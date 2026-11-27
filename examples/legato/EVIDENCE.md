@@ -184,6 +184,7 @@ workflow or a person caused a quality change. Full table:
 ## Follow-up: fix delta
 
 The cleanup PR #434 (`471bfd24 → 41c80614`) was measured with the frozen evaluator; see [FIX-EVIDENCE.md](FIX-EVIDENCE.md).
+The independent leaf-helper batch PR #435 (`471bfd24 → 96298449`, worklist B1–B3) is in [LEAF-EVIDENCE.md](LEAF-EVIDENCE.md).
 
 ## Bottom line
 
