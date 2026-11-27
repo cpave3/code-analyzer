@@ -391,3 +391,12 @@ Deferred:
   rule-based today
 - a correctness signal from independently run tests
 - calibrating any score against human review
+
+## For agents working on this repository
+
+This project's learnings, pitfalls and open threads are kept in the engram
+identity **`assayer`**. Run `engram --as assayer boot` at the start of a
+session and `engram recall "<query>" --as assayer` before assuming. Build and
+test with the offline environment described under
+[Build environment](#build-environment-where-this-poc-was-built-and-tested).
+Never modify a repository you evaluate.
