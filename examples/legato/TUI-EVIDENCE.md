@@ -124,3 +124,10 @@ from tui into service; it did not go away. The new symbol-level boundary
 **outside what the frozen evaluator can attest**. They rest on Legato's
 architecture test and on review. This is directional structural evidence,
 not proof that the boundary is correct.
+
+## Follow-up
+
+The author's caller check of the typed-nil judgement note, and my partial
+re-check, are recorded in
+[SANDBOX-REVIEWLOOP-EVIDENCE.md](SANDBOX-REVIEWLOOP-EVIDENCE.md#442-follow-up-typed-nil-judgement-note).
+It is still a judgement note, not a measured result.
