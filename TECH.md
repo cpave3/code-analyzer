@@ -9,6 +9,13 @@
 | Index | `modernc.org/sqlite` v1.63.0 | Pure-Go SQLite, so no second cgo dependency. Stores parse results and a queryable `symbol` table keyed by (adapter, adapter version, blob id). Unchanged blobs are never reparsed across snapshots, commits or runs. |
 | Git | `git` CLI | Required by the PRD. Uses plumbing only: `rev-parse`, `ls-tree -z`, `cat-file --batch`, `diff --name-status -M -z`, `rev-list --first-parent`, `ls-files -z`. |
 
+Toolchain used for development and verification: go1.26.0 installed by
+mise at `/home/cameron/.local/share/mise/installs/go/1.26.0/bin`, with
+`/usr/bin/gcc` 16.1.1 and `/usr/bin/git` 2.55.0, on the Bazzite 44 host (no
+container). Go is not on a minimal system `PATH`. Prefix `PATH` with that
+directory and set `GOTOOLCHAIN=local GOPROXY=off GOFLAGS=-mod=readonly` for
+an offline, reproducible build (see README → Build environment).
+
 There are no other third-party dependencies. Line diffs (bounded Myers),
 glob matching, MinHash and Tarjan SCC are small in-process implementations.
 

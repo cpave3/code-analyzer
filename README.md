@@ -14,6 +14,38 @@ design is good, and it never combines dimensions into an overall score.
 
 Requires Go 1.26+, git and a C compiler (Tree-sitter uses cgo).
 
+### Build environment (where this POC was built and tested)
+
+| Tool | Location on the dev host | Notes |
+|---|---|---|
+| Go | `/home/cameron/.local/share/mise/installs/go/1.26.0/bin/go` (go1.26.0 linux/amd64) | Installed by **mise**, per user. It is on `PATH` only in shells where mise is activated, such as Cameron's normal terminal. It is not in `/usr/bin`. |
+| C compiler | `/usr/bin/gcc` (GCC 16.1.1) | Needed for cgo (Tree-sitter) |
+| git | `/usr/bin/git` (2.55.0) | |
+| OS | Bazzite 44 (Fedora Kinoite), on the host directly | No container or toolbox needed |
+| Go modules | `~/go/pkg/mod` (already populated) | The build works offline with `GOPROXY=off` |
+
+**`go: command not found` (exit 127) is a toolchain `PATH` setup issue, not a code failure.**
+A minimal `PATH` (`/usr/bin:/bin`) has no `go`, so the command fails before
+any code is compiled. Put the existing toolchain directory first; nothing
+needs installing globally:
+
+```bash
+cd /home/cameron/Projects/code-evaluator
+export PATH=/home/cameron/.local/share/mise/installs/go/1.26.0/bin:$PATH
+export GOTOOLCHAIN=local GOPROXY=off GOFLAGS=-mod=readonly   # offline, pinned toolchain, go.mod not modified
+go version                                   # go1.26.0 linux/amd64
+go build -o bin/codeeval ./cmd/codeeval
+go vet ./... && go test -count=1 ./...
+```
+
+This exact sequence was verified under `env -i HOME=$HOME PATH=<go dir>:/usr/bin:/bin`:
+build, vet and every test passed. The e2e tests themselves call `go` (to
+build the binary and to run `go test` in fixture variants), so the Go
+directory must be on `PATH`, not just invoked by absolute path. Without
+mise, any Go ≥ 1.26 plus gcc works. Point `PATH` at its `bin` instead.
+The scripts in `scripts/` need the same `PATH` and stop with a clear message
+if `go` is missing.
+
 ```bash
 go build -o bin/codeeval ./cmd/codeeval
 
