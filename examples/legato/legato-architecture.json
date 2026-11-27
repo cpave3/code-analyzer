@@ -1,0 +1,13 @@
+{
+  "configVersion": 1,
+  "architecture": {
+    "rules": [
+      {"name": "tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)", "from": "internal/tui/**", "to": "internal/engine/**"},
+      {"name": "service must not import tui (CLAUDE.md)", "from": "internal/service/**", "to": "internal/tui/**"},
+      {"name": "engine must not import service (CLAUDE.md)", "from": "internal/engine/**", "to": "internal/service/**"},
+      {"name": "engine must not import tui (CLAUDE.md)", "from": "internal/engine/**", "to": "internal/tui/**"},
+      {"name": "engine must not import sibling engine packages (CLAUDE.md; test-enforced in internal/engine/store/architecture_test.go)", "from": "internal/engine/*", "to": "internal/engine/**"},
+      {"name": "config is standalone, no internal imports (CLAUDE.md prose)", "from": "config/**", "to": "internal/**"}
+    ]
+  }
+}
