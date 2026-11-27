@@ -43,6 +43,27 @@ stays pinned to `96298449` and was not relabelled.
 | scope | 0 | 0 | 0 |
 | correctness | n/a | n/a | n/a |
 
+**Read the complexity +1 with the raw totals below.** For #439 and #441,
+the +1 means the *modified roots* got simpler. It does **not** mean logic
+was removed. In both batches, total complexity in the changed scope went
+**up**:
+
+| Raw complexity, changed scope | #439 | #440 | #441 |
+|---|---:|---:|---:|
+| Root (modified) cc Δ | −9 | 0 | −16 |
+| Added helpers cc | +18 (6 helpers) | +6 (2 moved) | +23 (4 helpers) |
+| Deleted cc | 0 | −6 (2 moved) | 0 |
+| **Changed-scope cc, before → after** | **107 → 116 (+9)** | **94 → 94 (0)** | **64 → 71 (+7)** |
+| of which: per-function base points (+1 per new helper) | +6 | 0 | +4 |
+| of which: decision points (net, roots plus helpers) | +3 | 0 | +3 |
+| Hotspots in scope | 1 → 1 | 5 → 5 | 3 → 2 |
+
+The decision-point split comes from the evaluator's `decisions` metric.
+For each callable, cc = decisions + 1. The +3 decision points in #439 and
+#441 is the measured net. The evaluator cannot say whether it represents
+new logic or checks repeated at the helper boundaries (for example a nil
+or empty guard inside a helper that the caller also has).
+
 ---
 
 ## #439 BuildSandboxPlan (Claude-account and NuGet parts)
