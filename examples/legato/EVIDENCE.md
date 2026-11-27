@@ -181,6 +181,10 @@ workflow or a person caused a quality change. Full table:
    graph interact across merges, so the per-merge redundancy deltas sum to
    more than the net +17.
 
+## Follow-up: fix delta
+
+The cleanup PR #434 (`471bfd24 → 41c80614`) was measured with the frozen evaluator; see [FIX-EVIDENCE.md](FIX-EVIDENCE.md).
+
 ## Bottom line
 
 The POC can tell apart, with precise and reproducible evidence: copy-paste

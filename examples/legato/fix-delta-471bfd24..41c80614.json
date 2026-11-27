@@ -1,0 +1,1639 @@
+{
+  "schema": "codeeval.report/v1",
+  "tool": {
+    "name": "codeeval",
+    "version": "0.1.0-poc"
+  },
+  "scoringVersion": "scoring/v1",
+  "configVersion": 1,
+  "configHash": "3cef63633359769f",
+  "mode": "commits",
+  "repository": "legato-fix",
+  "base": {
+    "ref": "471bfd24a69628d985cdd7767dcb340da6a569b7",
+    "commit": "471bfd24a69628d985cdd7767dcb340da6a569b7",
+    "tree": "ae91f4192b232c82eb171be2e9dfb20da677f62a",
+    "commitTime": "2026-11-27T15:46:34+11:00"
+  },
+  "target": {
+    "ref": "41c8061476b6592b5ea4faa192d68a2a803b6c59",
+    "commit": "41c8061476b6592b5ea4faa192d68a2a803b6c59",
+    "tree": "555c4b3e8792e1e5c57d561f0fc29a1bbe890986",
+    "commitTime": "2026-11-27T17:33:03+11:00"
+  },
+  "scoreScale": "-2 significant degradation, -1 degradation, 0 neutral/mixed, +1 improvement, +2 significant improvement; null = not scored (unsupported, error or not assessed). No combined score.",
+  "languages": [
+    {
+      "id": "go",
+      "supported": true,
+      "adapterVersion": "go-adapter/3+tree-sitter-go/0.25.0",
+      "capabilities": {
+        "complexity": "cyclomatic = 1 + if/for/case/comm-case/\u0026\u0026/||; nesting counts if/for/switch/select/func-literal, else-if not nested",
+        "dependencies": "package import graph resolved via nearest go.mod; test files excluded",
+        "fingerprints": "exact token text and structural kinds (identifiers/literals abstracted), comments ignored",
+        "references": "name-based identifier references; qualifier mapped to import by alias or last path element; no type resolution",
+        "symbols": "functions, methods and type declarations (Tree-sitter)"
+      },
+      "limits": [
+        "no type checking: references are matched by name, not resolved",
+        "no call graph or interface dispatch resolution",
+        "build tags and GOOS/GOARCH file variants are all indexed together",
+        "import cycles are compile errors in Go; detected cycles indicate non-building code"
+      ],
+      "filesInTarget": 2209,
+      "filesInTargetByClass": {
+        "source": 989,
+        "test": 1220
+      },
+      "filesChanged": 11,
+      "linesChanged": 229
+    },
+    {
+      "id": "javascript",
+      "supported": false,
+      "note": "unsupported: no adapter",
+      "filesInTarget": 33,
+      "filesInTargetByClass": {
+        "source": 23,
+        "test": 8,
+        "testdata": 2
+      },
+      "filesChanged": 0,
+      "linesChanged": 0
+    },
+    {
+      "id": "kotlin",
+      "supported": false,
+      "note": "unsupported: no adapter",
+      "filesInTarget": 57,
+      "filesInTargetByClass": {
+        "build": 3,
+        "source": 54
+      },
+      "filesChanged": 0,
+      "linesChanged": 0
+    },
+    {
+      "id": "python",
+      "supported": false,
+      "note": "unsupported: no adapter",
+      "filesInTarget": 10,
+      "filesInTargetByClass": {
+        "source": 5,
+        "testdata": 5
+      },
+      "filesChanged": 0,
+      "linesChanged": 0
+    },
+    {
+      "id": "rust",
+      "supported": false,
+      "note": "unsupported: no adapter",
+      "filesInTarget": 34,
+      "filesInTargetByClass": {
+        "source": 34
+      },
+      "filesChanged": 0,
+      "linesChanged": 0
+    },
+    {
+      "id": "shell",
+      "supported": false,
+      "note": "unsupported: no adapter",
+      "filesInTarget": 15,
+      "filesInTargetByClass": {
+        "source": 15
+      },
+      "filesChanged": 0,
+      "linesChanged": 0
+    },
+    {
+      "id": "sql",
+      "supported": false,
+      "note": "unsupported: no adapter",
+      "filesInTarget": 160,
+      "filesInTargetByClass": {
+        "source": 160
+      },
+      "filesChanged": 0,
+      "linesChanged": 0
+    },
+    {
+      "id": "swift",
+      "supported": false,
+      "note": "unsupported: no adapter",
+      "filesInTarget": 2,
+      "filesInTargetByClass": {
+        "source": 2
+      },
+      "filesChanged": 0,
+      "linesChanged": 0
+    },
+    {
+      "id": "typescript",
+      "supported": false,
+      "note": "unsupported: planned adapter: tree-sitter-typescript; graph from import/export + tsconfig paths",
+      "filesInTarget": 999,
+      "filesInTargetByClass": {
+        "source": 577,
+        "test": 422
+      },
+      "filesChanged": 0,
+      "linesChanged": 0
+    }
+  ],
+  "change": {
+    "filesChanged": 11,
+    "linesAdded": 170,
+    "linesDeleted": 59,
+    "files": [
+      {
+        "status": "modified",
+        "path": "internal/engine/jira/client.go",
+        "language": "go",
+        "supported": true,
+        "class": "source",
+        "linesAdded": 4,
+        "linesDeleted": 3
+      },
+      {
+        "status": "modified",
+        "path": "internal/engine/jira/users.go",
+        "language": "go",
+        "supported": true,
+        "class": "source",
+        "linesAdded": 1,
+        "linesDeleted": 11
+      },
+      {
+        "status": "modified",
+        "path": "internal/engine/jira/users_test.go",
+        "language": "go",
+        "supported": true,
+        "class": "test",
+        "linesAdded": 50,
+        "linesDeleted": 0
+      },
+      {
+        "status": "modified",
+        "path": "internal/engine/jira/write.go",
+        "language": "go",
+        "supported": true,
+        "class": "source",
+        "linesAdded": 3,
+        "linesDeleted": 2
+      },
+      {
+        "status": "modified",
+        "path": "internal/engine/jira/write_test.go",
+        "language": "go",
+        "supported": true,
+        "class": "test",
+        "linesAdded": 5,
+        "linesDeleted": 3
+      },
+      {
+        "status": "added",
+        "path": "internal/server/invalidation_events.go",
+        "language": "go",
+        "supported": true,
+        "class": "source",
+        "linesAdded": 29,
+        "linesDeleted": 0
+      },
+      {
+        "status": "added",
+        "path": "internal/server/invalidation_events_test.go",
+        "language": "go",
+        "supported": true,
+        "class": "test",
+        "linesAdded": 60,
+        "linesDeleted": 0
+      },
+      {
+        "status": "modified",
+        "path": "internal/server/subscription_usage.go",
+        "language": "go",
+        "supported": true,
+        "class": "source",
+        "linesAdded": 1,
+        "linesDeleted": 17
+      },
+      {
+        "status": "modified",
+        "path": "internal/server/theme_preference.go",
+        "language": "go",
+        "supported": true,
+        "class": "source",
+        "linesAdded": 1,
+        "linesDeleted": 17
+      },
+      {
+        "status": "modified",
+        "path": "internal/service/plan.go",
+        "language": "go",
+        "supported": true,
+        "class": "source",
+        "linesAdded": 2,
+        "linesDeleted": 6
+      },
+      {
+        "status": "modified",
+        "path": "internal/service/plan_images_test.go",
+        "language": "go",
+        "supported": true,
+        "class": "test",
+        "linesAdded": 14,
+        "linesDeleted": 0
+      }
+    ],
+    "symbols": [
+      {
+        "status": "modified",
+        "kind": "method",
+        "name": "Client.DoTransition",
+        "exported": true,
+        "file": "internal/engine/jira/client.go",
+        "startLine": 140,
+        "endLine": 147,
+        "baseFile": "internal/engine/jira/client.go",
+        "baseStartLine": 140,
+        "baseEndLine": 147,
+        "class": "source"
+      },
+      {
+        "status": "deleted",
+        "kind": "method",
+        "name": "Client.doPost",
+        "exported": false,
+        "baseName": "Client.doPost",
+        "baseFile": "internal/engine/jira/client.go",
+        "baseStartLine": 157,
+        "baseEndLine": 164,
+        "class": "source"
+      },
+      {
+        "status": "added",
+        "kind": "method",
+        "name": "Client.doJSON",
+        "exported": false,
+        "file": "internal/engine/jira/client.go",
+        "startLine": 158,
+        "endLine": 165,
+        "class": "source"
+      },
+      {
+        "status": "modified",
+        "kind": "method",
+        "name": "Client.Assign",
+        "exported": true,
+        "file": "internal/engine/jira/users.go",
+        "startLine": 41,
+        "endLine": 54,
+        "baseFile": "internal/engine/jira/users.go",
+        "baseStartLine": 42,
+        "baseEndLine": 55,
+        "class": "source"
+      },
+      {
+        "status": "deleted",
+        "kind": "method",
+        "name": "Client.doPut",
+        "exported": false,
+        "baseName": "Client.doPut",
+        "baseFile": "internal/engine/jira/users.go",
+        "baseStartLine": 57,
+        "baseEndLine": 64,
+        "class": "source"
+      },
+      {
+        "status": "formatting_only",
+        "kind": "function",
+        "name": "TestCreateIssueAssignsAsItCreates",
+        "exported": true,
+        "file": "internal/engine/jira/users_test.go",
+        "startLine": 94,
+        "endLine": 103,
+        "baseFile": "internal/engine/jira/users_test.go",
+        "baseStartLine": 91,
+        "baseEndLine": 100,
+        "class": "test"
+      },
+      {
+        "status": "added",
+        "kind": "function",
+        "name": "TestWritesSendJSONWithBasicAuth",
+        "exported": true,
+        "file": "internal/engine/jira/users_test.go",
+        "startLine": 106,
+        "endLine": 127,
+        "class": "test"
+      },
+      {
+        "status": "added",
+        "kind": "function",
+        "name": "TestAssignRateLimitedIsRetriedWithItsBody",
+        "exported": true,
+        "file": "internal/engine/jira/users_test.go",
+        "startLine": 130,
+        "endLine": 150,
+        "class": "test"
+      },
+      {
+        "status": "modified",
+        "kind": "method",
+        "name": "Client.CreateIssue",
+        "exported": true,
+        "file": "internal/engine/jira/write.go",
+        "startLine": 93,
+        "endLine": 129,
+        "baseFile": "internal/engine/jira/write.go",
+        "baseStartLine": 92,
+        "baseEndLine": 128,
+        "class": "source"
+      },
+      {
+        "status": "modified",
+        "kind": "method",
+        "name": "Client.AddComment",
+        "exported": true,
+        "file": "internal/engine/jira/write.go",
+        "startLine": 132,
+        "endLine": 148,
+        "baseFile": "internal/engine/jira/write.go",
+        "baseStartLine": 131,
+        "baseEndLine": 147,
+        "class": "source"
+      },
+      {
+        "status": "modified",
+        "kind": "type",
+        "name": "recordedRequest",
+        "exported": false,
+        "file": "internal/engine/jira/write_test.go",
+        "startLine": 15,
+        "endLine": 19,
+        "baseFile": "internal/engine/jira/write_test.go",
+        "baseStartLine": 15,
+        "baseEndLine": 18,
+        "class": "test"
+      },
+      {
+        "status": "modified",
+        "kind": "function",
+        "name": "jiraServer",
+        "exported": false,
+        "file": "internal/engine/jira/write_test.go",
+        "startLine": 21,
+        "endLine": 36,
+        "baseFile": "internal/engine/jira/write_test.go",
+        "baseStartLine": 20,
+        "baseEndLine": 34,
+        "class": "test"
+      },
+      {
+        "status": "added",
+        "kind": "method",
+        "name": "Server.broadcastInvalidations",
+        "exported": false,
+        "file": "internal/server/invalidation_events.go",
+        "startLine": 12,
+        "endLine": 29,
+        "class": "source"
+      },
+      {
+        "status": "added",
+        "kind": "function",
+        "name": "TestInvalidationBroadcastersStopCleanly",
+        "exported": true,
+        "file": "internal/server/invalidation_events_test.go",
+        "startLine": 12,
+        "endLine": 60,
+        "class": "test"
+      },
+      {
+        "status": "modified",
+        "kind": "method",
+        "name": "Server.StartSubscriptionUsageEvents",
+        "exported": true,
+        "file": "internal/server/subscription_usage.go",
+        "startLine": 69,
+        "endLine": 71,
+        "baseFile": "internal/server/subscription_usage.go",
+        "baseStartLine": 70,
+        "baseEndLine": 87,
+        "class": "source"
+      },
+      {
+        "status": "modified",
+        "kind": "method",
+        "name": "Server.StartServerThemeEvents",
+        "exported": true,
+        "file": "internal/server/theme_preference.go",
+        "startLine": 22,
+        "endLine": 24,
+        "baseFile": "internal/server/theme_preference.go",
+        "baseStartLine": 23,
+        "baseEndLine": 40,
+        "class": "source"
+      },
+      {
+        "status": "modified",
+        "kind": "function",
+        "name": "planBundleImage",
+        "exported": false,
+        "file": "internal/service/plan.go",
+        "startLine": 72,
+        "endLine": 93,
+        "baseFile": "internal/service/plan.go",
+        "baseStartLine": 72,
+        "baseEndLine": 97,
+        "class": "source"
+      },
+      {
+        "status": "added",
+        "kind": "function",
+        "name": "TestPlanImageInASiblingFolderSharingTheBundlesPrefixIsOutside",
+        "exported": true,
+        "file": "internal/service/plan_images_test.go",
+        "startLine": 418,
+        "endLine": 428,
+        "class": "test"
+      }
+    ]
+  },
+  "dimensions": [
+    {
+      "dimension": "duplication",
+      "analyzers": [
+        {
+          "analyzer": "duplication",
+          "status": "ok",
+          "score": 1,
+          "summary": "structural redundancy 260→258 (Δ-2), exact 10→10; 0 near-structural candidate(s)"
+        }
+      ]
+    },
+    {
+      "dimension": "complexity",
+      "analyzers": [
+        {
+          "analyzer": "complexity",
+          "status": "ok",
+          "score": 1,
+          "summary": "modified callables net cyclomatic Δ-8; 2 added (cc 6), 2 deleted (cc 4); hotspots 1→1"
+        }
+      ]
+    },
+    {
+      "dimension": "architecture_coupling",
+      "analyzers": [
+        {
+          "analyzer": "dependencies",
+          "status": "ok",
+          "score": 0,
+          "summary": "internal edges 200→200 (+0/-0); cycles 0→0; rule violations 15→15"
+        }
+      ]
+    },
+    {
+      "dimension": "maintainability_scope",
+      "analyzers": [
+        {
+          "analyzer": "obsolete",
+          "status": "ok",
+          "score": 0,
+          "summary": "0 callable(s) newly unreferenced but kept; 0 unreferenced callable(s) removed"
+        },
+        {
+          "analyzer": "scope",
+          "status": "ok",
+          "score": 0,
+          "summary": "11 files changed (7 source); symbols +2/-2/~7 (renamed 0, formatting-only 0); exported API +0/-0/~0; 1 unit group(s)"
+        }
+      ]
+    },
+    {
+      "dimension": "correctness_confidence",
+      "analyzers": [
+        {
+          "analyzer": "correctness",
+          "status": "not_assessed",
+          "score": null,
+          "summary": "not assessed (context: 4 test files changed, +129/-3 lines; test churn is not evidence of correctness)"
+        }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "analyzer": "duplication",
+      "dimension": "duplication",
+      "title": "Callable duplication delta",
+      "version": "1",
+      "status": "ok",
+      "score": 1,
+      "scoreRule": "net structural redundancy Δ-2: ≥1 → -1, ≥3 → -2, ≤-1 → +1, ≤-3 → +2; near-structural candidates are not scored",
+      "summary": "structural redundancy 260→258 (Δ-2), exact 10→10; 0 near-structural candidate(s)",
+      "rationale": [
+        "callables with ≥40 tokens in production source are compared repository-wide (base 6762, target 6760)",
+        "introduced 0 redundant instance(s), removed 2; 0 pre-existing group(s) touched but unchanged in size"
+      ],
+      "measurements": [
+        {
+          "metric": "exact_redundant_callables",
+          "scope": "repository",
+          "before": 10,
+          "after": 10,
+          "delta": 0,
+          "unit": "count"
+        },
+        {
+          "metric": "structural_redundant_callables",
+          "scope": "repository",
+          "before": 260,
+          "after": 258,
+          "delta": -2,
+          "unit": "count"
+        },
+        {
+          "metric": "callables_considered",
+          "scope": "repository",
+          "before": 6762,
+          "after": 6760,
+          "delta": -2,
+          "unit": "count"
+        },
+        {
+          "metric": "redundant_instances_introduced",
+          "scope": "change",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 0,
+          "unit": "count"
+        },
+        {
+          "metric": "redundant_instances_removed",
+          "scope": "change",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 2,
+          "unit": "count"
+        },
+        {
+          "metric": "preexisting_groups_touched",
+          "scope": "change",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 0,
+          "unit": "count"
+        },
+        {
+          "metric": "near_structural_candidates",
+          "scope": "change",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 0,
+          "unit": "count"
+        }
+      ],
+      "findings": [
+        {
+          "kind": "duplication.removed",
+          "basis": "measured",
+          "direction": "improvement",
+          "message": "clone group shrank from 2 to 0 (removed/changed: [Client.doPost Client.doPut])",
+          "measurements": [
+            {
+              "metric": "group_size",
+              "before": 2,
+              "after": 0,
+              "delta": -2,
+              "unit": "callables"
+            }
+          ],
+          "evidence": [
+            {
+              "side": "base",
+              "commit": "471bfd24a69628d985cdd7767dcb340da6a569b7",
+              "file": "internal/engine/jira/client.go",
+              "symbol": "Client.doPost",
+              "startLine": 157,
+              "endLine": 164,
+              "role": "removed or changed (deleted)"
+            },
+            {
+              "side": "base",
+              "commit": "471bfd24a69628d985cdd7767dcb340da6a569b7",
+              "file": "internal/engine/jira/users.go",
+              "symbol": "Client.doPut",
+              "startLine": 57,
+              "endLine": 64,
+              "role": "removed or changed (deleted)"
+            }
+          ]
+        },
+        {
+          "kind": "duplication.removed",
+          "basis": "measured",
+          "direction": "improvement",
+          "message": "clone group shrank from 2 to 0 (removed/changed: [Server.StartSubscriptionUsageEvents Server.StartServerThemeEvents])",
+          "measurements": [
+            {
+              "metric": "group_size",
+              "before": 2,
+              "after": 0,
+              "delta": -2,
+              "unit": "callables"
+            }
+          ],
+          "evidence": [
+            {
+              "side": "base",
+              "commit": "471bfd24a69628d985cdd7767dcb340da6a569b7",
+              "file": "internal/server/subscription_usage.go",
+              "symbol": "Server.StartSubscriptionUsageEvents",
+              "startLine": 70,
+              "endLine": 87,
+              "role": "removed or changed (modified)"
+            },
+            {
+              "side": "base",
+              "commit": "471bfd24a69628d985cdd7767dcb340da6a569b7",
+              "file": "internal/server/theme_preference.go",
+              "symbol": "Server.StartServerThemeEvents",
+              "startLine": 23,
+              "endLine": 40,
+              "role": "removed or changed (modified)"
+            }
+          ]
+        }
+      ],
+      "coverage": {
+        "changedCodeFiles": 7,
+        "analyzed": 7,
+        "withParseErrors": 0,
+        "excludedByClass": {
+          "test": 4
+        },
+        "nonCodeFiles": 0
+      }
+    },
+    {
+      "analyzer": "complexity",
+      "dimension": "complexity",
+      "title": "Callable complexity deltas",
+      "version": "1",
+      "status": "ok",
+      "score": 1,
+      "scoreRule": "pre-existing hotspotΔ\u003c0 or modified net cyclomatic ≤ -3 → +1",
+      "summary": "modified callables net cyclomatic Δ-8; 2 added (cc 6), 2 deleted (cc 4); hotspots 1→1",
+      "rationale": [
+        "modified callables: 0 increased, 3 decreased; net cyclomatic Δ-8",
+        "added callables: 2 (cyclomatic 6); deleted callables: 2 (cyclomatic 4)",
+        "changed-scope cyclomatic 41→35 (Δ-6), hotspots 1→1"
+      ],
+      "measurements": [
+        {
+          "metric": "cyclomatic_sum",
+          "scope": "modified_callables",
+          "before": 37,
+          "after": 29,
+          "delta": -8
+        },
+        {
+          "metric": "decision_points_sum",
+          "scope": "modified_callables",
+          "before": 30,
+          "after": 22,
+          "delta": -8
+        },
+        {
+          "metric": "lines_sum",
+          "scope": "modified_callables",
+          "before": 138,
+          "after": 104,
+          "delta": -34
+        },
+        {
+          "metric": "max_nesting",
+          "scope": "modified_callables",
+          "before": 3,
+          "after": 2,
+          "delta": -1
+        },
+        {
+          "metric": "cyclomatic_sum",
+          "scope": "changed_scope",
+          "before": 41,
+          "after": 35,
+          "delta": -6
+        },
+        {
+          "metric": "max_cyclomatic",
+          "scope": "changed_scope",
+          "before": 10,
+          "after": 10,
+          "delta": 0
+        },
+        {
+          "metric": "hotspot_callables",
+          "scope": "changed_scope",
+          "before": 1,
+          "after": 1,
+          "delta": 0
+        },
+        {
+          "metric": "callables",
+          "scope": "changed_scope",
+          "before": 9,
+          "after": 9,
+          "delta": 0
+        },
+        {
+          "metric": "callables_modified",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 7,
+          "unit": "count"
+        },
+        {
+          "metric": "callables_added",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 2,
+          "unit": "count"
+        },
+        {
+          "metric": "callables_deleted",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 2,
+          "unit": "count"
+        },
+        {
+          "metric": "cyclomatic_sum_added",
+          "scope": "added_callables",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 6
+        },
+        {
+          "metric": "cyclomatic_sum_deleted",
+          "scope": "deleted_callables",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 4
+        },
+        {
+          "metric": "hotspot_delta_preexisting",
+          "scope": "modified_and_deleted",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 0,
+          "unit": "callables"
+        },
+        {
+          "metric": "hotspots_added",
+          "scope": "added_callables",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 0,
+          "unit": "callables"
+        }
+      ],
+      "findings": [
+        {
+          "kind": "complexity.modified",
+          "basis": "measured",
+          "direction": "improvement",
+          "message": "Server.StartSubscriptionUsageEvents: cyclomatic 4→1, nesting 3→0, lines 18→3",
+          "measurements": [
+            {
+              "metric": "cyclomatic",
+              "before": 4,
+              "after": 1,
+              "delta": -3
+            },
+            {
+              "metric": "decision_points",
+              "before": 3,
+              "after": 0,
+              "delta": -3
+            },
+            {
+              "metric": "max_nesting",
+              "before": 3,
+              "after": 0,
+              "delta": -3
+            },
+            {
+              "metric": "lines",
+              "before": 18,
+              "after": 3,
+              "delta": -15,
+              "unit": "lines"
+            },
+            {
+              "metric": "statements",
+              "before": 17,
+              "after": 1,
+              "delta": -16
+            }
+          ],
+          "evidence": [
+            {
+              "side": "base",
+              "commit": "471bfd24a69628d985cdd7767dcb340da6a569b7",
+              "file": "internal/server/subscription_usage.go",
+              "symbol": "Server.StartSubscriptionUsageEvents",
+              "startLine": 70,
+              "endLine": 87,
+              "role": "before"
+            },
+            {
+              "side": "target",
+              "commit": "41c8061476b6592b5ea4faa192d68a2a803b6c59",
+              "file": "internal/server/subscription_usage.go",
+              "symbol": "Server.StartSubscriptionUsageEvents",
+              "startLine": 69,
+              "endLine": 71,
+              "role": "after"
+            }
+          ]
+        },
+        {
+          "kind": "complexity.modified",
+          "basis": "measured",
+          "direction": "improvement",
+          "message": "Server.StartServerThemeEvents: cyclomatic 4→1, nesting 3→0, lines 18→3",
+          "measurements": [
+            {
+              "metric": "cyclomatic",
+              "before": 4,
+              "after": 1,
+              "delta": -3
+            },
+            {
+              "metric": "decision_points",
+              "before": 3,
+              "after": 0,
+              "delta": -3
+            },
+            {
+              "metric": "max_nesting",
+              "before": 3,
+              "after": 0,
+              "delta": -3
+            },
+            {
+              "metric": "lines",
+              "before": 18,
+              "after": 3,
+              "delta": -15,
+              "unit": "lines"
+            },
+            {
+              "metric": "statements",
+              "before": 17,
+              "after": 1,
+              "delta": -16
+            }
+          ],
+          "evidence": [
+            {
+              "side": "base",
+              "commit": "471bfd24a69628d985cdd7767dcb340da6a569b7",
+              "file": "internal/server/theme_preference.go",
+              "symbol": "Server.StartServerThemeEvents",
+              "startLine": 23,
+              "endLine": 40,
+              "role": "before"
+            },
+            {
+              "side": "target",
+              "commit": "41c8061476b6592b5ea4faa192d68a2a803b6c59",
+              "file": "internal/server/theme_preference.go",
+              "symbol": "Server.StartServerThemeEvents",
+              "startLine": 22,
+              "endLine": 24,
+              "role": "after"
+            }
+          ]
+        },
+        {
+          "kind": "complexity.modified",
+          "basis": "measured",
+          "direction": "improvement",
+          "message": "planBundleImage: cyclomatic 8→6, nesting 2→2, lines 26→22",
+          "measurements": [
+            {
+              "metric": "cyclomatic",
+              "before": 8,
+              "after": 6,
+              "delta": -2
+            },
+            {
+              "metric": "decision_points",
+              "before": 7,
+              "after": 5,
+              "delta": -2
+            },
+            {
+              "metric": "max_nesting",
+              "before": 2,
+              "after": 2,
+              "delta": 0
+            },
+            {
+              "metric": "lines",
+              "before": 26,
+              "after": 22,
+              "delta": -4,
+              "unit": "lines"
+            },
+            {
+              "metric": "statements",
+              "before": 17,
+              "after": 14,
+              "delta": -3
+            }
+          ],
+          "evidence": [
+            {
+              "side": "base",
+              "commit": "471bfd24a69628d985cdd7767dcb340da6a569b7",
+              "file": "internal/service/plan.go",
+              "symbol": "planBundleImage",
+              "startLine": 72,
+              "endLine": 97,
+              "role": "before"
+            },
+            {
+              "side": "target",
+              "commit": "41c8061476b6592b5ea4faa192d68a2a803b6c59",
+              "file": "internal/service/plan.go",
+              "symbol": "planBundleImage",
+              "startLine": 72,
+              "endLine": 93,
+              "role": "after"
+            }
+          ]
+        }
+      ],
+      "coverage": {
+        "changedCodeFiles": 7,
+        "analyzed": 7,
+        "withParseErrors": 0,
+        "excludedByClass": {
+          "test": 4
+        },
+        "nonCodeFiles": 0
+      }
+    },
+    {
+      "analyzer": "dependencies",
+      "dimension": "architecture_coupling",
+      "title": "Dependency graph delta",
+      "version": "1",
+      "status": "ok",
+      "score": 0,
+      "scoreRule": "no cycles or rule violations changed → 0 (new edges alone are reported, not judged: features legitimately add dependencies)",
+      "summary": "internal edges 200→200 (+0/-0); cycles 0→0; rule violations 15→15",
+      "rationale": [
+        "go: Go package imports (non-test files), internal packages resolved via nearest go.mod"
+      ],
+      "measurements": [
+        {
+          "metric": "internal_units",
+          "scope": "repository",
+          "before": 86,
+          "after": 86,
+          "delta": 0,
+          "unit": "units"
+        },
+        {
+          "metric": "internal_edges",
+          "scope": "repository",
+          "before": 200,
+          "after": 200,
+          "delta": 0,
+          "unit": "edges"
+        },
+        {
+          "metric": "external_dependency_refs",
+          "scope": "repository",
+          "before": 1028,
+          "after": 1028,
+          "delta": 0,
+          "unit": "unit→external pairs"
+        },
+        {
+          "metric": "cycles",
+          "scope": "repository",
+          "before": 0,
+          "after": 0,
+          "delta": 0,
+          "unit": "strongly connected components"
+        },
+        {
+          "metric": "rule_violations",
+          "scope": "repository",
+          "before": 15,
+          "after": 15,
+          "delta": 0,
+          "unit": "edges"
+        },
+        {
+          "metric": "edges_added",
+          "scope": "change",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 0,
+          "unit": "edges"
+        },
+        {
+          "metric": "edges_removed",
+          "scope": "change",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 0,
+          "unit": "edges"
+        }
+      ],
+      "findings": [
+        {
+          "kind": "dependencies.rule_violation_preexisting",
+          "basis": "measured",
+          "direction": "info",
+          "message": "[go] rule \"config is standalone, no internal imports (CLAUDE.md prose)\" already violated before the change: config → internal/engine/macros (not scored)",
+          "evidence": [
+            {
+              "side": "target",
+              "commit": "41c8061476b6592b5ea4faa192d68a2a803b6c59",
+              "file": "config/config.go",
+              "startLine": 14,
+              "endLine": 14,
+              "role": "import"
+            }
+          ]
+        },
+        {
+          "kind": "dependencies.rule_violation_preexisting",
+          "basis": "measured",
+          "direction": "info",
+          "message": "[go] rule \"tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)\" already violated before the change: internal/tui → internal/engine/events (not scored)",
+          "evidence": [
+            {
+              "side": "target",
+              "commit": "41c8061476b6592b5ea4faa192d68a2a803b6c59",
+              "file": "internal/tui/app.go",
+              "startLine": 14,
+              "endLine": 14,
+              "role": "import"
+            }
+          ]
+        },
+        {
+          "kind": "dependencies.rule_violation_preexisting",
+          "basis": "measured",
+          "direction": "info",
+          "message": "[go] rule \"tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)\" already violated before the change: internal/tui → internal/engine/ipc (not scored)",
+          "evidence": [
+            {
+              "side": "target",
+              "commit": "41c8061476b6592b5ea4faa192d68a2a803b6c59",
+              "file": "internal/tui/app.go",
+              "startLine": 15,
+              "endLine": 15,
+              "role": "import"
+            }
+          ]
+        },
+        {
+          "kind": "dependencies.rule_violation_preexisting",
+          "basis": "measured",
+          "direction": "info",
+          "message": "[go] rule \"tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)\" already violated before the change: internal/tui → internal/engine/macros (not scored)",
+          "evidence": [
+            {
+              "side": "target",
+              "commit": "41c8061476b6592b5ea4faa192d68a2a803b6c59",
+              "file": "internal/tui/app.go",
+              "startLine": 16,
+              "endLine": 16,
+              "role": "import"
+            }
+          ]
+        },
+        {
+          "kind": "dependencies.rule_violation_preexisting",
+          "basis": "measured",
+          "direction": "info",
+          "message": "[go] rule \"tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)\" already violated before the change: internal/tui → internal/engine/store (not scored)",
+          "evidence": [
+            {
+              "side": "target",
+              "commit": "41c8061476b6592b5ea4faa192d68a2a803b6c59",
+              "file": "internal/tui/app.go",
+              "startLine": 17,
+              "endLine": 17,
+              "role": "import"
+            }
+          ]
+        },
+        {
+          "kind": "dependencies.rule_violation_preexisting",
+          "basis": "measured",
+          "direction": "info",
+          "message": "[go] rule \"tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)\" already violated before the change: internal/tui → internal/engine/workflow (not scored)",
+          "evidence": [
+            {
+              "side": "target",
+              "commit": "41c8061476b6592b5ea4faa192d68a2a803b6c59",
+              "file": "internal/tui/app.go",
+              "startLine": 18,
+              "endLine": 18,
+              "role": "import"
+            }
+          ]
+        },
+        {
+          "kind": "dependencies.rule_violation_preexisting",
+          "basis": "measured",
+          "direction": "info",
+          "message": "[go] rule \"tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)\" already violated before the change: internal/tui/board → internal/engine/store (not scored)",
+          "evidence": [
+            {
+              "side": "target",
+              "commit": "41c8061476b6592b5ea4faa192d68a2a803b6c59",
+              "file": "internal/tui/board/model.go",
+              "startLine": 9,
+              "endLine": 9,
+              "role": "import"
+            }
+          ]
+        },
+        {
+          "kind": "dependencies.rule_violation_preexisting",
+          "basis": "measured",
+          "direction": "info",
+          "message": "[go] rule \"tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)\" already violated before the change: internal/tui/overlay → internal/engine/github (not scored)",
+          "evidence": [
+            {
+              "side": "target",
+              "commit": "41c8061476b6592b5ea4faa192d68a2a803b6c59",
+              "file": "internal/tui/overlay/link_pr.go",
+              "startLine": 10,
+              "endLine": 10,
+              "role": "import"
+            }
+          ]
+        },
+        {
+          "kind": "dependencies.rule_violation_preexisting",
+          "basis": "measured",
+          "direction": "info",
+          "message": "[go] rule \"tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)\" already violated before the change: internal/tui/overlay → internal/engine/macros (not scored)",
+          "evidence": [
+            {
+              "side": "target",
+              "commit": "41c8061476b6592b5ea4faa192d68a2a803b6c59",
+              "file": "internal/tui/overlay/macro_picker.go",
+              "startLine": 9,
+              "endLine": 9,
+              "role": "import"
+            }
+          ]
+        },
+        {
+          "kind": "dependencies.rule_violation_preexisting",
+          "basis": "measured",
+          "direction": "info",
+          "message": "[go] rule \"tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)\" already violated before the change: internal/tui/overlay → internal/engine/workflow (not scored)",
+          "evidence": [
+            {
+              "side": "target",
+              "commit": "41c8061476b6592b5ea4faa192d68a2a803b6c59",
+              "file": "internal/tui/overlay/workflow_trigger.go",
+              "startLine": 9,
+              "endLine": 9,
+              "role": "import"
+            }
+          ]
+        },
+        {
+          "kind": "dependencies.rule_violation_preexisting",
+          "basis": "measured",
+          "direction": "info",
+          "message": "[go] rule \"tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)\" already violated before the change: internal/tui/overlay → internal/engine/store (not scored)",
+          "evidence": [
+            {
+              "side": "target",
+              "commit": "41c8061476b6592b5ea4faa192d68a2a803b6c59",
+              "file": "internal/tui/overlay/workspace.go",
+              "startLine": 9,
+              "endLine": 9,
+              "role": "import"
+            }
+          ]
+        },
+        {
+          "kind": "dependencies.rule_violation_preexisting",
+          "basis": "measured",
+          "direction": "info",
+          "message": "[go] rule \"tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)\" already violated before the change: internal/tui/plan → internal/engine/store (not scored)",
+          "evidence": [
+            {
+              "side": "target",
+              "commit": "41c8061476b6592b5ea4faa192d68a2a803b6c59",
+              "file": "internal/tui/plan/model.go",
+              "startLine": 13,
+              "endLine": 13,
+              "role": "import"
+            }
+          ]
+        },
+        {
+          "kind": "dependencies.rule_violation_preexisting",
+          "basis": "measured",
+          "direction": "info",
+          "message": "[go] rule \"tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)\" already violated before the change: internal/tui/report → internal/engine/analytics (not scored)",
+          "evidence": [
+            {
+              "side": "target",
+              "commit": "41c8061476b6592b5ea4faa192d68a2a803b6c59",
+              "file": "internal/tui/report/model.go",
+              "startLine": 12,
+              "endLine": 12,
+              "role": "import"
+            }
+          ]
+        },
+        {
+          "kind": "dependencies.rule_violation_preexisting",
+          "basis": "measured",
+          "direction": "info",
+          "message": "[go] rule \"tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)\" already violated before the change: internal/tui/review → internal/engine/git (not scored)",
+          "evidence": [
+            {
+              "side": "target",
+              "commit": "41c8061476b6592b5ea4faa192d68a2a803b6c59",
+              "file": "internal/tui/review/messages.go",
+              "startLine": 4,
+              "endLine": 4,
+              "role": "import"
+            }
+          ]
+        },
+        {
+          "kind": "dependencies.rule_violation_preexisting",
+          "basis": "measured",
+          "direction": "info",
+          "message": "[go] rule \"tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)\" already violated before the change: internal/tui/review → internal/engine/store (not scored)",
+          "evidence": [
+            {
+              "side": "target",
+              "commit": "41c8061476b6592b5ea4faa192d68a2a803b6c59",
+              "file": "internal/tui/review/model.go",
+              "startLine": 17,
+              "endLine": 17,
+              "role": "import"
+            }
+          ]
+        }
+      ],
+      "coverage": {
+        "changedCodeFiles": 7,
+        "analyzed": 7,
+        "withParseErrors": 0,
+        "excludedByClass": {
+          "test": 4
+        },
+        "nonCodeFiles": 0
+      }
+    },
+    {
+      "analyzer": "obsolete",
+      "dimension": "maintainability_scope",
+      "title": "Code left obsolete",
+      "version": "1",
+      "status": "ok",
+      "score": 0,
+      "scoreRule": "no newly orphaned functions (methods alone are low confidence and not scored) → 0",
+      "summary": "0 callable(s) newly unreferenced but kept; 0 unreferenced callable(s) removed",
+      "measurements": [
+        {
+          "metric": "callables_left_unreferenced",
+          "scope": "touched_units",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 0,
+          "unit": "callables"
+        },
+        {
+          "metric": "unreferenced_callables_removed",
+          "scope": "touched_units",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 0,
+          "unit": "callables"
+        }
+      ],
+      "findings": [],
+      "coverage": {
+        "changedCodeFiles": 7,
+        "analyzed": 7,
+        "withParseErrors": 0,
+        "excludedByClass": {
+          "test": 4
+        },
+        "nonCodeFiles": 0
+      }
+    },
+    {
+      "analyzer": "scope",
+      "dimension": "maintainability_scope",
+      "title": "Change scope and locality",
+      "version": "1",
+      "status": "ok",
+      "score": 0,
+      "scoreRule": "no unrelated churn detected → 0 (breadth and API changes are reported, not judged; this analyzer never scores positive)",
+      "summary": "11 files changed (7 source); symbols +2/-2/~7 (renamed 0, formatting-only 0); exported API +0/-0/~0; 1 unit group(s)",
+      "rationale": [
+        "affected callers are counted by identifier name (qualified by package name across packages), without type resolution",
+        "a focused change scores 0: scope has no improvement direction"
+      ],
+      "measurements": [
+        {
+          "metric": "files_changed",
+          "scope": "source",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 7,
+          "unit": "files"
+        },
+        {
+          "metric": "lines_added",
+          "scope": "source",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 41,
+          "unit": "lines"
+        },
+        {
+          "metric": "lines_deleted",
+          "scope": "source",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 56,
+          "unit": "lines"
+        },
+        {
+          "metric": "files_changed",
+          "scope": "test",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 4,
+          "unit": "files"
+        },
+        {
+          "metric": "lines_added",
+          "scope": "test",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 129,
+          "unit": "lines"
+        },
+        {
+          "metric": "lines_deleted",
+          "scope": "test",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 3,
+          "unit": "lines"
+        },
+        {
+          "metric": "symbols_added",
+          "scope": "source",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 2,
+          "unit": "symbols"
+        },
+        {
+          "metric": "symbols_deleted",
+          "scope": "source",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 2,
+          "unit": "symbols"
+        },
+        {
+          "metric": "symbols_modified",
+          "scope": "source",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 7,
+          "unit": "symbols"
+        },
+        {
+          "metric": "symbols_renamed",
+          "scope": "source",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 0,
+          "unit": "symbols"
+        },
+        {
+          "metric": "symbols_moved",
+          "scope": "source",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 0,
+          "unit": "symbols"
+        },
+        {
+          "metric": "symbols_formatting_only",
+          "scope": "source",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 0,
+          "unit": "symbols"
+        },
+        {
+          "metric": "exported_symbols_added",
+          "scope": "source",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 0,
+          "unit": "symbols"
+        },
+        {
+          "metric": "exported_symbols_removed",
+          "scope": "source",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 0,
+          "unit": "symbols"
+        },
+        {
+          "metric": "exported_symbols_changed",
+          "scope": "source",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 0,
+          "unit": "symbols"
+        },
+        {
+          "metric": "units_changed",
+          "scope": "source",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 3,
+          "unit": "units"
+        },
+        {
+          "metric": "disconnected_unit_groups",
+          "scope": "source",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 1,
+          "unit": "groups"
+        },
+        {
+          "metric": "unrelated_churn_symbols",
+          "scope": "source",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 0,
+          "unit": "symbols"
+        }
+      ],
+      "findings": [],
+      "coverage": {
+        "changedCodeFiles": 7,
+        "analyzed": 7,
+        "withParseErrors": 0,
+        "excludedByClass": {
+          "test": 4
+        },
+        "nonCodeFiles": 0
+      }
+    },
+    {
+      "analyzer": "correctness",
+      "dimension": "correctness_confidence",
+      "title": "Correctness confidence",
+      "version": "1",
+      "status": "not_assessed",
+      "score": null,
+      "scoreRule": "never scored in this POC: no independent correctness evidence is collected",
+      "summary": "not assessed (context: 4 test files changed, +129/-3 lines; test churn is not evidence of correctness)",
+      "measurements": [
+        {
+          "metric": "test_files_changed",
+          "scope": "context_only",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 4,
+          "unit": "files"
+        },
+        {
+          "metric": "test_lines_added",
+          "scope": "context_only",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 129,
+          "unit": "lines"
+        },
+        {
+          "metric": "test_lines_deleted",
+          "scope": "context_only",
+          "before": null,
+          "after": null,
+          "delta": null,
+          "value": 3,
+          "unit": "lines"
+        }
+      ],
+      "findings": [],
+      "coverage": {
+        "changedCodeFiles": 4,
+        "analyzed": 4,
+        "withParseErrors": 0,
+        "excludedByClass": {
+          "source": 7
+        },
+        "nonCodeFiles": 0
+      }
+    }
+  ],
+  "diagnostics": {
+    "change": [],
+    "snapshotCountByCode": {}
+  },
+  "limitations": [
+    "POC: measurements of structure, not proof of design quality; lower metrics do not by themselves prove better architecture",
+    "scores are per analyzer and directional; there is deliberately no weighted overall score",
+    "correctness confidence is not assessed; the evaluated repository's code is never executed",
+    "duplication, complexity and obsolete-code analyzers measure production source only; tests, generated, vendor and docs are counted in scope and coverage",
+    "structural/near-structural similarity marks candidates, not semantic equivalence or proven missed reuse",
+    "go: no type checking: references are matched by name, not resolved",
+    "go: no call graph or interface dispatch resolution",
+    "go: build tags and GOOS/GOARCH file variants are all indexed together",
+    "go: import cycles are compile errors in Go; detected cycles indicate non-building code",
+    "csharp: no adapter — files are counted as unsupported coverage, never scored",
+    "java: no adapter — files are counted as unsupported coverage, never scored",
+    "javascript: no adapter — files are counted as unsupported coverage, never scored",
+    "kotlin: no adapter — files are counted as unsupported coverage, never scored",
+    "python: no adapter — files are counted as unsupported coverage, never scored",
+    "rust: no adapter — files are counted as unsupported coverage, never scored",
+    "shell: no adapter — files are counted as unsupported coverage, never scored",
+    "sql: no adapter — files are counted as unsupported coverage, never scored",
+    "swift: no adapter — files are counted as unsupported coverage, never scored",
+    "typescript: no adapter — files are counted as unsupported coverage, never scored"
+  ],
+  "timing": {
+    "startedAt": "2026-11-27T17:35:16+11:00",
+    "elapsedMillis": 1637,
+    "filesParsed": 2218,
+    "cacheHits": 2198,
+    "cacheMisses": 2218
+  }
+}
