@@ -190,6 +190,7 @@ Three independent batches, each from `471bfd24`, are in [BATCHES-439-441-EVIDENC
 The independent TUI-boundary batch PR #442 (`471bfd24 → c05e6bdb`, worklist G) is in [TUI-EVIDENCE.md](TUI-EVIDENCE.md).
 The #439 updated head (`6af114f8`, with the `1b322d6c → 6af114f8` increment) and the independent review-loop batch #443 (`471bfd24 → f3ddb233`) are in [SANDBOX-REVIEWLOOP-EVIDENCE.md](SANDBOX-REVIEWLOOP-EVIDENCE.md).
 Three independent batches, each from `471bfd24`, are in [BATCHES-444-446-EVIDENCE.md](BATCHES-444-446-EVIDENCE.md): #444 sandbox-prefix (`94ce0d0d`), #445 Claude account resolution (`3faa8213`) and #446 resume preparation (`8a2e03d7`).
+**The final combined stack** (11 layers, `471bfd24 → bb13a424`, excluding #434), with per-layer comparisons and the residual drift from `9a61e9f8`, is in [FINAL-STACK-EVIDENCE.md](FINAL-STACK-EVIDENCE.md).
 
 ## Bottom line
 

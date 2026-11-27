@@ -1,0 +1,72 @@
+{
+  "base": "471bfd24a69628d985cdd7767dcb340da6a569b7",
+  "target": "bb13a424dc73f3eeb98f8bce43db932a9d19f7e6",
+  "layers": [
+    {
+      "pr": 436,
+      "ref": "refs/heads/legato/i95qqzwb-ledger",
+      "parent": "471bfd24a69628d985cdd7767dcb340da6a569b7",
+      "head": "952953624e3d6bd204578a5f4a28d019d7776469"
+    },
+    {
+      "pr": 435,
+      "ref": "refs/heads/legato/i95qqzwb-leaf-helpers",
+      "parent": "952953624e3d6bd204578a5f4a28d019d7776469",
+      "head": "679e0ed2d35b810bbf23b4845246c1beb7e1f7e8"
+    },
+    {
+      "pr": 437,
+      "ref": "refs/heads/legato/i95qqzwb-service-dups",
+      "parent": "679e0ed2d35b810bbf23b4845246c1beb7e1f7e8",
+      "head": "907025f419bfb39d7d75f58fb5844686f69cdac7"
+    },
+    {
+      "pr": 440,
+      "ref": "refs/heads/legato/i95qqzwb-config-macros",
+      "parent": "907025f419bfb39d7d75f58fb5844686f69cdac7",
+      "head": "ff6ba3d0949368340f3511fcd78e11eac0140ff1"
+    },
+    {
+      "pr": 442,
+      "ref": "refs/heads/legato/i95qqzwb-tui-boundary",
+      "parent": "ff6ba3d0949368340f3511fcd78e11eac0140ff1",
+      "head": "3d112f744e19d9565a4b50bc5fcedfb1a160f265"
+    },
+    {
+      "pr": 441,
+      "ref": "refs/heads/legato/i95qqzwb-small-extracts",
+      "parent": "3d112f744e19d9565a4b50bc5fcedfb1a160f265",
+      "head": "f506d37e1b0fbeffa6f955288d8354c95b8e549c"
+    },
+    {
+      "pr": 443,
+      "ref": "refs/heads/legato/i95qqzwb-review-loop",
+      "parent": "f506d37e1b0fbeffa6f955288d8354c95b8e549c",
+      "head": "41f8361673104d7dd14100c4916f9b92f72bf27f"
+    },
+    {
+      "pr": 446,
+      "ref": "refs/heads/legato/i95qqzwb-prepare-resume",
+      "parent": "41f8361673104d7dd14100c4916f9b92f72bf27f",
+      "head": "6ac9257d1067fe440ac56d59bd8a484080fef5fe"
+    },
+    {
+      "pr": 445,
+      "ref": "refs/heads/legato/i95qqzwb-claude-account-resolve",
+      "parent": "6ac9257d1067fe440ac56d59bd8a484080fef5fe",
+      "head": "a3ee21f209d477ae0e574c4375aa3aaf09dc89f0"
+    },
+    {
+      "pr": 439,
+      "ref": "refs/heads/legato/i95qqzwb-sandbox-plan",
+      "parent": "a3ee21f209d477ae0e574c4375aa3aaf09dc89f0",
+      "head": "4cf88e48425163499193263ffec92c72adbe6c82"
+    },
+    {
+      "pr": 444,
+      "ref": "refs/heads/legato/i95qqzwb-sandbox-prefix",
+      "parent": "4cf88e48425163499193263ffec92c72adbe6c82",
+      "head": "bb13a424dc73f3eeb98f8bce43db932a9d19f7e6"
+    }
+  ]
+}
