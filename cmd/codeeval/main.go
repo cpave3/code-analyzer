@@ -26,6 +26,8 @@ const usage = `codeeval — repository-aware code change evaluator (POC)
 Usage:
   codeeval evaluate --repo PATH --base REV (--target REV | --working-tree) [flags]
   codeeval history  --repo PATH --base REV --target REV [flags]
+  codeeval score    --repo PATH --rev REV [flags]                 (experimental scoring/v2: absolute snapshot)
+  codeeval score    --repo PATH --base REV --target REV [--steps] [flags]   (scoring/v2 delta)
   codeeval languages
   codeeval analyzers
   codeeval version
@@ -38,6 +40,11 @@ Flags for evaluate/history:
   --cache-dir DIR    SQLite index location (default: user cache dir/codeeval)
   --no-cache         use an in-memory index only
   --timing           include timing metadata (makes output non-deterministic)
+
+Additional flags for score:
+  --modules N        modules shown in the Markdown summary (default 25; JSON has all)
+  --top N            callables and clone groups listed (default 25; 0 = all)
+  --steps            with --base/--target: add a ledger for each first-parent step
 
 The evaluated repository is never modified: no checkout, reset, stash, fetch,
 hooks or external diff drivers; outputs and cache may not be placed inside it.
@@ -57,6 +64,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return evaluate(args[1:], stdout, stderr, false)
 	case "history":
 		return evaluate(args[1:], stdout, stderr, true)
+	case "score":
+		return scoreCmd(args[1:], stdout, stderr)
 	case "languages":
 		return listLanguages(stdout)
 	case "analyzers":

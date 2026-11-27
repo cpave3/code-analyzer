@@ -1,0 +1,435 @@
+{
+  "schema": "codeeval.delta/v2",
+  "scoringVersion": "scoring/v2-experimental",
+  "tool": {
+    "name": "codeeval",
+    "version": "0.1.0-poc"
+  },
+  "configHash": "3cef63633359769f",
+  "repository": "legato-fix",
+  "weights": {
+    "cyclomaticExcessPoint": 1,
+    "nestingExcessLevel": 2,
+    "redundantTokensPerPoint": 20,
+    "ruleViolationEdge": 10,
+    "cycleUnit": 20,
+    "halfScoreDensity": 25
+  },
+  "thresholds": {
+    "hotspotCyclomatic": 10,
+    "hotspotNesting": 4,
+    "minCloneTokens": 40
+  },
+  "notes": [
+    "experimental scoring/v2: separate from and not comparable to scoring/v1 −2..+2 scores; v1 reports are unchanged",
+    "debt points = complexity (Σ max(0, cyclomatic − H + 1): debt exactly when a callable is a hotspot) + nesting (Σ max(0, depth − N + 1) × weight) + duplication (structural-clone redundant tokens ÷ tokens-per-point) + architecture (configured-rule-violating edges and units in cycles × weights)",
+    "debt is additive across modules and telescopes across commits (Δ = after − before of one snapshot function); it is the quantity to optimise within one codebase because adding code cannot dilute it",
+    "score = 100 × h ÷ (h + debt per 1,000 supported source lines), h = halfScoreDensity: a size-normalised view for comparing modules or codebases; it can be diluted by adding simple code, so do not optimise it alone",
+    "weights are uncalibrated defaults; the score is a structural index, not a measure of correctness, design quality or behaviour",
+    "only languages with adapters are measured; see coverage — unsupported source is not scored and not neutral",
+    "architecture debt reflects only the configured import-level rules; rules the configuration cannot express are not measured",
+    "complexity growth below the hotspot thresholds carries no debt; it is reported as decision points and checked by the existing-callable branch gate",
+    "gates are advisory checks, not merge decisions"
+  ],
+  "base": {
+    "ref": "471bfd24a69628d985cdd7767dcb340da6a569b7",
+    "commit": "471bfd24a69628d985cdd7767dcb340da6a569b7",
+    "tree": "ae91f4192b232c82eb171be2e9dfb20da677f62a",
+    "commitTime": "2026-11-27T15:46:34+11:00"
+  },
+  "target": {
+    "ref": "41c8061476b6592b5ea4faa192d68a2a803b6c59",
+    "commit": "41c8061476b6592b5ea4faa192d68a2a803b6c59",
+    "tree": "555c4b3e8792e1e5c57d561f0fc29a1bbe890986",
+    "commitTime": "2026-11-27T17:33:03+11:00"
+  },
+  "coverageAfter": {
+    "languages": [
+      {
+        "language": "go",
+        "supported": true,
+        "files": 989,
+        "bytes": 8324433
+      },
+      {
+        "language": "javascript",
+        "supported": false,
+        "files": 23,
+        "bytes": 128585
+      },
+      {
+        "language": "kotlin",
+        "supported": false,
+        "files": 54,
+        "bytes": 394351
+      },
+      {
+        "language": "python",
+        "supported": false,
+        "files": 5,
+        "bytes": 44436
+      },
+      {
+        "language": "rust",
+        "supported": false,
+        "files": 34,
+        "bytes": 564583
+      },
+      {
+        "language": "shell",
+        "supported": false,
+        "files": 15,
+        "bytes": 36033
+      },
+      {
+        "language": "sql",
+        "supported": false,
+        "files": 160,
+        "bytes": 171688
+      },
+      {
+        "language": "swift",
+        "supported": false,
+        "files": 2,
+        "bytes": 5345
+      },
+      {
+        "language": "typescript",
+        "supported": false,
+        "files": 577,
+        "bytes": 3798448
+      }
+    ],
+    "supportedSourceFiles": 989,
+    "sourceFiles": 1859,
+    "supportedByteShare": 0.6181,
+    "parseErrorFiles": 0
+  },
+  "size": {
+    "changedSourceFiles": 7,
+    "changedSupportedSourceFiles": 7,
+    "changedSupportedSourceLines": 97,
+    "unsupportedChangedSourceFilesByLanguage": {}
+  },
+  "before": {
+    "id": "codebase",
+    "components": {
+      "sourceFiles": 988,
+      "sourceLines": 238533,
+      "callables": 9298,
+      "cyclomaticTotal": 47685,
+      "decisionPoints": 38387,
+      "hotspots": 1288,
+      "cyclomaticExcess": 10027,
+      "nestingExcess": 309,
+      "clonedCallables": 422,
+      "exactRedundant": 10,
+      "structuralRedundant": 260,
+      "redundantTokens": 16326,
+      "ruleViolations": 15,
+      "cycleUnits": 0,
+      "internalEdges": 200
+    },
+    "debt": {
+      "complexity": 10027,
+      "nesting": 618,
+      "duplication": 816.3,
+      "architecture": 150,
+      "total": 11611.3
+    },
+    "debtPerKLOC": 48.68,
+    "score": 33.93
+  },
+  "after": {
+    "id": "codebase",
+    "components": {
+      "sourceFiles": 989,
+      "sourceLines": 238519,
+      "callables": 9298,
+      "cyclomaticTotal": 47679,
+      "decisionPoints": 38381,
+      "hotspots": 1288,
+      "cyclomaticExcess": 10027,
+      "nestingExcess": 309,
+      "clonedCallables": 418,
+      "exactRedundant": 10,
+      "structuralRedundant": 258,
+      "redundantTokens": 16133,
+      "ruleViolations": 15,
+      "cycleUnits": 0,
+      "internalEdges": 200
+    },
+    "debt": {
+      "complexity": 10027,
+      "nesting": 618,
+      "duplication": 806.65,
+      "architecture": 150,
+      "total": 11601.65
+    },
+    "debtPerKLOC": 48.64,
+    "score": 33.95
+  },
+  "ledger": {
+    "components": {
+      "sourceFiles": 1,
+      "sourceLines": -14,
+      "callables": 0,
+      "cyclomaticTotal": -6,
+      "decisionPoints": -6,
+      "hotspots": 0,
+      "cyclomaticExcess": 0,
+      "nestingExcess": 0,
+      "clonedCallables": -4,
+      "structuralRedundant": -2,
+      "redundantTokens": -193,
+      "ruleViolations": 0,
+      "cycleUnits": 0,
+      "internalEdges": 0
+    },
+    "debt": {
+      "complexity": 0,
+      "nesting": 0,
+      "duplication": -9.65,
+      "architecture": 0,
+      "total": -9.65
+    },
+    "debtPerKLOC": -0.04,
+    "score": 0.02
+  },
+  "debtPerChangedKLOC": {
+    "complexity": 0,
+    "nesting": 0,
+    "duplication": -99.48,
+    "architecture": 0,
+    "total": -99.48
+  },
+  "changedCallables": {
+    "modified": 7,
+    "modifiedDecisionsBeforeAfter": [
+      30,
+      22
+    ],
+    "modifiedCyclomaticBeforeAfter": [
+      37,
+      29
+    ],
+    "added": 2,
+    "addedDecisions": 4,
+    "deleted": 2,
+    "deletedDecisions": 2,
+    "netDecisionPoints": -6,
+    "netFunctionBasePoints": 0
+  },
+  "gates": [
+    {
+      "name": "no_new_exact_duplicates",
+      "passed": true,
+      "detail": "0 exact redundant callables"
+    },
+    {
+      "name": "no_new_structural_duplicates",
+      "passed": true,
+      "detail": "-2 structural redundant callables"
+    },
+    {
+      "name": "no_new_rule_violations",
+      "passed": true,
+      "detail": "0 rule-violating edges"
+    },
+    {
+      "name": "no_new_cycles",
+      "passed": true,
+      "detail": "0 units in cycles"
+    },
+    {
+      "name": "no_branch_growth_in_existing_callables",
+      "passed": true,
+      "detail": "-8 decision points in modified pre-existing callables"
+    },
+    {
+      "name": "no_hotspot_excess_growth",
+      "passed": true,
+      "detail": "0 cyclomatic excess, 0 nesting excess"
+    }
+  ],
+  "modules": [
+    {
+      "id": "internal/engine/jira",
+      "language": "go",
+      "debtBefore": 74.7,
+      "debtAfter": 71,
+      "debtDelta": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": -3.7,
+        "architecture": 0,
+        "total": -3.7
+      },
+      "scoreBefore": 32.43,
+      "scoreAfter": 33.43
+    },
+    {
+      "id": "internal/server",
+      "language": "go",
+      "debtBefore": 522.8,
+      "debtAfter": 516.85,
+      "debtDelta": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": -5.95,
+        "architecture": 0,
+        "total": -5.95
+      },
+      "scoreBefore": 48.76,
+      "scoreAfter": 49.04
+    }
+  ],
+  "steps": [
+    {
+      "index": 1,
+      "parent": "471bfd24a69628d985cdd7767dcb340da6a569b7",
+      "commit": "6f4e46168009cc35dd3d90130f3a824bebef8d24",
+      "subject": "refactor(server): share the invalidation broadcast loop (ah7qmrsa)",
+      "size": {
+        "changedSourceFiles": 3,
+        "changedSupportedSourceFiles": 3,
+        "changedSupportedSourceLines": 65,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 1,
+          "sourceLines": -2,
+          "callables": 1,
+          "cyclomaticTotal": -2,
+          "decisionPoints": -3,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": -2,
+          "structuralRedundant": -1,
+          "redundantTokens": -119,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": -5.95,
+          "architecture": 0,
+          "total": -5.95
+        },
+        "debtPerKLOC": -0.03,
+        "score": 0.01
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": -91.54,
+        "architecture": 0,
+        "total": -91.54
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 2,
+      "parent": "6f4e46168009cc35dd3d90130f3a824bebef8d24",
+      "commit": "b8ebb812d6352cedc359a2105b3f1657cf208afe",
+      "subject": "refactor(jira): one doJSON for POST and PUT writes (ah7qmrsa)",
+      "size": {
+        "changedSourceFiles": 3,
+        "changedSupportedSourceFiles": 3,
+        "changedSupportedSourceLines": 24,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": -8,
+          "callables": -1,
+          "cyclomaticTotal": -2,
+          "decisionPoints": -1,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": -2,
+          "structuralRedundant": -1,
+          "redundantTokens": -74,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": -3.7,
+          "architecture": 0,
+          "total": -3.7
+        },
+        "debtPerKLOC": -0.01,
+        "score": 0.01
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": -154.17,
+        "architecture": 0,
+        "total": -154.17
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 3,
+      "parent": "b8ebb812d6352cedc359a2105b3f1657cf208afe",
+      "commit": "41c8061476b6592b5ea4faa192d68a2a803b6c59",
+      "subject": "refactor(service): plan images use pathWithin (ah7qmrsa)",
+      "size": {
+        "changedSourceFiles": 1,
+        "changedSupportedSourceFiles": 1,
+        "changedSupportedSourceLines": 8,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": -4,
+          "callables": 0,
+          "cyclomaticTotal": -2,
+          "decisionPoints": -2,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 0
+      },
+      "gatesFailed": []
+    }
+  ],
+  "stepCheck": {
+    "chainStartsAtBase": true,
+    "sumOfStepDebtDelta": -9.65,
+    "netDebtDelta": -9.65,
+    "telescopes": true
+  }
+}

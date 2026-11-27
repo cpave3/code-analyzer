@@ -78,6 +78,30 @@ resolve revs ─▶ index base snapshot ─┐
 - **Safety.** See the README's read-only guarantees. Configuration is never
   read from the evaluated repository.
 
+## scoring/v2 (experimental)
+
+`internal/scorev2` scores snapshots directly from the index (the same
+symbols, metrics, fingerprints and graphs the v1 analyzers use) through
+read-only engine accessors (`internal/engine/access.go`). Design choices:
+
+- **State, not events.** Every quantity is a function of one snapshot, so a
+  delta is after − before and per-step deltas telescope exactly. v1's
+  change-attributed scores do not have this property.
+- **Additive debt.** Debt is attributed to the module that owns the callable,
+  clone member (pro rata (n−1)/n) or importing unit, so modules sum to the
+  codebase.
+- **Hotspot excess instead of hotspot counts.** Σ max(0, cc − H + 1) removes
+  the threshold-edge step of counting hotspots: shrinking a cc-107 function
+  to 96 removes 11 points, and a new helper at cc 10 adds 1. It rewards
+  splitting large functions; the decision-point ledger shows whether logic
+  was removed or moved.
+- **Debt for optimisation, density score for comparison.** Normalised scores
+  can be diluted by adding low-complexity code, so the score is presented as
+  a comparison view and debt as the optimisation target.
+- **Advisory gates** replace thresholds for "should never get worse" checks.
+- Deferred: calibrated bands (percentiles of a repository's own historical
+  step rates), configurable weights, non-import rule types.
+
 ## Known limitations
 
 - Go references are matched by name. `obsolete` and `callers` can miss

@@ -112,6 +112,46 @@ caveat. File classes (source, test, testdata, generated, vendor, build, docs,
 excluded, other) are reported. The duplication, complexity and obsolete
 analyzers measure production source only.
 
+## Experimental scoring/v2: debt, absolute score and telescoping deltas
+
+`codeeval score` runs a second, separately versioned scoring model
+(`scoring/v2-experimental`). It does not change `evaluate`/`history` or any
+`scoring/v1` output; v1 JSON from this binary is byte-identical to earlier
+runs.
+
+```bash
+codeeval score --repo PATH --rev REV [--config FILE] [--output F.json] [--summary F.md]          # absolute snapshot
+codeeval score --repo PATH --base REV --target REV [--steps] [--config FILE] ...                # delta (+ per first-parent step)
+```
+
+**Debt points** are measured on a single snapshot, for the codebase and for
+each module (Go package):
+
+| Component | Raw | Default weight |
+|---|---|---|
+| complexity | Σ max(0, cyclomatic − H + 1): debt exactly when a callable is a hotspot (H = 10) | 1 per point |
+| nesting | Σ max(0, depth − N + 1), N = 4 | 2 per level |
+| duplication | redundant tokens in structural clone groups (each member carries (n−1)/n of its tokens) | 1 per 20 tokens |
+| architecture | configured-rule-violating edges, units inside dependency cycles | 10 per edge, 20 per unit |
+
+Properties: module debts **sum** to codebase debt; deltas are after − before
+of one snapshot function, so per-step deltas **telescope** to the net delta
+(`--steps` checks this). The **score** is `100 × h ÷ (h + debt per 1,000
+supported source lines)` with `h = 25`: a size-normalised view for comparing
+modules or codebases. **Optimise debt, not the score:** the score can be
+diluted by adding simple code (shown on Legato in
+[examples/legato/v2/V2-EVIDENCE.md](examples/legato/v2/V2-EVIDENCE.md)).
+Deltas also report the changed-callable split into decision points versus
+function base points, debt per changed kLOC, per-module deltas, and advisory
+gates (no new exact/structural duplicates, rule violations or cycles; no
+branch growth in existing callables; no hotspot-excess growth).
+
+Limits: weights are uncalibrated defaults recorded in every report; only
+languages with adapters are measured (coverage is reported, unsupported is
+not neutral); complexity growth below the hotspot thresholds carries no debt
+(it shows as decision points); architecture debt reflects only configured
+import-level rules; correctness is not measured.
+
 ## Languages
 
 | Language | Status |

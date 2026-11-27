@@ -1,0 +1,2196 @@
+{
+  "schema": "codeeval.delta/v2",
+  "scoringVersion": "scoring/v2-experimental",
+  "tool": {
+    "name": "codeeval",
+    "version": "0.1.0-poc"
+  },
+  "configHash": "3cef63633359769f",
+  "repository": "legato-stack",
+  "weights": {
+    "cyclomaticExcessPoint": 1,
+    "nestingExcessLevel": 2,
+    "redundantTokensPerPoint": 20,
+    "ruleViolationEdge": 10,
+    "cycleUnit": 20,
+    "halfScoreDensity": 25
+  },
+  "thresholds": {
+    "hotspotCyclomatic": 10,
+    "hotspotNesting": 4,
+    "minCloneTokens": 40
+  },
+  "notes": [
+    "experimental scoring/v2: separate from and not comparable to scoring/v1 −2..+2 scores; v1 reports are unchanged",
+    "debt points = complexity (Σ max(0, cyclomatic − H + 1): debt exactly when a callable is a hotspot) + nesting (Σ max(0, depth − N + 1) × weight) + duplication (structural-clone redundant tokens ÷ tokens-per-point) + architecture (configured-rule-violating edges and units in cycles × weights)",
+    "debt is additive across modules and telescopes across commits (Δ = after − before of one snapshot function); it is the quantity to optimise within one codebase because adding code cannot dilute it",
+    "score = 100 × h ÷ (h + debt per 1,000 supported source lines), h = halfScoreDensity: a size-normalised view for comparing modules or codebases; it can be diluted by adding simple code, so do not optimise it alone",
+    "weights are uncalibrated defaults; the score is a structural index, not a measure of correctness, design quality or behaviour",
+    "only languages with adapters are measured; see coverage — unsupported source is not scored and not neutral",
+    "architecture debt reflects only the configured import-level rules; rules the configuration cannot express are not measured",
+    "complexity growth below the hotspot thresholds carries no debt; it is reported as decision points and checked by the existing-callable branch gate",
+    "gates are advisory checks, not merge decisions"
+  ],
+  "base": {
+    "ref": "471bfd24a69628d985cdd7767dcb340da6a569b7",
+    "commit": "471bfd24a69628d985cdd7767dcb340da6a569b7",
+    "tree": "ae91f4192b232c82eb171be2e9dfb20da677f62a",
+    "commitTime": "2026-11-27T15:46:34+11:00"
+  },
+  "target": {
+    "ref": "bb13a424dc73f3eeb98f8bce43db932a9d19f7e6",
+    "commit": "bb13a424dc73f3eeb98f8bce43db932a9d19f7e6",
+    "tree": "25b725950d6a06a99078492cededc57c2fae2ebb",
+    "commitTime": "2026-11-27T20:29:04+11:00"
+  },
+  "coverageAfter": {
+    "languages": [
+      {
+        "language": "go",
+        "supported": true,
+        "files": 990,
+        "bytes": 8338850
+      },
+      {
+        "language": "javascript",
+        "supported": false,
+        "files": 23,
+        "bytes": 128585
+      },
+      {
+        "language": "kotlin",
+        "supported": false,
+        "files": 54,
+        "bytes": 394351
+      },
+      {
+        "language": "python",
+        "supported": false,
+        "files": 5,
+        "bytes": 44436
+      },
+      {
+        "language": "rust",
+        "supported": false,
+        "files": 34,
+        "bytes": 564583
+      },
+      {
+        "language": "shell",
+        "supported": false,
+        "files": 15,
+        "bytes": 36033
+      },
+      {
+        "language": "sql",
+        "supported": false,
+        "files": 160,
+        "bytes": 171688
+      },
+      {
+        "language": "swift",
+        "supported": false,
+        "files": 2,
+        "bytes": 5345
+      },
+      {
+        "language": "typescript",
+        "supported": false,
+        "files": 577,
+        "bytes": 3798448
+      }
+    ],
+    "supportedSourceFiles": 990,
+    "sourceFiles": 1860,
+    "supportedByteShare": 0.6185,
+    "parseErrorFiles": 0
+  },
+  "size": {
+    "changedSourceFiles": 37,
+    "changedSupportedSourceFiles": 37,
+    "changedSupportedSourceLines": 1698,
+    "unsupportedChangedSourceFilesByLanguage": {}
+  },
+  "before": {
+    "id": "codebase",
+    "components": {
+      "sourceFiles": 988,
+      "sourceLines": 238533,
+      "callables": 9298,
+      "cyclomaticTotal": 47685,
+      "decisionPoints": 38387,
+      "hotspots": 1288,
+      "cyclomaticExcess": 10027,
+      "nestingExcess": 309,
+      "clonedCallables": 422,
+      "exactRedundant": 10,
+      "structuralRedundant": 260,
+      "redundantTokens": 16326,
+      "ruleViolations": 15,
+      "cycleUnits": 0,
+      "internalEdges": 200
+    },
+    "debt": {
+      "complexity": 10027,
+      "nesting": 618,
+      "duplication": 816.3,
+      "architecture": 150,
+      "total": 11611.3
+    },
+    "debtPerKLOC": 48.68,
+    "score": 33.93
+  },
+  "after": {
+    "id": "codebase",
+    "components": {
+      "sourceFiles": 990,
+      "sourceLines": 238865,
+      "callables": 9336,
+      "cyclomaticTotal": 47699,
+      "decisionPoints": 38363,
+      "hotspots": 1285,
+      "cyclomaticExcess": 9888,
+      "nestingExcess": 306,
+      "clonedCallables": 409,
+      "exactRedundant": 8,
+      "structuralRedundant": 253,
+      "redundantTokens": 15544,
+      "ruleViolations": 11,
+      "cycleUnits": 0,
+      "internalEdges": 199
+    },
+    "debt": {
+      "complexity": 9888,
+      "nesting": 612,
+      "duplication": 777.2,
+      "architecture": 110,
+      "total": 11387.2
+    },
+    "debtPerKLOC": 47.67,
+    "score": 34.4
+  },
+  "ledger": {
+    "components": {
+      "sourceFiles": 2,
+      "sourceLines": 332,
+      "callables": 38,
+      "cyclomaticTotal": 14,
+      "decisionPoints": -24,
+      "hotspots": -3,
+      "cyclomaticExcess": -139,
+      "nestingExcess": -3,
+      "clonedCallables": -13,
+      "exactRedundant": -2,
+      "structuralRedundant": -7,
+      "redundantTokens": -782,
+      "ruleViolations": -4,
+      "cycleUnits": 0,
+      "internalEdges": -1
+    },
+    "debt": {
+      "complexity": -139,
+      "nesting": -6,
+      "duplication": -39.1,
+      "architecture": -40,
+      "total": -224.1
+    },
+    "debtPerKLOC": -1.01,
+    "score": 0.47
+  },
+  "debtPerChangedKLOC": {
+    "complexity": -81.86,
+    "nesting": -3.53,
+    "duplication": -23.03,
+    "architecture": -23.56,
+    "total": -131.98
+  },
+  "changedCallables": {
+    "modified": 60,
+    "modifiedDecisionsBeforeAfter": [
+      755,
+      544
+    ],
+    "modifiedCyclomaticBeforeAfter": [
+      815,
+      604
+    ],
+    "added": 43,
+    "addedDecisions": 202,
+    "deleted": 5,
+    "deletedDecisions": 15,
+    "netDecisionPoints": -24,
+    "netFunctionBasePoints": 38
+  },
+  "gates": [
+    {
+      "name": "no_new_exact_duplicates",
+      "passed": true,
+      "detail": "-2 exact redundant callables"
+    },
+    {
+      "name": "no_new_structural_duplicates",
+      "passed": true,
+      "detail": "-7 structural redundant callables"
+    },
+    {
+      "name": "no_new_rule_violations",
+      "passed": true,
+      "detail": "-4 rule-violating edges"
+    },
+    {
+      "name": "no_new_cycles",
+      "passed": true,
+      "detail": "0 units in cycles"
+    },
+    {
+      "name": "no_branch_growth_in_existing_callables",
+      "passed": true,
+      "detail": "-211 decision points in modified pre-existing callables"
+    },
+    {
+      "name": "no_hotspot_excess_growth",
+      "passed": true,
+      "detail": "-139 cyclomatic excess, -3 nesting excess"
+    }
+  ],
+  "modules": [
+    {
+      "id": "internal/engine/codexusage",
+      "language": "go",
+      "debtBefore": 18.3,
+      "debtAfter": 16.18,
+      "debtDelta": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": -2.13,
+        "architecture": 0,
+        "total": -2.13
+      },
+      "scoreBefore": 42.95,
+      "scoreAfter": 44.75
+    },
+    {
+      "id": "internal/engine/opencodeusage",
+      "language": "go",
+      "debtBefore": 14.38,
+      "debtAfter": 12,
+      "debtDelta": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": -2.38,
+        "architecture": 0,
+        "total": -2.38
+      },
+      "scoreBefore": 31.71,
+      "scoreAfter": 34.6
+    },
+    {
+      "id": "internal/engine/claudeusage",
+      "language": "go",
+      "debtBefore": 16.68,
+      "debtAfter": 12.18,
+      "debtDelta": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": -4.5,
+        "architecture": 0,
+        "total": -4.5
+      },
+      "scoreBefore": 40.45,
+      "scoreAfter": 45.89
+    },
+    {
+      "id": "internal/handofftest",
+      "language": "go",
+      "debtBefore": 51.05,
+      "debtAfter": 45.05,
+      "debtDelta": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": -6,
+        "architecture": 0,
+        "total": -6
+      },
+      "scoreBefore": 53.2,
+      "scoreAfter": 56.12
+    },
+    {
+      "id": "config",
+      "language": "go",
+      "debtBefore": 256.1,
+      "debtAfter": 246.1,
+      "debtDelta": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": -10,
+        "total": -10
+      },
+      "scoreBefore": 34.05,
+      "scoreAfter": 35.48
+    },
+    {
+      "id": "internal/tui/overlay",
+      "language": "go",
+      "debtBefore": 371.2,
+      "debtAfter": 361.2,
+      "debtDelta": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": -10,
+        "total": -10
+      },
+      "scoreBefore": 27.96,
+      "scoreAfter": 28.51
+    },
+    {
+      "id": "internal/engine/workflow",
+      "language": "go",
+      "debtBefore": 597,
+      "debtAfter": 582,
+      "debtDelta": {
+        "complexity": -11,
+        "nesting": -4,
+        "duplication": 0,
+        "architecture": 0,
+        "total": -15
+      },
+      "scoreBefore": 28.78,
+      "scoreAfter": 29.35
+    },
+    {
+      "id": "cmd/legato",
+      "language": "go",
+      "debtBefore": 888.13,
+      "debtAfter": 871.93,
+      "debtDelta": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": -16.2,
+        "architecture": 0,
+        "total": -16.2
+      },
+      "scoreBefore": 34.35,
+      "scoreAfter": 34.75
+    },
+    {
+      "id": "internal/tui",
+      "language": "go",
+      "debtBefore": 448.2,
+      "debtAfter": 428.2,
+      "debtDelta": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": -20,
+        "total": -20
+      },
+      "scoreBefore": 21.17,
+      "scoreAfter": 21.94
+    },
+    {
+      "id": "internal/service",
+      "language": "go",
+      "debtBefore": 5070.35,
+      "debtAfter": 4932.45,
+      "debtDelta": {
+        "complexity": -128,
+        "nesting": -2,
+        "duplication": -7.9,
+        "architecture": 0,
+        "total": -137.9
+      },
+      "scoreBefore": 32.14,
+      "scoreAfter": 32.82
+    }
+  ],
+  "steps": [
+    {
+      "index": 1,
+      "parent": "471bfd24a69628d985cdd7767dcb340da6a569b7",
+      "commit": "7d9862b658aff58823dd7e009b6d822848198413",
+      "subject": "docs(analysis): CodeEval findings ledger for 9a61e9f8..471bfd24 (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 0,
+        "changedSupportedSourceFiles": 0,
+        "changedSupportedSourceLines": 0,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 0,
+          "callables": 0,
+          "cyclomaticTotal": 0,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": null,
+      "gatesFailed": []
+    },
+    {
+      "index": 2,
+      "parent": "7d9862b658aff58823dd7e009b6d822848198413",
+      "commit": "8661dc42a368d137f807798ae52625253029b059",
+      "subject": "docs(analysis): ledger records Cameron's G decisions, #435 measurement, #437 stack (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 0,
+        "changedSupportedSourceFiles": 0,
+        "changedSupportedSourceLines": 0,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 0,
+          "callables": 0,
+          "cyclomaticTotal": 0,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": null,
+      "gatesFailed": []
+    },
+    {
+      "index": 3,
+      "parent": "8661dc42a368d137f807798ae52625253029b059",
+      "commit": "952953624e3d6bd204578a5f4a28d019d7776469",
+      "subject": "docs(analysis): ledger maps every item to its PR (#435–#446) and the measurements (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 0,
+        "changedSupportedSourceFiles": 0,
+        "changedSupportedSourceLines": 0,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 0,
+          "callables": 0,
+          "cyclomaticTotal": 0,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": null,
+      "gatesFailed": []
+    },
+    {
+      "index": 4,
+      "parent": "952953624e3d6bd204578a5f4a28d019d7776469",
+      "commit": "fb7d1f8f08bbec1c770016216be789c53a83c202",
+      "subject": "refactor(arch): stdlib-only leaf packages under internal/leaf (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 2,
+        "changedSupportedSourceFiles": 2,
+        "changedSupportedSourceLines": 67,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 2,
+          "sourceLines": 69,
+          "callables": 2,
+          "cyclomaticTotal": 10,
+          "decisionPoints": 8,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 2,
+          "exactRedundant": 1,
+          "structuralRedundant": 2,
+          "redundantTokens": 180,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 9,
+          "architecture": 0,
+          "total": 9
+        },
+        "debtPerKLOC": 0.02,
+        "score": -0.01
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 134.33,
+        "architecture": 0,
+        "total": 134.33
+      },
+      "gatesFailed": [
+        "no_new_exact_duplicates",
+        "no_new_structural_duplicates"
+      ]
+    },
+    {
+      "index": 5,
+      "parent": "fb7d1f8f08bbec1c770016216be789c53a83c202",
+      "commit": "d40cc841b69633ac9d17a4f90cefc5e48dacd410",
+      "subject": "refactor(usage): claude and opencode readers share retryafter.Parse (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 2,
+        "changedSupportedSourceFiles": 2,
+        "changedSupportedSourceLines": 38,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": -26,
+          "callables": -2,
+          "cyclomaticTotal": -12,
+          "decisionPoints": -10,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": -3,
+          "exactRedundant": -2,
+          "structuralRedundant": -2,
+          "redundantTokens": -190,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 2
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": -9.5,
+          "architecture": 0,
+          "total": -9.5
+        },
+        "debtPerKLOC": -0.03,
+        "score": 0.02
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": -250,
+        "architecture": 0,
+        "total": -250
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 6,
+      "parent": "d40cc841b69633ac9d17a4f90cefc5e48dacd410",
+      "commit": "6d99f8bc622fc05df447ec1a549a89b0aedbdcab",
+      "subject": "refactor(usage): claude and codex readers share regularfile.Open (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 4,
+        "changedSupportedSourceFiles": 4,
+        "changedSupportedSourceLines": 64,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": -2,
+          "sourceLines": -54,
+          "callables": -2,
+          "cyclomaticTotal": -8,
+          "decisionPoints": -6,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": -3,
+          "exactRedundant": -1,
+          "structuralRedundant": -2,
+          "redundantTokens": -170,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 2
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": -8.5,
+          "architecture": 0,
+          "total": -8.5
+        },
+        "debtPerKLOC": -0.03,
+        "score": 0.01
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": -132.81,
+        "architecture": 0,
+        "total": -132.81
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 7,
+      "parent": "6d99f8bc622fc05df447ec1a549a89b0aedbdcab",
+      "commit": "679e0ed2d35b810bbf23b4845246c1beb7e1f7e8",
+      "subject": "docs(site): the architecture page states the leaf-package rule (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 0,
+        "changedSupportedSourceFiles": 0,
+        "changedSupportedSourceLines": 0,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 0,
+          "callables": 0,
+          "cyclomaticTotal": 0,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": null,
+      "gatesFailed": []
+    },
+    {
+      "index": 8,
+      "parent": "679e0ed2d35b810bbf23b4845246c1beb7e1f7e8",
+      "commit": "adc5c3aa7b795507076ee895e46a04fb476c7101",
+      "subject": "refactor(usage): provider usage errors map through a reason table (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 1,
+        "changedSupportedSourceFiles": 1,
+        "changedSupportedSourceLines": 84,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 16,
+          "callables": 1,
+          "cyclomaticTotal": -6,
+          "decisionPoints": -7,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": -107,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": -5.35,
+          "architecture": 0,
+          "total": -5.35
+        },
+        "debtPerKLOC": -0.02,
+        "score": 0.01
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": -63.69,
+        "architecture": 0,
+        "total": -63.69
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 9,
+      "parent": "adc5c3aa7b795507076ee895e46a04fb476c7101",
+      "commit": "306d76debd00fbe8514bd5ddcb9d847cb8cc9cf4",
+      "subject": "refactor(service): PullRequestModes reads its rules in one place (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 1,
+        "changedSupportedSourceFiles": 1,
+        "changedSupportedSourceLines": 28,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 4,
+          "callables": 1,
+          "cyclomaticTotal": 1,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": -2,
+          "structuralRedundant": -1,
+          "redundantTokens": -51,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": -2.55,
+          "architecture": 0,
+          "total": -2.55
+        },
+        "debtPerKLOC": -0.01,
+        "score": 0
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": -91.07,
+        "architecture": 0,
+        "total": -91.07
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 10,
+      "parent": "306d76debd00fbe8514bd5ddcb9d847cb8cc9cf4",
+      "commit": "5eb0119b5982066f7c75d66e3b4a64661467c7d2",
+      "subject": "refactor(cmd): the singleton runtime roles share claimDataDirLock (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 4,
+        "changedSupportedSourceFiles": 4,
+        "changedSupportedSourceLines": 83,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 1,
+          "sourceLines": -12,
+          "callables": 1,
+          "cyclomaticTotal": -5,
+          "decisionPoints": -6,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": -3,
+          "structuralRedundant": -2,
+          "redundantTokens": -324,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": -16.2,
+          "architecture": 0,
+          "total": -16.2
+        },
+        "debtPerKLOC": -0.07,
+        "score": 0.04
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": -195.18,
+        "architecture": 0,
+        "total": -195.18
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 11,
+      "parent": "5eb0119b5982066f7c75d66e3b4a64661467c7d2",
+      "commit": "459afaa30d1806d0f6781f6c3e67b25131ba6b27",
+      "subject": "refactor(handofftest): the review fake edits a pull request through editPR (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 1,
+        "changedSupportedSourceFiles": 1,
+        "changedSupportedSourceLines": 38,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": -16,
+          "callables": 1,
+          "cyclomaticTotal": -5,
+          "decisionPoints": -6,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": -4,
+          "structuralRedundant": -2,
+          "redundantTokens": -120,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": -6,
+          "architecture": 0,
+          "total": -6
+        },
+        "debtPerKLOC": -0.02,
+        "score": 0.01
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": -157.89,
+        "architecture": 0,
+        "total": -157.89
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 12,
+      "parent": "459afaa30d1806d0f6781f6c3e67b25131ba6b27",
+      "commit": "907025f419bfb39d7d75f58fb5844686f69cdac7",
+      "subject": "test(usage): pin the precedence of overlapping provider usage errors (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 0,
+        "changedSupportedSourceFiles": 0,
+        "changedSupportedSourceLines": 0,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 0,
+          "callables": 0,
+          "cyclomaticTotal": 0,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": null,
+      "gatesFailed": []
+    },
+    {
+      "index": 13,
+      "parent": "907025f419bfb39d7d75f58fb5844686f69cdac7",
+      "commit": "ff6ba3d0949368340f3511fcd78e11eac0140ff1",
+      "subject": "refactor(config): config owns the macro model; delete engine/macros (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 7,
+        "changedSupportedSourceFiles": 7,
+        "changedSupportedSourceLines": 118,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": -2,
+          "callables": 0,
+          "cyclomaticTotal": 0,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": -3,
+          "cycleUnits": 0,
+          "internalEdges": -4
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": -30,
+          "total": -30
+        },
+        "debtPerKLOC": -0.13,
+        "score": 0.05
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": -254.24,
+        "total": -254.24
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 14,
+      "parent": "ff6ba3d0949368340f3511fcd78e11eac0140ff1",
+      "commit": "db51f9c6e63e46cab69c3c6baa6869ef35e653e1",
+      "subject": "test(tui): pin how plan verdicts reach the conductor and the bus (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 0,
+        "changedSupportedSourceFiles": 0,
+        "changedSupportedSourceLines": 0,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 0,
+          "callables": 0,
+          "cyclomaticTotal": 0,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": null,
+      "gatesFailed": []
+    },
+    {
+      "index": 15,
+      "parent": "db51f9c6e63e46cab69c3c6baa6869ef35e653e1",
+      "commit": "684dc2dad39b887749d59e9dd834e430f0336775",
+      "subject": "refactor(tui): engine behaviour reaches the TUI through service (ADR 3, i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 2,
+        "changedSupportedSourceFiles": 2,
+        "changedSupportedSourceLines": 64,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 1,
+          "sourceLines": 37,
+          "callables": 1,
+          "cyclomaticTotal": 1,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": -1,
+          "cycleUnits": 0,
+          "internalEdges": -1
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": -10,
+          "total": -10
+        },
+        "debtPerKLOC": -0.05,
+        "score": 0.03
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": -156.25,
+        "total": -156.25
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 16,
+      "parent": "684dc2dad39b887749d59e9dd834e430f0336775",
+      "commit": "3d112f744e19d9565a4b50bc5fcedfb1a160f265",
+      "subject": "test(tui): drop the macros row from the engine allowlist (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 0,
+        "changedSupportedSourceFiles": 0,
+        "changedSupportedSourceLines": 0,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 0,
+          "callables": 0,
+          "cyclomaticTotal": 0,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": null,
+      "gatesFailed": []
+    },
+    {
+      "index": 17,
+      "parent": "3d112f744e19d9565a4b50bc5fcedfb1a160f265",
+      "commit": "705c80a44f6420f38e45d47f2df9fbd73bde4c1d",
+      "subject": "refactor(agents): a conversation's newest recorded account is one lookup (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 1,
+        "changedSupportedSourceFiles": 1,
+        "changedSupportedSourceLines": 25,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 7,
+          "callables": 1,
+          "cyclomaticTotal": 2,
+          "decisionPoints": 1,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 0
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 18,
+      "parent": "705c80a44f6420f38e45d47f2df9fbd73bde4c1d",
+      "commit": "992e301fe032c2f9e8f0f34140f6ed0eb3cab93a",
+      "subject": "refactor(history): recovery asks storageDirsFor where a run's conversations are (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 1,
+        "changedSupportedSourceFiles": 1,
+        "changedSupportedSourceLines": 46,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 8,
+          "callables": 1,
+          "cyclomaticTotal": 1,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": -5,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": -5,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": -5
+        },
+        "debtPerKLOC": -0.02,
+        "score": 0.01
+      },
+      "debtPerChangedKLOC": {
+        "complexity": -108.7,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": -108.7
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 19,
+      "parent": "992e301fe032c2f9e8f0f34140f6ed0eb3cab93a",
+      "commit": "6b0d83c96343ed4081bb1150463031a82bb7b41c",
+      "subject": "refactor(workflow): upgrade finds whole references in one function (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 1,
+        "changedSupportedSourceFiles": 1,
+        "changedSupportedSourceLines": 35,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 11,
+          "callables": 1,
+          "cyclomaticTotal": 2,
+          "decisionPoints": 1,
+          "hotspots": -1,
+          "cyclomaticExcess": -4,
+          "nestingExcess": -1,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": -4,
+          "nesting": -2,
+          "duplication": 0,
+          "architecture": 0,
+          "total": -6
+        },
+        "debtPerKLOC": -0.03,
+        "score": 0.01
+      },
+      "debtPerChangedKLOC": {
+        "complexity": -114.29,
+        "nesting": -57.14,
+        "duplication": 0,
+        "architecture": 0,
+        "total": -171.43
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 20,
+      "parent": "6b0d83c96343ed4081bb1150463031a82bb7b41c",
+      "commit": "a8e7353726510b938af24f2eb14be124d96ff879",
+      "subject": "refactor(workflow): ticket.create resolves its assignee in one place (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 1,
+        "changedSupportedSourceFiles": 1,
+        "changedSupportedSourceLines": 40,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 12,
+          "callables": 1,
+          "cyclomaticTotal": 2,
+          "decisionPoints": 1,
+          "hotspots": 0,
+          "cyclomaticExcess": -3,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": -3,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": -3
+        },
+        "debtPerKLOC": -0.01,
+        "score": 0.01
+      },
+      "debtPerChangedKLOC": {
+        "complexity": -75,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": -75
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 21,
+      "parent": "a8e7353726510b938af24f2eb14be124d96ff879",
+      "commit": "821efd6774c0e071ee402b1880761b6809ca6c17",
+      "subject": "test(workflow): pin the shape a review loop step's prs must have (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 0,
+        "changedSupportedSourceFiles": 0,
+        "changedSupportedSourceLines": 0,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 0,
+          "callables": 0,
+          "cyclomaticTotal": 0,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": null,
+      "gatesFailed": []
+    },
+    {
+      "index": 22,
+      "parent": "821efd6774c0e071ee402b1880761b6809ca6c17",
+      "commit": "f506d37e1b0fbeffa6f955288d8354c95b8e549c",
+      "subject": "refactor(workflow): a review loop step's prs shape is validReviewLoopPRs (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 1,
+        "changedSupportedSourceFiles": 1,
+        "changedSupportedSourceLines": 39,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 9,
+          "callables": 1,
+          "cyclomaticTotal": 2,
+          "decisionPoints": 1,
+          "hotspots": 0,
+          "cyclomaticExcess": -7,
+          "nestingExcess": -1,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": -7,
+          "nesting": -2,
+          "duplication": 0,
+          "architecture": 0,
+          "total": -9
+        },
+        "debtPerKLOC": -0.04,
+        "score": 0.02
+      },
+      "debtPerChangedKLOC": {
+        "complexity": -179.49,
+        "nesting": -51.28,
+        "duplication": 0,
+        "architecture": 0,
+        "total": -230.77
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 23,
+      "parent": "f506d37e1b0fbeffa6f955288d8354c95b8e549c",
+      "commit": "3c32833907085080af42820d580c1def4121f464",
+      "subject": "refactor(service): map a watched check context in watchedCheck.toWatchCheck (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 1,
+        "changedSupportedSourceFiles": 1,
+        "changedSupportedSourceLines": 76,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 14,
+          "callables": 1,
+          "cyclomaticTotal": 2,
+          "decisionPoints": 1,
+          "hotspots": -1,
+          "cyclomaticExcess": -4,
+          "nestingExcess": -1,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": -4,
+          "nesting": -2,
+          "duplication": 0,
+          "architecture": 0,
+          "total": -6
+        },
+        "debtPerKLOC": -0.03,
+        "score": 0.01
+      },
+      "debtPerChangedKLOC": {
+        "complexity": -52.63,
+        "nesting": -26.32,
+        "duplication": 0,
+        "architecture": 0,
+        "total": -78.95
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 24,
+      "parent": "3c32833907085080af42820d580c1def4121f464",
+      "commit": "035f776204f5ca824406887df004bc3f93894b15",
+      "subject": "refactor(service): read one watch round in readWatchRound (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 1,
+        "changedSupportedSourceFiles": 1,
+        "changedSupportedSourceLines": 89,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 23,
+          "callables": 1,
+          "cyclomaticTotal": 1,
+          "decisionPoints": 0,
+          "hotspots": 1,
+          "cyclomaticExcess": -8,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": -8,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": -8
+        },
+        "debtPerKLOC": -0.04,
+        "score": 0.02
+      },
+      "debtPerChangedKLOC": {
+        "complexity": -89.89,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": -89.89
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 25,
+      "parent": "035f776204f5ca824406887df004bc3f93894b15",
+      "commit": "8ff58506707dfaec0013dfe0038dbb43fd475254",
+      "subject": "refactor(service): choose the layers a steward adds in stackedLayersToAdd (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 1,
+        "changedSupportedSourceFiles": 1,
+        "changedSupportedSourceLines": 58,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 10,
+          "callables": 1,
+          "cyclomaticTotal": 1,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": -8,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": -8,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": -8
+        },
+        "debtPerKLOC": -0.03,
+        "score": 0.01
+      },
+      "debtPerChangedKLOC": {
+        "complexity": -137.93,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": -137.93
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 26,
+      "parent": "8ff58506707dfaec0013dfe0038dbb43fd475254",
+      "commit": "2b9404c4d0111f127b88cd725aeecb84828ec9fe",
+      "subject": "refactor(service): settle waiting review steps through one fail and complete (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 1,
+        "changedSupportedSourceFiles": 1,
+        "changedSupportedSourceLines": 49,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 1,
+          "callables": 2,
+          "cyclomaticTotal": -10,
+          "decisionPoints": -12,
+          "hotspots": -4,
+          "cyclomaticExcess": -9,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": -9,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": -9
+        },
+        "debtPerKLOC": -0.04,
+        "score": 0.02
+      },
+      "debtPerChangedKLOC": {
+        "complexity": -183.67,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": -183.67
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 27,
+      "parent": "2b9404c4d0111f127b88cd725aeecb84828ec9fe",
+      "commit": "d32ce9ed8d147ee578010361990512020f16d24a",
+      "subject": "refactor(service): name the ready step's head check and the clean pass's events (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 1,
+        "changedSupportedSourceFiles": 1,
+        "changedSupportedSourceLines": 116,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 28,
+          "callables": 4,
+          "cyclomaticTotal": 3,
+          "decisionPoints": -1,
+          "hotspots": 0,
+          "cyclomaticExcess": -14,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": -14,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": -14
+        },
+        "debtPerKLOC": -0.07,
+        "score": 0.03
+      },
+      "debtPerChangedKLOC": {
+        "complexity": -120.69,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": -120.69
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 28,
+      "parent": "d32ce9ed8d147ee578010361990512020f16d24a",
+      "commit": "24c9601c95c787039497cfbbd4f6096c61e35c7c",
+      "subject": "refactor(service): name when an agent's review round is done (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 1,
+        "changedSupportedSourceFiles": 1,
+        "changedSupportedSourceLines": 34,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 14,
+          "callables": 2,
+          "cyclomaticTotal": 2,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": -11,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": -11,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": -11
+        },
+        "debtPerKLOC": -0.05,
+        "score": 0.02
+      },
+      "debtPerChangedKLOC": {
+        "complexity": -323.53,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": -323.53
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 29,
+      "parent": "24c9601c95c787039497cfbbd4f6096c61e35c7c",
+      "commit": "f6758acfc9f86b892ecfb0bb1f899a9608a5e441",
+      "subject": "refactor(service): read an author's round from roundPRs, end with closedOutcome (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 1,
+        "changedSupportedSourceFiles": 1,
+        "changedSupportedSourceLines": 47,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 17,
+          "callables": 2,
+          "cyclomaticTotal": 1,
+          "decisionPoints": -1,
+          "hotspots": 0,
+          "cyclomaticExcess": -6,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": -6,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": -6
+        },
+        "debtPerKLOC": -0.02,
+        "score": 0.02
+      },
+      "debtPerChangedKLOC": {
+        "complexity": -127.66,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": -127.66
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 30,
+      "parent": "f6758acfc9f86b892ecfb0bb1f899a9608a5e441",
+      "commit": "766845ae5773132107890fa098923f9b54124082",
+      "subject": "refactor(service): name the two scans of steps waiting to open (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 1,
+        "changedSupportedSourceFiles": 1,
+        "changedSupportedSourceLines": 40,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 20,
+          "callables": 2,
+          "cyclomaticTotal": 6,
+          "decisionPoints": 4,
+          "hotspots": -1,
+          "cyclomaticExcess": -8,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": -8,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": -8
+        },
+        "debtPerKLOC": -0.04,
+        "score": 0.01
+      },
+      "debtPerChangedKLOC": {
+        "complexity": -200,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": -200
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 31,
+      "parent": "766845ae5773132107890fa098923f9b54124082",
+      "commit": "41f8361673104d7dd14100c4916f9b92f72bf27f",
+      "subject": "refactor(service): list the step-owned loops' hosts in stepOwnedLoopHosts (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 1,
+        "changedSupportedSourceFiles": 1,
+        "changedSupportedSourceLines": 35,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 15,
+          "callables": 1,
+          "cyclomaticTotal": 3,
+          "decisionPoints": 2,
+          "hotspots": 0,
+          "cyclomaticExcess": -2,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": -2,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": -2
+        },
+        "debtPerKLOC": -0.01,
+        "score": 0.01
+      },
+      "debtPerChangedKLOC": {
+        "complexity": -57.14,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": -57.14
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 32,
+      "parent": "41f8361673104d7dd14100c4916f9b92f72bf27f",
+      "commit": "af697f4305d997d40743590062e3e0f49eef4782",
+      "subject": "test(service): pin every path of prepareTaskResume (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 0,
+        "changedSupportedSourceFiles": 0,
+        "changedSupportedSourceLines": 0,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 0,
+          "callables": 0,
+          "cyclomaticTotal": 0,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": null,
+      "gatesFailed": []
+    },
+    {
+      "index": 33,
+      "parent": "af697f4305d997d40743590062e3e0f49eef4782",
+      "commit": "6ac9257d1067fe440ac56d59bd8a484080fef5fe",
+      "subject": "refactor(service): split prepareTaskResume by responsibility (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 1,
+        "changedSupportedSourceFiles": 1,
+        "changedSupportedSourceLines": 143,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 43,
+          "callables": 4,
+          "cyclomaticTotal": 6,
+          "decisionPoints": 2,
+          "hotspots": 1,
+          "cyclomaticExcess": -17,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": -17,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": -17
+        },
+        "debtPerKLOC": -0.08,
+        "score": 0.04
+      },
+      "debtPerChangedKLOC": {
+        "complexity": -118.88,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": -118.88
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 34,
+      "parent": "6ac9257d1067fe440ac56d59bd8a484080fef5fe",
+      "commit": "67be03c20fd8fa052fd5176154a4dcf29ea1399e",
+      "subject": "test(service): characterise resolveClaudeAccount's every return (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 0,
+        "changedSupportedSourceFiles": 0,
+        "changedSupportedSourceLines": 0,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 0,
+          "callables": 0,
+          "cyclomaticTotal": 0,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": null,
+      "gatesFailed": []
+    },
+    {
+      "index": 35,
+      "parent": "67be03c20fd8fa052fd5176154a4dcf29ea1399e",
+      "commit": "a3ee21f209d477ae0e574c4375aa3aaf09dc89f0",
+      "subject": "refactor(service): split resolveClaudeAccount's named-account guards (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 1,
+        "changedSupportedSourceFiles": 1,
+        "changedSupportedSourceLines": 67,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 31,
+          "callables": 3,
+          "cyclomaticTotal": 6,
+          "decisionPoints": 3,
+          "hotspots": 1,
+          "cyclomaticExcess": -14,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": -14,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": -14
+        },
+        "debtPerKLOC": -0.07,
+        "score": 0.03
+      },
+      "debtPerChangedKLOC": {
+        "complexity": -208.96,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": -208.96
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 36,
+      "parent": "a3ee21f209d477ae0e574c4375aa3aaf09dc89f0",
+      "commit": "52bfa43e2600413c3e4f436bdb849da697a5b5f8",
+      "subject": "test(service): pin sandbox plans around Claude accounts and NuGet (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 0,
+        "changedSupportedSourceFiles": 0,
+        "changedSupportedSourceLines": 0,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 0,
+          "callables": 0,
+          "cyclomaticTotal": 0,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": null,
+      "gatesFailed": []
+    },
+    {
+      "index": 37,
+      "parent": "52bfa43e2600413c3e4f436bdb849da697a5b5f8",
+      "commit": "17c33dcc481c2d4dd8754312729e627234fc69b5",
+      "subject": "refactor(service): move the Claude-account and NuGet parts out of BuildSandboxPlan (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 1,
+        "changedSupportedSourceFiles": 1,
+        "changedSupportedSourceLines": 102,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 48,
+          "callables": 6,
+          "cyclomaticTotal": 9,
+          "decisionPoints": 3,
+          "hotspots": 0,
+          "cyclomaticExcess": -9,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": -9,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": -9
+        },
+        "debtPerKLOC": -0.05,
+        "score": 0.02
+      },
+      "debtPerChangedKLOC": {
+        "complexity": -88.24,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": -88.24
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 38,
+      "parent": "17c33dcc481c2d4dd8754312729e627234fc69b5",
+      "commit": "4cf88e48425163499193263ffec92c72adbe6c82",
+      "subject": "refactor(service): resolve ToolState and GH overlays through realPaths too (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 1,
+        "changedSupportedSourceFiles": 1,
+        "changedSupportedSourceLines": 12,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": -8,
+          "callables": 0,
+          "cyclomaticTotal": -2,
+          "decisionPoints": -2,
+          "hotspots": 0,
+          "cyclomaticExcess": -2,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": -2,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": -2
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": {
+        "complexity": -166.67,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": -166.67
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 39,
+      "parent": "4cf88e48425163499193263ffec92c72adbe6c82",
+      "commit": "1c70f46760e26616b6597e8b7be1fe9ad1903bae",
+      "subject": "test(sandbox): pin which Claude accounts a sandboxed agent can reach (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 0,
+        "changedSupportedSourceFiles": 0,
+        "changedSupportedSourceLines": 0,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 0,
+          "callables": 0,
+          "cyclomaticTotal": 0,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": null,
+      "gatesFailed": []
+    },
+    {
+      "index": 40,
+      "parent": "1c70f46760e26616b6597e8b7be1fe9ad1903bae",
+      "commit": "bb13a424dc73f3eeb98f8bce43db932a9d19f7e6",
+      "subject": "refactor(sandbox): sandboxPrefix applies the Claude account rule in withClaudeAccounts (i95qqzwb)",
+      "size": {
+        "changedSourceFiles": 1,
+        "changedSupportedSourceFiles": 1,
+        "changedSupportedSourceLines": 63,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 13,
+          "callables": 1,
+          "cyclomaticTotal": 1,
+          "decisionPoints": 0,
+          "hotspots": 1,
+          "cyclomaticExcess": -8,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": -8,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": -8
+        },
+        "debtPerKLOC": -0.04,
+        "score": 0.02
+      },
+      "debtPerChangedKLOC": {
+        "complexity": -126.98,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": -126.98
+      },
+      "gatesFailed": []
+    }
+  ],
+  "stepCheck": {
+    "chainStartsAtBase": true,
+    "sumOfStepDebtDelta": -224.1,
+    "netDebtDelta": -224.1,
+    "telescopes": true
+  }
+}

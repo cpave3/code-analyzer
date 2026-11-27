@@ -203,3 +203,10 @@ drift between documented and actual layering. Those items are what is worth
 acting on. The directional scores are a coarse index into that evidence. They
 are not a quality verdict, especially for large windows and while the tool
 covers Go only.
+
+## Experimental scoring/v2
+
+A separately versioned debt model (`scoring/v2-experimental`, `codeeval
+score`) was applied to the same revisions afterwards. It gives absolute
+snapshot debt and scores, per-module debt, and deltas that telescope. See
+[v2/V2-EVIDENCE.md](v2/V2-EVIDENCE.md). The v1 results above are unchanged.

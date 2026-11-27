@@ -1,0 +1,4010 @@
+{
+  "schema": "codeeval.snapshot/v2",
+  "scoringVersion": "scoring/v2-experimental",
+  "tool": {
+    "name": "codeeval",
+    "version": "0.1.0-poc"
+  },
+  "configHash": "3cef63633359769f",
+  "repository": "legato-stack",
+  "weights": {
+    "cyclomaticExcessPoint": 1,
+    "nestingExcessLevel": 2,
+    "redundantTokensPerPoint": 20,
+    "ruleViolationEdge": 10,
+    "cycleUnit": 20,
+    "halfScoreDensity": 25
+  },
+  "thresholds": {
+    "hotspotCyclomatic": 10,
+    "hotspotNesting": 4,
+    "minCloneTokens": 40
+  },
+  "notes": [
+    "experimental scoring/v2: separate from and not comparable to scoring/v1 −2..+2 scores; v1 reports are unchanged",
+    "debt points = complexity (Σ max(0, cyclomatic − H + 1): debt exactly when a callable is a hotspot) + nesting (Σ max(0, depth − N + 1) × weight) + duplication (structural-clone redundant tokens ÷ tokens-per-point) + architecture (configured-rule-violating edges and units in cycles × weights)",
+    "debt is additive across modules and telescopes across commits (Δ = after − before of one snapshot function); it is the quantity to optimise within one codebase because adding code cannot dilute it",
+    "score = 100 × h ÷ (h + debt per 1,000 supported source lines), h = halfScoreDensity: a size-normalised view for comparing modules or codebases; it can be diluted by adding simple code, so do not optimise it alone",
+    "weights are uncalibrated defaults; the score is a structural index, not a measure of correctness, design quality or behaviour",
+    "only languages with adapters are measured; see coverage — unsupported source is not scored and not neutral",
+    "architecture debt reflects only the configured import-level rules; rules the configuration cannot express are not measured",
+    "complexity growth below the hotspot thresholds carries no debt; it is reported as decision points and checked by the existing-callable branch gate",
+    "gates are advisory checks, not merge decisions"
+  ],
+  "revision": {
+    "ref": "bb13a424dc73f3eeb98f8bce43db932a9d19f7e6",
+    "commit": "bb13a424dc73f3eeb98f8bce43db932a9d19f7e6",
+    "tree": "25b725950d6a06a99078492cededc57c2fae2ebb",
+    "commitTime": "2026-11-27T20:29:04+11:00"
+  },
+  "coverage": {
+    "languages": [
+      {
+        "language": "go",
+        "supported": true,
+        "files": 990,
+        "bytes": 8338850
+      },
+      {
+        "language": "javascript",
+        "supported": false,
+        "files": 23,
+        "bytes": 128585
+      },
+      {
+        "language": "kotlin",
+        "supported": false,
+        "files": 54,
+        "bytes": 394351
+      },
+      {
+        "language": "python",
+        "supported": false,
+        "files": 5,
+        "bytes": 44436
+      },
+      {
+        "language": "rust",
+        "supported": false,
+        "files": 34,
+        "bytes": 564583
+      },
+      {
+        "language": "shell",
+        "supported": false,
+        "files": 15,
+        "bytes": 36033
+      },
+      {
+        "language": "sql",
+        "supported": false,
+        "files": 160,
+        "bytes": 171688
+      },
+      {
+        "language": "swift",
+        "supported": false,
+        "files": 2,
+        "bytes": 5345
+      },
+      {
+        "language": "typescript",
+        "supported": false,
+        "files": 577,
+        "bytes": 3798448
+      }
+    ],
+    "supportedSourceFiles": 990,
+    "sourceFiles": 1860,
+    "supportedByteShare": 0.6185,
+    "parseErrorFiles": 0
+  },
+  "codebase": {
+    "id": "codebase",
+    "components": {
+      "sourceFiles": 990,
+      "sourceLines": 238865,
+      "callables": 9336,
+      "cyclomaticTotal": 47699,
+      "decisionPoints": 38363,
+      "hotspots": 1285,
+      "cyclomaticExcess": 9888,
+      "nestingExcess": 306,
+      "clonedCallables": 409,
+      "exactRedundant": 8,
+      "structuralRedundant": 253,
+      "redundantTokens": 15544,
+      "ruleViolations": 11,
+      "cycleUnits": 0,
+      "internalEdges": 199
+    },
+    "debt": {
+      "complexity": 9888,
+      "nesting": 612,
+      "duplication": 777.2,
+      "architecture": 110,
+      "total": 11387.2
+    },
+    "debtPerKLOC": 47.67,
+    "score": 34.4
+  },
+  "modules": [
+    {
+      "id": "internal/service",
+      "language": "go",
+      "components": {
+        "sourceFiles": 331,
+        "sourceLines": 96395,
+        "callables": 3778,
+        "cyclomaticTotal": 20885,
+        "decisionPoints": 17107,
+        "hotspots": 606,
+        "cyclomaticExcess": 4618,
+        "nestingExcess": 121,
+        "clonedCallables": 52,
+        "redundantTokens": 1449,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 47
+      },
+      "debt": {
+        "complexity": 4618,
+        "nesting": 242,
+        "duplication": 72.45,
+        "architecture": 0,
+        "total": 4932.45
+      },
+      "debtPerKLOC": 51.17,
+      "score": 32.82
+    },
+    {
+      "id": "cmd/legato",
+      "language": "go",
+      "components": {
+        "sourceFiles": 121,
+        "sourceLines": 18575,
+        "callables": 638,
+        "cyclomaticTotal": 3518,
+        "decisionPoints": 2880,
+        "hotspots": 84,
+        "cyclomaticExcess": 809,
+        "nestingExcess": 13,
+        "clonedCallables": 16,
+        "redundantTokens": 738.5,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 45
+      },
+      "debt": {
+        "complexity": 809,
+        "nesting": 26,
+        "duplication": 36.93,
+        "architecture": 0,
+        "total": 871.93
+      },
+      "debtPerKLOC": 46.94,
+      "score": 34.75
+    },
+    {
+      "id": "internal/engine/store",
+      "language": "go",
+      "components": {
+        "sourceFiles": 89,
+        "sourceLines": 20004,
+        "callables": 953,
+        "cyclomaticTotal": 3303,
+        "decisionPoints": 2350,
+        "hotspots": 62,
+        "cyclomaticExcess": 403,
+        "nestingExcess": 7,
+        "clonedCallables": 212,
+        "redundantTokens": 8338,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 403,
+        "nesting": 14,
+        "duplication": 416.9,
+        "architecture": 0,
+        "total": 833.9
+      },
+      "debtPerKLOC": 41.69,
+      "score": 37.49
+    },
+    {
+      "id": "internal/engine/workflow",
+      "language": "go",
+      "components": {
+        "sourceFiles": 33,
+        "sourceLines": 9670,
+        "callables": 334,
+        "cyclomaticTotal": 2175,
+        "decisionPoints": 1841,
+        "hotspots": 70,
+        "cyclomaticExcess": 538,
+        "nestingExcess": 21,
+        "clonedCallables": 2,
+        "redundantTokens": 40,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 538,
+        "nesting": 42,
+        "duplication": 2,
+        "architecture": 0,
+        "total": 582
+      },
+      "debtPerKLOC": 60.19,
+      "score": 29.35
+    },
+    {
+      "id": "internal/server",
+      "language": "go",
+      "components": {
+        "sourceFiles": 100,
+        "sourceLines": 19905,
+        "callables": 727,
+        "cyclomaticTotal": 3401,
+        "decisionPoints": 2674,
+        "hotspots": 68,
+        "cyclomaticExcess": 389,
+        "nestingExcess": 33,
+        "clonedCallables": 28,
+        "redundantTokens": 1356,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 17
+      },
+      "debt": {
+        "complexity": 389,
+        "nesting": 66,
+        "duplication": 67.8,
+        "architecture": 0,
+        "total": 522.8
+      },
+      "debtPerKLOC": 26.26,
+      "score": 48.77
+    },
+    {
+      "id": "internal/tui",
+      "language": "go",
+      "components": {
+        "sourceFiles": 14,
+        "sourceLines": 4815,
+        "callables": 184,
+        "cyclomaticTotal": 950,
+        "decisionPoints": 766,
+        "hotspots": 15,
+        "cyclomaticExcess": 372,
+        "nestingExcess": 9,
+        "clonedCallables": 5,
+        "redundantTokens": 164,
+        "ruleViolations": 3,
+        "cycleUnits": 0,
+        "internalEdges": 17
+      },
+      "debt": {
+        "complexity": 372,
+        "nesting": 18,
+        "duplication": 8.2,
+        "architecture": 30,
+        "total": 428.2
+      },
+      "debtPerKLOC": 88.93,
+      "score": 21.94
+    },
+    {
+      "id": "internal/cli",
+      "language": "go",
+      "components": {
+        "sourceFiles": 41,
+        "sourceLines": 8422,
+        "callables": 310,
+        "cyclomaticTotal": 1716,
+        "decisionPoints": 1406,
+        "hotspots": 51,
+        "cyclomaticExcess": 376,
+        "nestingExcess": 8,
+        "clonedCallables": 21,
+        "redundantTokens": 695,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 14
+      },
+      "debt": {
+        "complexity": 376,
+        "nesting": 16,
+        "duplication": 34.75,
+        "architecture": 0,
+        "total": 426.75
+      },
+      "debtPerKLOC": 50.67,
+      "score": 33.04
+    },
+    {
+      "id": "internal/tui/overlay",
+      "language": "go",
+      "components": {
+        "sourceFiles": 28,
+        "sourceLines": 5763,
+        "callables": 230,
+        "cyclomaticTotal": 1186,
+        "decisionPoints": 956,
+        "hotspots": 41,
+        "cyclomaticExcess": 265,
+        "nestingExcess": 25,
+        "clonedCallables": 4,
+        "redundantTokens": 324,
+        "ruleViolations": 3,
+        "cycleUnits": 0,
+        "internalEdges": 7
+      },
+      "debt": {
+        "complexity": 265,
+        "nesting": 50,
+        "duplication": 16.2,
+        "architecture": 30,
+        "total": 361.2
+      },
+      "debtPerKLOC": 62.68,
+      "score": 28.51
+    },
+    {
+      "id": "config",
+      "language": "go",
+      "components": {
+        "sourceFiles": 22,
+        "sourceLines": 5414,
+        "callables": 180,
+        "cyclomaticTotal": 1042,
+        "decisionPoints": 862,
+        "hotspots": 32,
+        "cyclomaticExcess": 232,
+        "nestingExcess": 4,
+        "clonedCallables": 5,
+        "redundantTokens": 122,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 232,
+        "nesting": 8,
+        "duplication": 6.1,
+        "architecture": 0,
+        "total": 246.1
+      },
+      "debtPerKLOC": 45.46,
+      "score": 35.48
+    },
+    {
+      "id": "internal/engine/dockerproxy",
+      "language": "go",
+      "components": {
+        "sourceFiles": 6,
+        "sourceLines": 2020,
+        "callables": 65,
+        "cyclomaticTotal": 578,
+        "decisionPoints": 513,
+        "hotspots": 18,
+        "cyclomaticExcess": 230,
+        "nestingExcess": 4,
+        "clonedCallables": 2,
+        "redundantTokens": 86,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 230,
+        "nesting": 8,
+        "duplication": 4.3,
+        "architecture": 0,
+        "total": 242.3
+      },
+      "debtPerKLOC": 119.95,
+      "score": 17.25
+    },
+    {
+      "id": "internal/engine/credential",
+      "language": "go",
+      "components": {
+        "sourceFiles": 14,
+        "sourceLines": 3938,
+        "callables": 145,
+        "cyclomaticTotal": 858,
+        "decisionPoints": 713,
+        "hotspots": 27,
+        "cyclomaticExcess": 223,
+        "nestingExcess": 1,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 223,
+        "nesting": 2,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 225
+      },
+      "debtPerKLOC": 57.14,
+      "score": 30.44
+    },
+    {
+      "id": "internal/tui/agents",
+      "language": "go",
+      "components": {
+        "sourceFiles": 9,
+        "sourceLines": 2940,
+        "callables": 109,
+        "cyclomaticTotal": 617,
+        "decisionPoints": 508,
+        "hotspots": 20,
+        "cyclomaticExcess": 142,
+        "nestingExcess": 2,
+        "clonedCallables": 1,
+        "redundantTokens": 43,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 3
+      },
+      "debt": {
+        "complexity": 142,
+        "nesting": 4,
+        "duplication": 2.15,
+        "architecture": 0,
+        "total": 148.15
+      },
+      "debtPerKLOC": 50.39,
+      "score": 33.16
+    },
+    {
+      "id": "internal/engine/codexbridge",
+      "language": "go",
+      "components": {
+        "sourceFiles": 10,
+        "sourceLines": 2957,
+        "callables": 106,
+        "cyclomaticTotal": 543,
+        "decisionPoints": 437,
+        "hotspots": 15,
+        "cyclomaticExcess": 117,
+        "nestingExcess": 3,
+        "clonedCallables": 10,
+        "redundantTokens": 349.5,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 117,
+        "nesting": 6,
+        "duplication": 17.48,
+        "architecture": 0,
+        "total": 140.48
+      },
+      "debtPerKLOC": 47.51,
+      "score": 34.48
+    },
+    {
+      "id": "internal/engine/claudebridge",
+      "language": "go",
+      "components": {
+        "sourceFiles": 11,
+        "sourceLines": 3222,
+        "callables": 114,
+        "cyclomaticTotal": 561,
+        "decisionPoints": 447,
+        "hotspots": 15,
+        "cyclomaticExcess": 91,
+        "nestingExcess": 6,
+        "clonedCallables": 8,
+        "redundantTokens": 276.5,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 91,
+        "nesting": 12,
+        "duplication": 13.83,
+        "architecture": 0,
+        "total": 116.83
+      },
+      "debtPerKLOC": 36.26,
+      "score": 40.81
+    },
+    {
+      "id": "internal/setup",
+      "language": "go",
+      "components": {
+        "sourceFiles": 8,
+        "sourceLines": 1179,
+        "callables": 40,
+        "cyclomaticTotal": 262,
+        "decisionPoints": 222,
+        "hotspots": 8,
+        "cyclomaticExcess": 73,
+        "nestingExcess": 2,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 3
+      },
+      "debt": {
+        "complexity": 73,
+        "nesting": 4,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 77
+      },
+      "debtPerKLOC": 65.31,
+      "score": 27.68
+    },
+    {
+      "id": "internal/engine/jira",
+      "language": "go",
+      "components": {
+        "sourceFiles": 7,
+        "sourceLines": 1434,
+        "callables": 52,
+        "cyclomaticTotal": 279,
+        "decisionPoints": 227,
+        "hotspots": 10,
+        "cyclomaticExcess": 59,
+        "nestingExcess": 6,
+        "clonedCallables": 2,
+        "redundantTokens": 74,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 59,
+        "nesting": 12,
+        "duplication": 3.7,
+        "architecture": 0,
+        "total": 74.7
+      },
+      "debtPerKLOC": 52.09,
+      "score": 32.43
+    },
+    {
+      "id": "internal/tui/board",
+      "language": "go",
+      "components": {
+        "sourceFiles": 4,
+        "sourceLines": 1535,
+        "callables": 70,
+        "cyclomaticTotal": 332,
+        "decisionPoints": 262,
+        "hotspots": 8,
+        "cyclomaticExcess": 54,
+        "nestingExcess": 2,
+        "clonedCallables": 3,
+        "redundantTokens": 100,
+        "ruleViolations": 1,
+        "cycleUnits": 0,
+        "internalEdges": 4
+      },
+      "debt": {
+        "complexity": 54,
+        "nesting": 4,
+        "duplication": 5,
+        "architecture": 10,
+        "total": 73
+      },
+      "debtPerKLOC": 47.56,
+      "score": 34.46
+    },
+    {
+      "id": "internal/engine/hooks",
+      "language": "go",
+      "components": {
+        "sourceFiles": 13,
+        "sourceLines": 2388,
+        "callables": 136,
+        "cyclomaticTotal": 424,
+        "decisionPoints": 288,
+        "hotspots": 10,
+        "cyclomaticExcess": 41,
+        "nestingExcess": 5,
+        "clonedCallables": 4,
+        "redundantTokens": 159,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 41,
+        "nesting": 10,
+        "duplication": 7.95,
+        "architecture": 0,
+        "total": 58.95
+      },
+      "debtPerKLOC": 24.69,
+      "score": 50.32
+    },
+    {
+      "id": "internal/tui/detail",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 897,
+        "callables": 29,
+        "cyclomaticTotal": 193,
+        "decisionPoints": 164,
+        "hotspots": 7,
+        "cyclomaticExcess": 54,
+        "nestingExcess": 2,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 5
+      },
+      "debt": {
+        "complexity": 54,
+        "nesting": 4,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 58
+      },
+      "debtPerKLOC": 64.66,
+      "score": 27.88
+    },
+    {
+      "id": "internal/tui/review",
+      "language": "go",
+      "components": {
+        "sourceFiles": 2,
+        "sourceLines": 892,
+        "callables": 46,
+        "cyclomaticTotal": 198,
+        "decisionPoints": 152,
+        "hotspots": 6,
+        "cyclomaticExcess": 30,
+        "nestingExcess": 2,
+        "clonedCallables": 1,
+        "redundantTokens": 45,
+        "ruleViolations": 2,
+        "cycleUnits": 0,
+        "internalEdges": 5
+      },
+      "debt": {
+        "complexity": 30,
+        "nesting": 4,
+        "duplication": 2.25,
+        "architecture": 20,
+        "total": 56.25
+      },
+      "debtPerKLOC": 63.06,
+      "score": 28.39
+    },
+    {
+      "id": "internal/tui/plan",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 387,
+        "callables": 15,
+        "cyclomaticTotal": 99,
+        "decisionPoints": 84,
+        "hotspots": 5,
+        "cyclomaticExcess": 36,
+        "nestingExcess": 2,
+        "clonedCallables": 1,
+        "redundantTokens": 45,
+        "ruleViolations": 1,
+        "cycleUnits": 0,
+        "internalEdges": 4
+      },
+      "debt": {
+        "complexity": 36,
+        "nesting": 4,
+        "duplication": 2.25,
+        "architecture": 10,
+        "total": 52.25
+      },
+      "debtPerKLOC": 135.01,
+      "score": 15.62
+    },
+    {
+      "id": "internal/engine/oauthclient",
+      "language": "go",
+      "components": {
+        "sourceFiles": 7,
+        "sourceLines": 1158,
+        "callables": 41,
+        "cyclomaticTotal": 204,
+        "decisionPoints": 163,
+        "hotspots": 5,
+        "cyclomaticExcess": 45,
+        "nestingExcess": 1,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 45,
+        "nesting": 2,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 47
+      },
+      "debtPerKLOC": 40.59,
+      "score": 38.12
+    },
+    {
+      "id": "internal/handofftest",
+      "language": "go",
+      "components": {
+        "sourceFiles": 6,
+        "sourceLines": 2305,
+        "callables": 174,
+        "cyclomaticTotal": 360,
+        "decisionPoints": 186,
+        "hotspots": 5,
+        "cyclomaticExcess": 33,
+        "nestingExcess": 1,
+        "clonedCallables": 7,
+        "redundantTokens": 201,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 9
+      },
+      "debt": {
+        "complexity": 33,
+        "nesting": 2,
+        "duplication": 10.05,
+        "architecture": 0,
+        "total": 45.05
+      },
+      "debtPerKLOC": 19.54,
+      "score": 56.12
+    },
+    {
+      "id": "internal/engine/discordbot",
+      "language": "go",
+      "components": {
+        "sourceFiles": 5,
+        "sourceLines": 1268,
+        "callables": 41,
+        "cyclomaticTotal": 216,
+        "decisionPoints": 175,
+        "hotspots": 5,
+        "cyclomaticExcess": 43,
+        "nestingExcess": 1,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 43,
+        "nesting": 2,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 45
+      },
+      "debtPerKLOC": 35.49,
+      "score": 41.33
+    },
+    {
+      "id": "internal/tui/attention",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 273,
+        "callables": 11,
+        "cyclomaticTotal": 71,
+        "decisionPoints": 60,
+        "hotspots": 2,
+        "cyclomaticExcess": 31,
+        "nestingExcess": 2,
+        "clonedCallables": 2,
+        "redundantTokens": 100.5,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 3
+      },
+      "debt": {
+        "complexity": 31,
+        "nesting": 4,
+        "duplication": 5.03,
+        "architecture": 0,
+        "total": 40.03
+      },
+      "debtPerKLOC": 146.61,
+      "score": 14.57
+    },
+    {
+      "id": "internal/engine/gitrepo",
+      "language": "go",
+      "components": {
+        "sourceFiles": 3,
+        "sourceLines": 778,
+        "callables": 32,
+        "cyclomaticTotal": 163,
+        "decisionPoints": 131,
+        "hotspots": 4,
+        "cyclomaticExcess": 37,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 37,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 37
+      },
+      "debtPerKLOC": 47.56,
+      "score": 34.46
+    },
+    {
+      "id": "internal/engine/slackbot",
+      "language": "go",
+      "components": {
+        "sourceFiles": 4,
+        "sourceLines": 1024,
+        "callables": 32,
+        "cyclomaticTotal": 165,
+        "decisionPoints": 133,
+        "hotspots": 5,
+        "cyclomaticExcess": 30,
+        "nestingExcess": 3,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 30,
+        "nesting": 6,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 36
+      },
+      "debtPerKLOC": 35.16,
+      "score": 41.56
+    },
+    {
+      "id": "internal/engine/mqtt",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 239,
+        "callables": 11,
+        "cyclomaticTotal": 72,
+        "decisionPoints": 61,
+        "hotspots": 2,
+        "cyclomaticExcess": 32,
+        "nestingExcess": 1,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 32,
+        "nesting": 2,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 34
+      },
+      "debtPerKLOC": 142.26,
+      "score": 14.95
+    },
+    {
+      "id": "internal/engine/chimera",
+      "language": "go",
+      "components": {
+        "sourceFiles": 3,
+        "sourceLines": 873,
+        "callables": 41,
+        "cyclomaticTotal": 128,
+        "decisionPoints": 87,
+        "hotspots": 3,
+        "cyclomaticExcess": 9,
+        "nestingExcess": 3,
+        "clonedCallables": 8,
+        "redundantTokens": 366.5,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 9,
+        "nesting": 6,
+        "duplication": 18.33,
+        "architecture": 0,
+        "total": 33.33
+      },
+      "debtPerKLOC": 38.17,
+      "score": 39.57
+    },
+    {
+      "id": "internal/engine/transcript",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 462,
+        "callables": 14,
+        "cyclomaticTotal": 125,
+        "decisionPoints": 111,
+        "hotspots": 6,
+        "cyclomaticExcess": 31,
+        "nestingExcess": 1,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 31,
+        "nesting": 2,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 33
+      },
+      "debtPerKLOC": 71.43,
+      "score": 25.93
+    },
+    {
+      "id": "internal/engine/swarm",
+      "language": "go",
+      "components": {
+        "sourceFiles": 3,
+        "sourceLines": 378,
+        "callables": 12,
+        "cyclomaticTotal": 86,
+        "decisionPoints": 74,
+        "hotspots": 2,
+        "cyclomaticExcess": 29,
+        "nestingExcess": 1,
+        "clonedCallables": 1,
+        "redundantTokens": 25.5,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 29,
+        "nesting": 2,
+        "duplication": 1.27,
+        "architecture": 0,
+        "total": 32.28
+      },
+      "debtPerKLOC": 85.38,
+      "score": 22.65
+    },
+    {
+      "id": "internal/tui/hotkey",
+      "language": "go",
+      "components": {
+        "sourceFiles": 3,
+        "sourceLines": 907,
+        "callables": 42,
+        "cyclomaticTotal": 154,
+        "decisionPoints": 112,
+        "hotspots": 2,
+        "cyclomaticExcess": 24,
+        "nestingExcess": 2,
+        "clonedCallables": 2,
+        "redundantTokens": 44,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 24,
+        "nesting": 4,
+        "duplication": 2.2,
+        "architecture": 0,
+        "total": 30.2
+      },
+      "debtPerKLOC": 33.3,
+      "score": 42.88
+    },
+    {
+      "id": "internal/engine/attest",
+      "language": "go",
+      "components": {
+        "sourceFiles": 2,
+        "sourceLines": 423,
+        "callables": 11,
+        "cyclomaticTotal": 91,
+        "decisionPoints": 80,
+        "hotspots": 3,
+        "cyclomaticExcess": 28,
+        "nestingExcess": 1,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 28,
+        "nesting": 2,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 30
+      },
+      "debtPerKLOC": 70.92,
+      "score": 26.06
+    },
+    {
+      "id": "internal/engine/whisper",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 333,
+        "callables": 6,
+        "cyclomaticTotal": 61,
+        "decisionPoints": 55,
+        "hotspots": 3,
+        "cyclomaticExcess": 24,
+        "nestingExcess": 2,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 24,
+        "nesting": 4,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 28
+      },
+      "debtPerKLOC": 84.08,
+      "score": 22.92
+    },
+    {
+      "id": "internal/engine/git",
+      "language": "go",
+      "components": {
+        "sourceFiles": 4,
+        "sourceLines": 564,
+        "callables": 26,
+        "cyclomaticTotal": 124,
+        "decisionPoints": 98,
+        "hotspots": 2,
+        "cyclomaticExcess": 27,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 27,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 27
+      },
+      "debtPerKLOC": 47.87,
+      "score": 34.31
+    },
+    {
+      "id": "streamdeck/cmd/legato-streamdeck",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 408,
+        "callables": 10,
+        "cyclomaticTotal": 75,
+        "decisionPoints": 65,
+        "hotspots": 3,
+        "cyclomaticExcess": 22,
+        "nestingExcess": 2,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 3
+      },
+      "debt": {
+        "complexity": 22,
+        "nesting": 4,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 26
+      },
+      "debtPerKLOC": 63.73,
+      "score": 28.18
+    },
+    {
+      "id": "internal/tui/report",
+      "language": "go",
+      "components": {
+        "sourceFiles": 2,
+        "sourceLines": 591,
+        "callables": 22,
+        "cyclomaticTotal": 98,
+        "decisionPoints": 76,
+        "hotspots": 3,
+        "cyclomaticExcess": 12,
+        "nestingExcess": 0,
+        "clonedCallables": 2,
+        "redundantTokens": 77,
+        "ruleViolations": 1,
+        "cycleUnits": 0,
+        "internalEdges": 4
+      },
+      "debt": {
+        "complexity": 12,
+        "nesting": 0,
+        "duplication": 3.85,
+        "architecture": 10,
+        "total": 25.85
+      },
+      "debtPerKLOC": 43.74,
+      "score": 36.37
+    },
+    {
+      "id": "internal/engine/egress",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 387,
+        "callables": 13,
+        "cyclomaticTotal": 89,
+        "decisionPoints": 76,
+        "hotspots": 3,
+        "cyclomaticExcess": 25,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 25,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 25
+      },
+      "debtPerKLOC": 64.6,
+      "score": 27.9
+    },
+    {
+      "id": "internal/engine/prompt",
+      "language": "go",
+      "components": {
+        "sourceFiles": 2,
+        "sourceLines": 395,
+        "callables": 10,
+        "cyclomaticTotal": 72,
+        "decisionPoints": 62,
+        "hotspots": 1,
+        "cyclomaticExcess": 22,
+        "nestingExcess": 1,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 22,
+        "nesting": 2,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 24
+      },
+      "debtPerKLOC": 60.76,
+      "score": 29.15
+    },
+    {
+      "id": "internal/engine/mcpupstream",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 465,
+        "callables": 15,
+        "cyclomaticTotal": 92,
+        "decisionPoints": 77,
+        "hotspots": 4,
+        "cyclomaticExcess": 20,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 20,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 20
+      },
+      "debtPerKLOC": 43.01,
+      "score": 36.76
+    },
+    {
+      "id": "internal/engine/endofturn",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 475,
+        "callables": 18,
+        "cyclomaticTotal": 66,
+        "decisionPoints": 48,
+        "hotspots": 1,
+        "cyclomaticExcess": 17,
+        "nestingExcess": 1,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 17,
+        "nesting": 2,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 19
+      },
+      "debtPerKLOC": 40,
+      "score": 38.46
+    },
+    {
+      "id": "internal/engine/stackgraph",
+      "language": "go",
+      "components": {
+        "sourceFiles": 2,
+        "sourceLines": 381,
+        "callables": 10,
+        "cyclomaticTotal": 84,
+        "decisionPoints": 74,
+        "hotspots": 2,
+        "cyclomaticExcess": 18,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 18,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 18
+      },
+      "debtPerKLOC": 47.24,
+      "score": 34.6
+    },
+    {
+      "id": "internal/engine/hotreload",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 252,
+        "callables": 8,
+        "cyclomaticTotal": 52,
+        "decisionPoints": 44,
+        "hotspots": 1,
+        "cyclomaticExcess": 15,
+        "nestingExcess": 1,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 15,
+        "nesting": 2,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 17
+      },
+      "debtPerKLOC": 67.46,
+      "score": 27.04
+    },
+    {
+      "id": "internal/engine/sandbox",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 218,
+        "callables": 6,
+        "cyclomaticTotal": 38,
+        "decisionPoints": 32,
+        "hotspots": 1,
+        "cyclomaticExcess": 17,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 17,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 17
+      },
+      "debtPerKLOC": 77.98,
+      "score": 24.28
+    },
+    {
+      "id": "internal/engine/codexusage",
+      "language": "go",
+      "components": {
+        "sourceFiles": 3,
+        "sourceLines": 524,
+        "callables": 13,
+        "cyclomaticTotal": 101,
+        "decisionPoints": 88,
+        "hotspots": 5,
+        "cyclomaticExcess": 13,
+        "nestingExcess": 1,
+        "clonedCallables": 1,
+        "redundantTokens": 23.5,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 1
+      },
+      "debt": {
+        "complexity": 13,
+        "nesting": 2,
+        "duplication": 1.18,
+        "architecture": 0,
+        "total": 16.18
+      },
+      "debtPerKLOC": 30.87,
+      "score": 44.75
+    },
+    {
+      "id": "internal/engine/planvalidate",
+      "language": "go",
+      "components": {
+        "sourceFiles": 3,
+        "sourceLines": 448,
+        "callables": 15,
+        "cyclomaticTotal": 83,
+        "decisionPoints": 68,
+        "hotspots": 3,
+        "cyclomaticExcess": 13,
+        "nestingExcess": 1,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 13,
+        "nesting": 2,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 15
+      },
+      "debtPerKLOC": 33.48,
+      "score": 42.75
+    },
+    {
+      "id": "internal/engine/attachments",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 216,
+        "callables": 9,
+        "cyclomaticTotal": 54,
+        "decisionPoints": 45,
+        "hotspots": 2,
+        "cyclomaticExcess": 14,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 14,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 14
+      },
+      "debtPerKLOC": 64.81,
+      "score": 27.84
+    },
+    {
+      "id": "internal/tui/statusbar",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 372,
+        "callables": 17,
+        "cyclomaticTotal": 72,
+        "decisionPoints": 55,
+        "hotspots": 2,
+        "cyclomaticExcess": 14,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 2
+      },
+      "debt": {
+        "complexity": 14,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 14
+      },
+      "debtPerKLOC": 37.63,
+      "score": 39.91
+    },
+    {
+      "id": "internal/engine/claudeusage",
+      "language": "go",
+      "components": {
+        "sourceFiles": 5,
+        "sourceLines": 413,
+        "callables": 15,
+        "cyclomaticTotal": 66,
+        "decisionPoints": 51,
+        "hotspots": 2,
+        "cyclomaticExcess": 11,
+        "nestingExcess": 0,
+        "clonedCallables": 1,
+        "redundantTokens": 23.5,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 2
+      },
+      "debt": {
+        "complexity": 11,
+        "nesting": 0,
+        "duplication": 1.18,
+        "architecture": 0,
+        "total": 12.18
+      },
+      "debtPerKLOC": 29.48,
+      "score": 45.89
+    },
+    {
+      "id": "internal/engine/opencodeusage",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 254,
+        "callables": 6,
+        "cyclomaticTotal": 47,
+        "decisionPoints": 41,
+        "hotspots": 2,
+        "cyclomaticExcess": 12,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 1
+      },
+      "debt": {
+        "complexity": 12,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 12
+      },
+      "debtPerKLOC": 47.24,
+      "score": 34.6
+    },
+    {
+      "id": "internal/engine/github",
+      "language": "go",
+      "components": {
+        "sourceFiles": 3,
+        "sourceLines": 728,
+        "callables": 32,
+        "cyclomaticTotal": 134,
+        "decisionPoints": 102,
+        "hotspots": 3,
+        "cyclomaticExcess": 10,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 10,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 10
+      },
+      "debtPerKLOC": 13.74,
+      "score": 64.54
+    },
+    {
+      "id": "internal/engine/clonesetup",
+      "language": "go",
+      "components": {
+        "sourceFiles": 3,
+        "sourceLines": 333,
+        "callables": 9,
+        "cyclomaticTotal": 59,
+        "decisionPoints": 50,
+        "hotspots": 1,
+        "cyclomaticExcess": 7,
+        "nestingExcess": 1,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 7,
+        "nesting": 2,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 9
+      },
+      "debtPerKLOC": 27.03,
+      "score": 48.05
+    },
+    {
+      "id": "cmd/validate/service-smoke",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 120,
+        "callables": 2,
+        "cyclomaticTotal": 16,
+        "decisionPoints": 14,
+        "hotspots": 1,
+        "cyclomaticExcess": 6,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 3
+      },
+      "debt": {
+        "complexity": 6,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 6
+      },
+      "debtPerKLOC": 50,
+      "score": 33.33
+    },
+    {
+      "id": "internal/engine/analytics",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 232,
+        "callables": 14,
+        "cyclomaticTotal": 35,
+        "decisionPoints": 21,
+        "hotspots": 1,
+        "cyclomaticExcess": 1,
+        "nestingExcess": 0,
+        "clonedCallables": 2,
+        "redundantTokens": 84,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 1,
+        "nesting": 0,
+        "duplication": 4.2,
+        "architecture": 0,
+        "total": 5.2
+      },
+      "debtPerKLOC": 22.41,
+      "score": 52.73
+    },
+    {
+      "id": "internal/engine/broker",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 262,
+        "callables": 9,
+        "cyclomaticTotal": 43,
+        "decisionPoints": 34,
+        "hotspots": 1,
+        "cyclomaticExcess": 5,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 5,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 5
+      },
+      "debtPerKLOC": 19.08,
+      "score": 56.71
+    },
+    {
+      "id": "internal/tui/theme",
+      "language": "go",
+      "components": {
+        "sourceFiles": 5,
+        "sourceLines": 518,
+        "callables": 20,
+        "cyclomaticTotal": 85,
+        "decisionPoints": 65,
+        "hotspots": 2,
+        "cyclomaticExcess": 3,
+        "nestingExcess": 1,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 3,
+        "nesting": 2,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 5
+      },
+      "debtPerKLOC": 9.65,
+      "score": 72.14
+    },
+    {
+      "id": "site",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 187,
+        "callables": 8,
+        "cyclomaticTotal": 42,
+        "decisionPoints": 34,
+        "hotspots": 1,
+        "cyclomaticExcess": 5,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 5,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 5
+      },
+      "debtPerKLOC": 26.74,
+      "score": 48.32
+    },
+    {
+      "id": "internal/engine/burnlite",
+      "language": "go",
+      "components": {
+        "sourceFiles": 2,
+        "sourceLines": 669,
+        "callables": 29,
+        "cyclomaticTotal": 79,
+        "decisionPoints": 50,
+        "hotspots": 0,
+        "cyclomaticExcess": 0,
+        "nestingExcess": 0,
+        "clonedCallables": 3,
+        "redundantTokens": 96,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 4.8,
+        "architecture": 0,
+        "total": 4.8
+      },
+      "debtPerKLOC": 7.17,
+      "score": 77.7
+    },
+    {
+      "id": "internal/engine/tmux",
+      "language": "go",
+      "components": {
+        "sourceFiles": 4,
+        "sourceLines": 668,
+        "callables": 35,
+        "cyclomaticTotal": 123,
+        "decisionPoints": 88,
+        "hotspots": 1,
+        "cyclomaticExcess": 1,
+        "nestingExcess": 0,
+        "clonedCallables": 2,
+        "redundantTokens": 68,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 1,
+        "nesting": 0,
+        "duplication": 3.4,
+        "architecture": 0,
+        "total": 4.4
+      },
+      "debtPerKLOC": 6.59,
+      "score": 79.15
+    },
+    {
+      "id": "internal/tui/clipboard",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 113,
+        "callables": 7,
+        "cyclomaticTotal": 26,
+        "decisionPoints": 19,
+        "hotspots": 1,
+        "cyclomaticExcess": 4,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 4,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 4
+      },
+      "debtPerKLOC": 35.4,
+      "score": 41.39
+    },
+    {
+      "id": "streamdeck/internal/legato",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 558,
+        "callables": 22,
+        "cyclomaticTotal": 94,
+        "decisionPoints": 72,
+        "hotspots": 1,
+        "cyclomaticExcess": 4,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 4,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 4
+      },
+      "debtPerKLOC": 7.17,
+      "score": 77.72
+    },
+    {
+      "id": "internal/engine/mcpserver",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 233,
+        "callables": 7,
+        "cyclomaticTotal": 28,
+        "decisionPoints": 21,
+        "hotspots": 1,
+        "cyclomaticExcess": 3,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 3,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 3
+      },
+      "debtPerKLOC": 12.88,
+      "score": 66.01
+    },
+    {
+      "id": "internal/engine/mcpstdio",
+      "language": "go",
+      "components": {
+        "sourceFiles": 3,
+        "sourceLines": 459,
+        "callables": 27,
+        "cyclomaticTotal": 89,
+        "decisionPoints": 62,
+        "hotspots": 2,
+        "cyclomaticExcess": 3,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 3,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 3
+      },
+      "debtPerKLOC": 6.54,
+      "score": 79.27
+    },
+    {
+      "id": "internal/engine/selfupdate",
+      "language": "go",
+      "components": {
+        "sourceFiles": 2,
+        "sourceLines": 218,
+        "callables": 8,
+        "cyclomaticTotal": 37,
+        "decisionPoints": 29,
+        "hotspots": 1,
+        "cyclomaticExcess": 3,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 3,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 3
+      },
+      "debtPerKLOC": 13.76,
+      "score": 64.5
+    },
+    {
+      "id": "internal/engine/skills",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 211,
+        "callables": 7,
+        "cyclomaticTotal": 38,
+        "decisionPoints": 31,
+        "hotspots": 1,
+        "cyclomaticExcess": 3,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 3,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 3
+      },
+      "debtPerKLOC": 14.22,
+      "score": 63.75
+    },
+    {
+      "id": "internal/engine/ipc",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 273,
+        "callables": 12,
+        "cyclomaticTotal": 47,
+        "decisionPoints": 35,
+        "hotspots": 1,
+        "cyclomaticExcess": 2,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 2,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 2
+      },
+      "debtPerKLOC": 7.33,
+      "score": 77.34
+    },
+    {
+      "id": "internal/engine/libretto",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 221,
+        "callables": 7,
+        "cyclomaticTotal": 29,
+        "decisionPoints": 22,
+        "hotspots": 1,
+        "cyclomaticExcess": 2,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 2,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 2
+      },
+      "debtPerKLOC": 9.05,
+      "score": 73.42
+    },
+    {
+      "id": "internal/engine/pairing",
+      "language": "go",
+      "components": {
+        "sourceFiles": 3,
+        "sourceLines": 323,
+        "callables": 14,
+        "cyclomaticTotal": 46,
+        "decisionPoints": 32,
+        "hotspots": 1,
+        "cyclomaticExcess": 2,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 2,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 2
+      },
+      "debtPerKLOC": 6.19,
+      "score": 80.15
+    },
+    {
+      "id": "internal/engine/reviewbriefing",
+      "language": "go",
+      "components": {
+        "sourceFiles": 2,
+        "sourceLines": 358,
+        "callables": 14,
+        "cyclomaticTotal": 65,
+        "decisionPoints": 51,
+        "hotspots": 1,
+        "cyclomaticExcess": 2,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 2,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 2
+      },
+      "debtPerKLOC": 5.59,
+      "score": 81.74
+    },
+    {
+      "id": "streamdeck/internal/opendeck",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 199,
+        "callables": 10,
+        "cyclomaticTotal": 28,
+        "decisionPoints": 18,
+        "hotspots": 1,
+        "cyclomaticExcess": 2,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 2,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 2
+      },
+      "debtPerKLOC": 10.05,
+      "score": 71.33
+    },
+    {
+      "id": "internal/engine/audio",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 298,
+        "callables": 11,
+        "cyclomaticTotal": 42,
+        "decisionPoints": 31,
+        "hotspots": 0,
+        "cyclomaticExcess": 0,
+        "nestingExcess": 0,
+        "clonedCallables": 1,
+        "redundantTokens": 30,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 1.5,
+        "architecture": 0,
+        "total": 1.5
+      },
+      "debtPerKLOC": 5.03,
+      "score": 83.24
+    },
+    {
+      "id": "internal/engine/auth",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 64,
+        "callables": 4,
+        "cyclomaticTotal": 11,
+        "decisionPoints": 7,
+        "hotspots": 0,
+        "cyclomaticExcess": 0,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 0
+      },
+      "debtPerKLOC": 0,
+      "score": 100
+    },
+    {
+      "id": "internal/engine/certs",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 274,
+        "callables": 11,
+        "cyclomaticTotal": 50,
+        "decisionPoints": 39,
+        "hotspots": 0,
+        "cyclomaticExcess": 0,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 0
+      },
+      "debtPerKLOC": 0,
+      "score": 100
+    },
+    {
+      "id": "internal/engine/discovery",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 94,
+        "callables": 3,
+        "cyclomaticTotal": 20,
+        "decisionPoints": 17,
+        "hotspots": 0,
+        "cyclomaticExcess": 0,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 0
+      },
+      "debtPerKLOC": 0,
+      "score": 100
+    },
+    {
+      "id": "internal/engine/engram",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 370,
+        "callables": 22,
+        "cyclomaticTotal": 52,
+        "decisionPoints": 30,
+        "hotspots": 0,
+        "cyclomaticExcess": 0,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 0
+      },
+      "debtPerKLOC": 0,
+      "score": 100
+    },
+    {
+      "id": "internal/engine/events",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 335,
+        "callables": 5,
+        "cyclomaticTotal": 14,
+        "decisionPoints": 9,
+        "hotspots": 0,
+        "cyclomaticExcess": 0,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 0
+      },
+      "debtPerKLOC": 0,
+      "score": 100
+    },
+    {
+      "id": "internal/engine/logfile",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 124,
+        "callables": 7,
+        "cyclomaticTotal": 23,
+        "decisionPoints": 16,
+        "hotspots": 0,
+        "cyclomaticExcess": 0,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 0
+      },
+      "debtPerKLOC": 0,
+      "score": 100
+    },
+    {
+      "id": "internal/engine/manticore",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 123,
+        "callables": 6,
+        "cyclomaticTotal": 13,
+        "decisionPoints": 7,
+        "hotspots": 0,
+        "cyclomaticExcess": 0,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 0
+      },
+      "debtPerKLOC": 0,
+      "score": 100
+    },
+    {
+      "id": "internal/engine/mcpstdio/mcpstdiotest",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 106,
+        "callables": 2,
+        "cyclomaticTotal": 9,
+        "decisionPoints": 7,
+        "hotspots": 0,
+        "cyclomaticExcess": 0,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 0
+      },
+      "debtPerKLOC": 0,
+      "score": 100
+    },
+    {
+      "id": "internal/engine/version",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 97,
+        "callables": 6,
+        "cyclomaticTotal": 21,
+        "decisionPoints": 15,
+        "hotspots": 0,
+        "cyclomaticExcess": 0,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 0
+      },
+      "debtPerKLOC": 0,
+      "score": 100
+    },
+    {
+      "id": "internal/engine/worktree",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 54,
+        "callables": 3,
+        "cyclomaticTotal": 8,
+        "decisionPoints": 5,
+        "hotspots": 0,
+        "cyclomaticExcess": 0,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 0
+      },
+      "debtPerKLOC": 0,
+      "score": 100
+    },
+    {
+      "id": "internal/leaf/regularfile",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 37,
+        "callables": 1,
+        "cyclomaticTotal": 4,
+        "decisionPoints": 3,
+        "hotspots": 0,
+        "cyclomaticExcess": 0,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 0
+      },
+      "debtPerKLOC": 0,
+      "score": 100
+    },
+    {
+      "id": "internal/leaf/retryafter",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 32,
+        "callables": 1,
+        "cyclomaticTotal": 6,
+        "decisionPoints": 5,
+        "hotspots": 0,
+        "cyclomaticExcess": 0,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 0
+      },
+      "debtPerKLOC": 0,
+      "score": 100
+    },
+    {
+      "id": "internal/server/static",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 35,
+        "callables": 3,
+        "cyclomaticTotal": 6,
+        "decisionPoints": 3,
+        "hotspots": 0,
+        "cyclomaticExcess": 0,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 0
+      },
+      "debtPerKLOC": 0,
+      "score": 100
+    },
+    {
+      "id": "internal/testenv",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 103,
+        "callables": 3,
+        "cyclomaticTotal": 18,
+        "decisionPoints": 15,
+        "hotspots": 0,
+        "cyclomaticExcess": 0,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 0
+      },
+      "debtPerKLOC": 0,
+      "score": 100
+    },
+    {
+      "id": "streamdeck/internal/render",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 266,
+        "callables": 11,
+        "cyclomaticTotal": 28,
+        "decisionPoints": 17,
+        "hotspots": 0,
+        "cyclomaticExcess": 0,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 0
+      },
+      "debtPerKLOC": 0,
+      "score": 100
+    },
+    {
+      "id": "themes",
+      "language": "go",
+      "components": {
+        "sourceFiles": 1,
+        "sourceLines": 34,
+        "callables": 2,
+        "cyclomaticTotal": 2,
+        "decisionPoints": 0,
+        "hotspots": 0,
+        "cyclomaticExcess": 0,
+        "nestingExcess": 0,
+        "clonedCallables": 0,
+        "redundantTokens": 0,
+        "ruleViolations": 0,
+        "cycleUnits": 0,
+        "internalEdges": 0
+      },
+      "debt": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 0
+      },
+      "debtPerKLOC": 0,
+      "score": 100
+    }
+  ],
+  "topCallables": [
+    {
+      "module": "internal/tui",
+      "file": "internal/tui/app.go",
+      "name": "App.update",
+      "startLine": 696,
+      "endLine": 1827,
+      "cyclomatic": 308,
+      "nesting": 6,
+      "lines": 1132,
+      "debt": 305
+    },
+    {
+      "module": "internal/service",
+      "file": "internal/service/agent.go",
+      "name": "agentService.SpawnAgent",
+      "startLine": 837,
+      "endLine": 1693,
+      "cyclomatic": 287,
+      "nesting": 5,
+      "lines": 857,
+      "debt": 282
+    },
+    {
+      "module": "internal/service",
+      "file": "internal/service/sandbox_plan.go",
+      "name": "BuildSandboxPlan",
+      "startLine": 414,
+      "endLine": 742,
+      "cyclomatic": 96,
+      "nesting": 4,
+      "lines": 329,
+      "debt": 89
+    },
+    {
+      "module": "cmd/legato",
+      "file": "cmd/legato/main.go",
+      "name": "runReviewCmd",
+      "startLine": 347,
+      "endLine": 703,
+      "cyclomatic": 93,
+      "nesting": 4,
+      "lines": 357,
+      "debt": 86
+    },
+    {
+      "module": "internal/engine/store",
+      "file": "internal/engine/store/store.go",
+      "name": "prepareMigration",
+      "startLine": 364,
+      "endLine": 683,
+      "cyclomatic": 93,
+      "nesting": 4,
+      "lines": 320,
+      "debt": 86
+    },
+    {
+      "module": "cmd/legato",
+      "file": "cmd/legato/learning_cmd.go",
+      "name": "runLearnCmd",
+      "startLine": 69,
+      "endLine": 349,
+      "cyclomatic": 81,
+      "nesting": 3,
+      "lines": 281,
+      "debt": 72
+    },
+    {
+      "module": "cmd/legato",
+      "file": "cmd/legato/main.go",
+      "name": "runTUI",
+      "startLine": 1232,
+      "endLine": 1806,
+      "cyclomatic": 67,
+      "nesting": 4,
+      "lines": 575,
+      "debt": 60
+    },
+    {
+      "module": "internal/service",
+      "file": "internal/service/task_handoff.go",
+      "name": "TaskHandoffService.HandOff",
+      "startLine": 203,
+      "endLine": 396,
+      "cyclomatic": 69,
+      "nesting": 2,
+      "lines": 194,
+      "debt": 60
+    },
+    {
+      "module": "internal/engine/dockerproxy",
+      "file": "internal/engine/dockerproxy/policy.go",
+      "name": "Proxy.checkHostConfig",
+      "startLine": 146,
+      "endLine": 318,
+      "cyclomatic": 62,
+      "nesting": 3,
+      "lines": 173,
+      "debt": 53
+    },
+    {
+      "module": "internal/service",
+      "file": "internal/service/agent_sandbox.go",
+      "name": "agentService.sandboxPrefix",
+      "startLine": 49,
+      "endLine": 240,
+      "cyclomatic": 58,
+      "nesting": 3,
+      "lines": 192,
+      "debt": 49
+    },
+    {
+      "module": "cmd/legato",
+      "file": "cmd/legato/main.go",
+      "name": "runPlanCmd",
+      "startLine": 134,
+      "endLine": 345,
+      "cyclomatic": 57,
+      "nesting": 3,
+      "lines": 212,
+      "debt": 48
+    },
+    {
+      "module": "internal/cli",
+      "file": "internal/cli/claude_hook.go",
+      "name": "applyClaudeHookAt",
+      "startLine": 303,
+      "endLine": 450,
+      "cyclomatic": 55,
+      "nesting": 3,
+      "lines": 148,
+      "debt": 46
+    },
+    {
+      "module": "internal/server",
+      "file": "internal/server/agents.go",
+      "name": "Server.taskAgentHandler",
+      "startLine": 656,
+      "endLine": 844,
+      "cyclomatic": 52,
+      "nesting": 4,
+      "lines": 189,
+      "debt": 45
+    },
+    {
+      "module": "internal/service",
+      "file": "internal/service/learning_curation.go",
+      "name": "validateCuratorOperation",
+      "startLine": 414,
+      "endLine": 498,
+      "cyclomatic": 54,
+      "nesting": 2,
+      "lines": 85,
+      "debt": 45
+    },
+    {
+      "module": "internal/engine/dockerproxy",
+      "file": "internal/engine/dockerproxy/proxy.go",
+      "name": "Proxy.check",
+      "startLine": 185,
+      "endLine": 263,
+      "cyclomatic": 52,
+      "nesting": 3,
+      "lines": 79,
+      "debt": 43
+    },
+    {
+      "module": "internal/tui/agents",
+      "file": "internal/tui/agents/model.go",
+      "name": "Model.HandleAction",
+      "startLine": 537,
+      "endLine": 673,
+      "cyclomatic": 50,
+      "nesting": 4,
+      "lines": 137,
+      "debt": 43
+    },
+    {
+      "module": "internal/service",
+      "file": "internal/service/handoff_export.go",
+      "name": "renderHandoffMarkdown",
+      "startLine": 12,
+      "endLine": 178,
+      "cyclomatic": 47,
+      "nesting": 5,
+      "lines": 167,
+      "debt": 42
+    },
+    {
+      "module": "internal/cli",
+      "file": "internal/cli/chimera_link.go",
+      "name": "RunChimeraLink",
+      "startLine": 38,
+      "endLine": 223,
+      "cyclomatic": 46,
+      "nesting": 5,
+      "lines": 186,
+      "debt": 41
+    },
+    {
+      "module": "internal/server",
+      "file": "internal/server/board.go",
+      "name": "Server.taskHandler",
+      "startLine": 260,
+      "endLine": 463,
+      "cyclomatic": 46,
+      "nesting": 5,
+      "lines": 204,
+      "debt": 41
+    },
+    {
+      "module": "internal/service",
+      "file": "internal/service/pr_branches.go",
+      "name": "prTrackingService.syncTask",
+      "startLine": 367,
+      "endLine": 488,
+      "cyclomatic": 45,
+      "nesting": 5,
+      "lines": 122,
+      "debt": 40
+    },
+    {
+      "module": "internal/engine/codexbridge",
+      "file": "internal/engine/codexbridge/bridge.go",
+      "name": "Bridge.handle",
+      "startLine": 311,
+      "endLine": 494,
+      "cyclomatic": 44,
+      "nesting": 5,
+      "lines": 184,
+      "debt": 39
+    },
+    {
+      "module": "internal/service",
+      "file": "internal/service/handoff.go",
+      "name": "validateHandoffInput",
+      "startLine": 383,
+      "endLine": 487,
+      "cyclomatic": 48,
+      "nesting": 3,
+      "lines": 105,
+      "debt": 39
+    },
+    {
+      "module": "internal/engine/credential",
+      "file": "internal/engine/credential/httpproxy.go",
+      "name": "HTTPProxy.ServeHTTP",
+      "startLine": 158,
+      "endLine": 314,
+      "cyclomatic": 47,
+      "nesting": 3,
+      "lines": 157,
+      "debt": 38
+    },
+    {
+      "module": "internal/service",
+      "file": "internal/service/agent_graph_workflow.go",
+      "name": "AgentGraphService.workflowPlaces",
+      "startLine": 17,
+      "endLine": 161,
+      "cyclomatic": 46,
+      "nesting": 3,
+      "lines": 145,
+      "debt": 37
+    },
+    {
+      "module": "internal/engine/credential",
+      "file": "internal/engine/credential/httpproxy_git.go",
+      "name": "HTTPProxy.serveGit",
+      "startLine": 71,
+      "endLine": 236,
+      "cyclomatic": 45,
+      "nesting": 3,
+      "lines": 166,
+      "debt": 36
+    }
+  ],
+  "topCloneGroups": [
+    {
+      "exact": false,
+      "redundantTokens": 1276,
+      "debt": 63.8,
+      "members": [
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/review_loops.go",
+          "name": "Store.ClosedLoopReviewers",
+          "startLine": 1115,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/agent_conversation_recovery.go",
+          "name": "Store.ConversationStorageDirs",
+          "startLine": 41,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/resource.go",
+          "name": "Store.ListChosenExecutionResources",
+          "startLine": 148,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/resource.go",
+          "name": "Store.ListExecutionResources",
+          "startLine": 157,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/oauth_attempts.go",
+          "name": "Store.ListOAuthAttempts",
+          "startLine": 188,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/integration_attention.go",
+          "name": "Store.ListOpenIntegrationAttention",
+          "startLine": 76,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/plan.go",
+          "name": "Store.ListPlanComments",
+          "startLine": 183,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/plan.go",
+          "name": "Store.ListPlanMessages",
+          "startLine": 331,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/plan.go",
+          "name": "Store.ListPlanQuestions",
+          "startLine": 106,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/plan.go",
+          "name": "Store.ListPlanResponses",
+          "startLine": 168,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/plan.go",
+          "name": "Store.ListPlanRevisions",
+          "startLine": 306,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/plan.go",
+          "name": "Store.ListPlansByTask",
+          "startLine": 21,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/reeve_watches.go",
+          "name": "Store.ListReeveWatchEvents",
+          "startLine": 55,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/review.go",
+          "name": "Store.ListReviewChapterHunks",
+          "startLine": 453,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/review.go",
+          "name": "Store.ListReviewFindingsByPass",
+          "startLine": 123,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/review.go",
+          "name": "Store.ListReviewHunkNotesByPass",
+          "startLine": 108,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/review_loops.go",
+          "name": "Store.ListReviewLoopFindings",
+          "startLine": 993,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/review_loops.go",
+          "name": "Store.ListReviewLoopItems",
+          "startLine": 873,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/review_loops.go",
+          "name": "Store.ListReviewLoopPRs",
+          "startLine": 937,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/review_loops.go",
+          "name": "Store.ListReviewLoopPasses",
+          "startLine": 986,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/review.go",
+          "name": "Store.ListReviewMessagesByPass",
+          "startLine": 102,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/review.go",
+          "name": "Store.ListReviewPasses",
+          "startLine": 79,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/review.go",
+          "name": "Store.ListReviewStepsByPass",
+          "startLine": 94,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/review.go",
+          "name": "Store.ListReviewToursByTask",
+          "startLine": 64,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/handoff_reviews.go",
+          "name": "Store.ListRunReviewLoopsAuthoredBy",
+          "startLine": 1297,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/swarm.go",
+          "name": "Store.ListSubtasksByParent",
+          "startLine": 70,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/store.go",
+          "name": "Store.ListSyncLogs",
+          "startLine": 1073,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/task_notes.go",
+          "name": "Store.ListTaskNotes",
+          "startLine": 10,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/swarm.go",
+          "name": "Store.ListUnackedSwarmEvents",
+          "startLine": 245,
+          "tokens": 44
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/subagent_activity.go",
+          "name": "Store.OpenSubagents",
+          "startLine": 123,
+          "tokens": 44
+        }
+      ]
+    },
+    {
+      "exact": false,
+      "redundantTokens": 520,
+      "debt": 26,
+      "members": [
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/execution.go",
+          "name": "Store.GetExecution",
+          "startLine": 70,
+          "tokens": 65
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/learning_curation.go",
+          "name": "Store.GetLearningCurationGeneration",
+          "startLine": 163,
+          "tokens": 65
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/learning_curation.go",
+          "name": "Store.GetLearningCurationGenerationByAttempt",
+          "startLine": 54,
+          "tokens": 65
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/learning.go",
+          "name": "Store.GetLearningIncorporation",
+          "startLine": 415,
+          "tokens": 65
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/learning_prompt.go",
+          "name": "Store.GetLearningPromptManifest",
+          "startLine": 74,
+          "tokens": 65
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/learning.go",
+          "name": "Store.GetLearningReflectionRequest",
+          "startLine": 38,
+          "tokens": 65
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/learning.go",
+          "name": "Store.GetLearningReflectionRequestByAttempt",
+          "startLine": 49,
+          "tokens": 65
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/workflow_trigger.go",
+          "name": "Store.GetTaskTransition",
+          "startLine": 86,
+          "tokens": 65
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/workflow_trigger.go",
+          "name": "Store.LatestTaskTransition",
+          "startLine": 66,
+          "tokens": 65
+        }
+      ]
+    },
+    {
+      "exact": false,
+      "redundantTokens": 413,
+      "debt": 20.65,
+      "members": [
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/review.go",
+          "name": "Store.GetActiveReviewPass",
+          "startLine": 85,
+          "tokens": 59
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/review.go",
+          "name": "Store.GetDefaultReviewTour",
+          "startLine": 54,
+          "tokens": 59
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/reeve_change_sets.go",
+          "name": "Store.GetReeveChangeSet",
+          "startLine": 47,
+          "tokens": 59
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/reeve_peers.go",
+          "name": "Store.GetReevePeer",
+          "startLine": 35,
+          "tokens": 59
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/review.go",
+          "name": "Store.GetReviewPassPlan",
+          "startLine": 184,
+          "tokens": 59
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/review.go",
+          "name": "Store.GetReviewStep",
+          "startLine": 286,
+          "tokens": 59
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/review.go",
+          "name": "Store.GetReviewTour",
+          "startLine": 44,
+          "tokens": 59
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/handoff.go",
+          "name": "Store.HandoffObservation",
+          "startLine": 200,
+          "tokens": 59
+        }
+      ]
+    },
+    {
+      "exact": false,
+      "redundantTokens": 410,
+      "debt": 20.5,
+      "members": [
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/pr_reviews_seen.go",
+          "name": "Store.GitHubAppLogins",
+          "startLine": 64,
+          "tokens": 41
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/launch_messages.go",
+          "name": "Store.ListLaunchMessages",
+          "startLine": 37,
+          "tokens": 41
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/reeve_peers.go",
+          "name": "Store.ListReeveInbox",
+          "startLine": 105,
+          "tokens": 41
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/reeve_peers.go",
+          "name": "Store.ListReevePeers",
+          "startLine": 45,
+          "tokens": 41
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/repository_guidance.go",
+          "name": "Store.ListRepositoryGuidance",
+          "startLine": 21,
+          "tokens": 41
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/repository_preset.go",
+          "name": "Store.ListRepositoryPresets",
+          "startLine": 32,
+          "tokens": 41
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/credential.go",
+          "name": "Store.ListSecrets",
+          "startLine": 57,
+          "tokens": 41
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/settings.go",
+          "name": "Store.ListSettingEntries",
+          "startLine": 75,
+          "tokens": 41
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/settings.go",
+          "name": "Store.ListSettings",
+          "startLine": 19,
+          "tokens": 41
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/subscription_usage.go",
+          "name": "Store.ListSubscriptionUsage",
+          "startLine": 14,
+          "tokens": 41
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/workflow_trigger_switches.go",
+          "name": "Store.WorkflowTriggerSwitches",
+          "startLine": 14,
+          "tokens": 41
+        }
+      ]
+    },
+    {
+      "exact": false,
+      "redundantTokens": 260,
+      "debt": 13,
+      "members": [
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/repository_guidance.go",
+          "name": "Store.DeleteRepositoryGuidance",
+          "startLine": 28,
+          "tokens": 65
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/repository_preset.go",
+          "name": "Store.DeleteRepositoryPreset",
+          "startLine": 39,
+          "tokens": 65
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/integration_tokens.go",
+          "name": "Store.RevokeIntegrationToken",
+          "startLine": 156,
+          "tokens": 65
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/integration_tokens.go",
+          "name": "Store.RevokeMainIntegrationToken",
+          "startLine": 113,
+          "tokens": 65
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/execution_broker.go",
+          "name": "Store.SetExecutionReadOnly",
+          "startLine": 38,
+          "tokens": 65
+        }
+      ]
+    },
+    {
+      "exact": false,
+      "redundantTokens": 240,
+      "debt": 12,
+      "members": [
+        {
+          "module": "internal/engine/chimera",
+          "file": "internal/engine/chimera/client.go",
+          "name": "Client.ListCommands",
+          "startLine": 455,
+          "tokens": 60
+        },
+        {
+          "module": "internal/engine/chimera",
+          "file": "internal/engine/chimera/client.go",
+          "name": "Client.ListModels",
+          "startLine": 473,
+          "tokens": 60
+        },
+        {
+          "module": "internal/engine/chimera",
+          "file": "internal/engine/chimera/client.go",
+          "name": "Client.ListModes",
+          "startLine": 431,
+          "tokens": 60
+        },
+        {
+          "module": "internal/engine/chimera",
+          "file": "internal/engine/chimera/client.go",
+          "name": "Client.ListSkills",
+          "startLine": 464,
+          "tokens": 60
+        },
+        {
+          "module": "internal/engine/chimera",
+          "file": "internal/engine/chimera/client.go",
+          "name": "Client.ListSubagents",
+          "startLine": 217,
+          "tokens": 60
+        }
+      ]
+    },
+    {
+      "exact": false,
+      "redundantTokens": 214,
+      "debt": 10.7,
+      "members": [
+        {
+          "module": "internal/server",
+          "file": "internal/server/handoff.go",
+          "name": "Server.handoffHandler",
+          "startLine": 19,
+          "tokens": 107
+        },
+        {
+          "module": "internal/server",
+          "file": "internal/server/plan.go",
+          "name": "Server.planHandler",
+          "startLine": 67,
+          "tokens": 107
+        },
+        {
+          "module": "internal/server",
+          "file": "internal/server/plan.go",
+          "name": "Server.planRevisionsHandler",
+          "startLine": 85,
+          "tokens": 107
+        }
+      ]
+    },
+    {
+      "exact": false,
+      "redundantTokens": 210,
+      "debt": 10.5,
+      "members": [
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/approval_devices.go",
+          "name": "Store.GetApprovalDevice",
+          "startLine": 53,
+          "tokens": 70
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/attention.go",
+          "name": "Store.GetAttentionItem",
+          "startLine": 65,
+          "tokens": 70
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/plan.go",
+          "name": "Store.GetPlan",
+          "startLine": 10,
+          "tokens": 70
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/credential.go",
+          "name": "Store.GetSecret",
+          "startLine": 34,
+          "tokens": 70
+        }
+      ]
+    },
+    {
+      "exact": false,
+      "redundantTokens": 209,
+      "debt": 10.45,
+      "members": [
+        {
+          "module": "internal/tui/overlay",
+          "file": "internal/tui/overlay/move_workspace.go",
+          "name": "buildMWShortcuts",
+          "startLine": 72,
+          "tokens": 209
+        },
+        {
+          "module": "internal/tui/overlay",
+          "file": "internal/tui/overlay/workspace.go",
+          "name": "buildWSShortcuts",
+          "startLine": 72,
+          "tokens": 209
+        }
+      ]
+    },
+    {
+      "exact": false,
+      "redundantTokens": 206,
+      "debt": 10.3,
+      "members": [
+        {
+          "module": "internal/server",
+          "file": "internal/server/swarm.go",
+          "name": "Server.swarmCancelHandler",
+          "startLine": 293,
+          "tokens": 206
+        },
+        {
+          "module": "internal/server",
+          "file": "internal/server/swarm.go",
+          "name": "Server.swarmCloseHandler",
+          "startLine": 196,
+          "tokens": 206
+        }
+      ]
+    },
+    {
+      "exact": false,
+      "redundantTokens": 200,
+      "debt": 10,
+      "members": [
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/approval.go",
+          "name": "Store.CountApprovals",
+          "startLine": 178,
+          "tokens": 40
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/plan.go",
+          "name": "Store.CountUnansweredRequiredPlanQuestions",
+          "startLine": 139,
+          "tokens": 40
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/handoff.go",
+          "name": "Store.HasHandoffPackets",
+          "startLine": 238,
+          "tokens": 40
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/reeve_watches.go",
+          "name": "Store.HasReeveWatchEventKind",
+          "startLine": 106,
+          "tokens": 40
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/reeve_watches.go",
+          "name": "Store.TaskActivityMark",
+          "startLine": 96,
+          "tokens": 40
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/workflow.go",
+          "name": "Store.WorkflowAttemptInUse",
+          "startLine": 1114,
+          "tokens": 40
+        }
+      ]
+    },
+    {
+      "exact": false,
+      "redundantTokens": 190,
+      "debt": 9.5,
+      "members": [
+        {
+          "module": "internal/server",
+          "file": "internal/server/server.go",
+          "name": "Server.StartAttentionEvents",
+          "startLine": 990,
+          "tokens": 95
+        },
+        {
+          "module": "internal/server",
+          "file": "internal/server/server.go",
+          "name": "Server.StartPlanEvents",
+          "startLine": 974,
+          "tokens": 95
+        },
+        {
+          "module": "internal/server",
+          "file": "internal/server/reeve_voice.go",
+          "name": "Server.StartReeveSpokeEvents",
+          "startLine": 76,
+          "tokens": 95
+        }
+      ]
+    },
+    {
+      "exact": false,
+      "redundantTokens": 183,
+      "debt": 9.15,
+      "members": [
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/handoff_notices.go",
+          "name": "Store.ClaimHandoffNotice",
+          "startLine": 10,
+          "tokens": 61
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/approval_devices.go",
+          "name": "Store.ClaimInstanceValue",
+          "startLine": 221,
+          "tokens": 61
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/workers.go",
+          "name": "Store.SetWorkerRefused",
+          "startLine": 103,
+          "tokens": 61
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/workers.go",
+          "name": "Store.SetWorkerUnreachable",
+          "startLine": 91,
+          "tokens": 61
+        }
+      ]
+    },
+    {
+      "exact": false,
+      "redundantTokens": 178,
+      "debt": 8.9,
+      "members": [
+        {
+          "module": "cmd/legato",
+          "file": "cmd/legato/main.go",
+          "name": "runSwarmCancel",
+          "startLine": 2246,
+          "tokens": 89
+        },
+        {
+          "module": "cmd/legato",
+          "file": "cmd/legato/main.go",
+          "name": "runSwarmInbox",
+          "startLine": 2442,
+          "tokens": 89
+        },
+        {
+          "module": "cmd/legato",
+          "file": "cmd/legato/main.go",
+          "name": "runSwarmStatus",
+          "startLine": 2425,
+          "tokens": 89
+        }
+      ]
+    },
+    {
+      "exact": true,
+      "redundantTokens": 177,
+      "debt": 8.85,
+      "members": [
+        {
+          "module": "internal/engine/claudebridge",
+          "file": "internal/engine/claudebridge/stream.go",
+          "name": "Bridge.publish",
+          "startLine": 27,
+          "tokens": 177
+        },
+        {
+          "module": "internal/engine/codexbridge",
+          "file": "internal/engine/codexbridge/stream.go",
+          "name": "Bridge.publish",
+          "startLine": 30,
+          "tokens": 177
+        }
+      ]
+    },
+    {
+      "exact": false,
+      "redundantTokens": 177,
+      "debt": 8.85,
+      "members": [
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/oauth_attempts.go",
+          "name": "Store.ActiveOAuthAttempt",
+          "startLine": 78,
+          "tokens": 59
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/oauth_lifecycle.go",
+          "name": "Store.CurrentOAuthAttempt",
+          "startLine": 27,
+          "tokens": 59
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/mcp_connections.go",
+          "name": "Store.GetMCPConnection",
+          "startLine": 93,
+          "tokens": 59
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/oauth_attempts.go",
+          "name": "Store.GetOAuthAttempt",
+          "startLine": 69,
+          "tokens": 59
+        }
+      ]
+    },
+    {
+      "exact": false,
+      "redundantTokens": 159,
+      "debt": 7.95,
+      "members": [
+        {
+          "module": "internal/engine/hooks",
+          "file": "internal/engine/hooks/claude_mod.go",
+          "name": "InstallClaudeMod",
+          "startLine": 70,
+          "tokens": 53
+        },
+        {
+          "module": "internal/engine/hooks",
+          "file": "internal/engine/hooks/claude_mod.go",
+          "name": "InstallClaudeStateMod",
+          "startLine": 103,
+          "tokens": 53
+        },
+        {
+          "module": "internal/engine/hooks",
+          "file": "internal/engine/hooks/claude_mod.go",
+          "name": "InstallClaudeToolsMod",
+          "startLine": 92,
+          "tokens": 53
+        },
+        {
+          "module": "internal/engine/hooks",
+          "file": "internal/engine/hooks/claude_mod.go",
+          "name": "InstallClaudeUsageMod",
+          "startLine": 81,
+          "tokens": 53
+        }
+      ]
+    },
+    {
+      "exact": false,
+      "redundantTokens": 150,
+      "debt": 7.5,
+      "members": [
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/learning.go",
+          "name": "Store.VerifyLearningIncorporation",
+          "startLine": 475,
+          "tokens": 150
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/learning.go",
+          "name": "Store.VerifyLearningIncorporationTarget",
+          "startLine": 444,
+          "tokens": 150
+        }
+      ]
+    },
+    {
+      "exact": false,
+      "redundantTokens": 148,
+      "debt": 7.4,
+      "members": [
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/attention.go",
+          "name": "Store.GetAttentionItemBySource",
+          "startLine": 76,
+          "tokens": 74
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/plan.go",
+          "name": "Store.GetPlanByTaskName",
+          "startLine": 27,
+          "tokens": 74
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/plan.go",
+          "name": "Store.GetPlanQuestionByKey",
+          "startLine": 148,
+          "tokens": 74
+        }
+      ]
+    },
+    {
+      "exact": false,
+      "redundantTokens": 143,
+      "debt": 7.15,
+      "members": [
+        {
+          "module": "internal/service",
+          "file": "internal/service/claude_bridge.go",
+          "name": "agentService.discoverClaudeBridge",
+          "startLine": 24,
+          "tokens": 143
+        },
+        {
+          "module": "internal/service",
+          "file": "internal/service/codex_bridge.go",
+          "name": "agentService.discoverCodexBridge",
+          "startLine": 27,
+          "tokens": 143
+        }
+      ]
+    },
+    {
+      "exact": false,
+      "redundantTokens": 138,
+      "debt": 6.9,
+      "members": [
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/reeve_change_sets.go",
+          "name": "Store.ListAutoReeveChangeSets",
+          "startLine": 105,
+          "tokens": 46
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/delegations.go",
+          "name": "Store.ListDelegationsByState",
+          "startLine": 108,
+          "tokens": 46
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/delegations.go",
+          "name": "Store.ListDelegationsForTask",
+          "startLine": 115,
+          "tokens": 46
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/restart_record.go",
+          "name": "Store.ListRestartRecords",
+          "startLine": 78,
+          "tokens": 46
+        }
+      ]
+    },
+    {
+      "exact": false,
+      "redundantTokens": 138,
+      "debt": 6.9,
+      "members": [
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/review.go",
+          "name": "Store.ListReviewHunkNotes",
+          "startLine": 600,
+          "tokens": 46
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/review.go",
+          "name": "Store.ListReviewMessages",
+          "startLine": 699,
+          "tokens": 46
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/review.go",
+          "name": "Store.ListReviewSteps",
+          "startLine": 276,
+          "tokens": 46
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/integration_tokens.go",
+          "name": "Store.ListTasksForRepository",
+          "startLine": 179,
+          "tokens": 46
+        }
+      ]
+    },
+    {
+      "exact": false,
+      "redundantTokens": 136,
+      "debt": 6.8,
+      "members": [
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/plan.go",
+          "name": "Store.ApprovePlan",
+          "startLine": 213,
+          "tokens": 68
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/learning_prompt.go",
+          "name": "Store.BindLearningPromptManifestSession",
+          "startLine": 59,
+          "tokens": 68
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/swarm.go",
+          "name": "Store.SetParentActiveStep",
+          "startLine": 111,
+          "tokens": 68
+        }
+      ]
+    },
+    {
+      "exact": false,
+      "redundantTokens": 136,
+      "debt": 6.8,
+      "members": [
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/scope.go",
+          "name": "Store.GetScopeBatch",
+          "startLine": 173,
+          "tokens": 68
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/scope.go",
+          "name": "Store.GetScopePin",
+          "startLine": 125,
+          "tokens": 68
+        },
+        {
+          "module": "internal/engine/store",
+          "file": "internal/engine/store/scope.go",
+          "name": "Store.GetScopeSubscription",
+          "startLine": 260,
+          "tokens": 68
+        }
+      ]
+    },
+    {
+      "exact": false,
+      "redundantTokens": 135,
+      "debt": 6.75,
+      "members": [
+        {
+          "module": "cmd/legato",
+          "file": "cmd/legato/attention_cmd.go",
+          "name": "relativeAge",
+          "startLine": 111,
+          "tokens": 135
+        },
+        {
+          "module": "internal/tui/attention",
+          "file": "internal/tui/attention/model.go",
+          "name": "formatRelativeTime",
+          "startLine": 253,
+          "tokens": 135
+        }
+      ]
+    }
+  ],
+  "violations": [
+    {
+      "language": "go",
+      "rule": "tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)",
+      "from": "internal/tui",
+      "to": "internal/engine/events",
+      "file": "internal/tui/app.go",
+      "line": 15
+    },
+    {
+      "language": "go",
+      "rule": "tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)",
+      "from": "internal/tui",
+      "to": "internal/engine/store",
+      "file": "internal/tui/app.go",
+      "line": 16
+    },
+    {
+      "language": "go",
+      "rule": "tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)",
+      "from": "internal/tui",
+      "to": "internal/engine/workflow",
+      "file": "internal/tui/app.go",
+      "line": 17
+    },
+    {
+      "language": "go",
+      "rule": "tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)",
+      "from": "internal/tui/board",
+      "to": "internal/engine/store",
+      "file": "internal/tui/board/model.go",
+      "line": 9
+    },
+    {
+      "language": "go",
+      "rule": "tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)",
+      "from": "internal/tui/overlay",
+      "to": "internal/engine/github",
+      "file": "internal/tui/overlay/link_pr.go",
+      "line": 10
+    },
+    {
+      "language": "go",
+      "rule": "tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)",
+      "from": "internal/tui/overlay",
+      "to": "internal/engine/store",
+      "file": "internal/tui/overlay/workspace.go",
+      "line": 9
+    },
+    {
+      "language": "go",
+      "rule": "tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)",
+      "from": "internal/tui/overlay",
+      "to": "internal/engine/workflow",
+      "file": "internal/tui/overlay/workflow_trigger.go",
+      "line": 9
+    },
+    {
+      "language": "go",
+      "rule": "tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)",
+      "from": "internal/tui/plan",
+      "to": "internal/engine/store",
+      "file": "internal/tui/plan/model.go",
+      "line": 13
+    },
+    {
+      "language": "go",
+      "rule": "tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)",
+      "from": "internal/tui/report",
+      "to": "internal/engine/analytics",
+      "file": "internal/tui/report/model.go",
+      "line": 12
+    },
+    {
+      "language": "go",
+      "rule": "tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)",
+      "from": "internal/tui/review",
+      "to": "internal/engine/git",
+      "file": "internal/tui/review/messages.go",
+      "line": 4
+    },
+    {
+      "language": "go",
+      "rule": "tui must not import engine (CLAUDE.md prose; NOT enforced by Legato architecture tests)",
+      "from": "internal/tui/review",
+      "to": "internal/engine/store",
+      "file": "internal/tui/review/model.go",
+      "line": 17
+    }
+  ],
+  "cycles": []
+}

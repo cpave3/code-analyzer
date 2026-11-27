@@ -1,0 +1,1606 @@
+{
+  "schema": "codeeval.delta/v2",
+  "scoringVersion": "scoring/v2-experimental",
+  "tool": {
+    "name": "codeeval",
+    "version": "0.1.0-poc"
+  },
+  "configHash": "3cef63633359769f",
+  "repository": "legato-stack",
+  "weights": {
+    "cyclomaticExcessPoint": 1,
+    "nestingExcessLevel": 2,
+    "redundantTokensPerPoint": 20,
+    "ruleViolationEdge": 10,
+    "cycleUnit": 20,
+    "halfScoreDensity": 25
+  },
+  "thresholds": {
+    "hotspotCyclomatic": 10,
+    "hotspotNesting": 4,
+    "minCloneTokens": 40
+  },
+  "notes": [
+    "experimental scoring/v2: separate from and not comparable to scoring/v1 −2..+2 scores; v1 reports are unchanged",
+    "debt points = complexity (Σ max(0, cyclomatic − H + 1): debt exactly when a callable is a hotspot) + nesting (Σ max(0, depth − N + 1) × weight) + duplication (structural-clone redundant tokens ÷ tokens-per-point) + architecture (configured-rule-violating edges and units in cycles × weights)",
+    "debt is additive across modules and telescopes across commits (Δ = after − before of one snapshot function); it is the quantity to optimise within one codebase because adding code cannot dilute it",
+    "score = 100 × h ÷ (h + debt per 1,000 supported source lines), h = halfScoreDensity: a size-normalised view for comparing modules or codebases; it can be diluted by adding simple code, so do not optimise it alone",
+    "weights are uncalibrated defaults; the score is a structural index, not a measure of correctness, design quality or behaviour",
+    "only languages with adapters are measured; see coverage — unsupported source is not scored and not neutral",
+    "architecture debt reflects only the configured import-level rules; rules the configuration cannot express are not measured",
+    "complexity growth below the hotspot thresholds carries no debt; it is reported as decision points and checked by the existing-callable branch gate",
+    "gates are advisory checks, not merge decisions"
+  ],
+  "base": {
+    "ref": "9a61e9f8a021fa95a616966fe3977d4a5f6e0ccc",
+    "commit": "9a61e9f8a021fa95a616966fe3977d4a5f6e0ccc",
+    "tree": "a55db6103bf46379323be4e2328b521169a6ac45",
+    "commitTime": "2026-11-25T21:49:11+11:00"
+  },
+  "target": {
+    "ref": "471bfd24a69628d985cdd7767dcb340da6a569b7",
+    "commit": "471bfd24a69628d985cdd7767dcb340da6a569b7",
+    "tree": "ae91f4192b232c82eb171be2e9dfb20da677f62a",
+    "commitTime": "2026-11-27T15:46:34+11:00"
+  },
+  "coverageAfter": {
+    "languages": [
+      {
+        "language": "go",
+        "supported": true,
+        "files": 988,
+        "bytes": 8324647
+      },
+      {
+        "language": "javascript",
+        "supported": false,
+        "files": 23,
+        "bytes": 128585
+      },
+      {
+        "language": "kotlin",
+        "supported": false,
+        "files": 54,
+        "bytes": 394351
+      },
+      {
+        "language": "python",
+        "supported": false,
+        "files": 5,
+        "bytes": 44436
+      },
+      {
+        "language": "rust",
+        "supported": false,
+        "files": 34,
+        "bytes": 564583
+      },
+      {
+        "language": "shell",
+        "supported": false,
+        "files": 15,
+        "bytes": 36033
+      },
+      {
+        "language": "sql",
+        "supported": false,
+        "files": 160,
+        "bytes": 171688
+      },
+      {
+        "language": "swift",
+        "supported": false,
+        "files": 2,
+        "bytes": 5345
+      },
+      {
+        "language": "typescript",
+        "supported": false,
+        "files": 577,
+        "bytes": 3798448
+      }
+    ],
+    "supportedSourceFiles": 988,
+    "sourceFiles": 1858,
+    "supportedByteShare": 0.6181,
+    "parseErrorFiles": 0
+  },
+  "size": {
+    "changedSourceFiles": 296,
+    "changedSupportedSourceFiles": 201,
+    "changedSupportedSourceLines": 16581,
+    "unsupportedChangedSourceFilesByLanguage": {
+      "javascript": 2,
+      "kotlin": 2,
+      "sql": 7,
+      "typescript": 84
+    }
+  },
+  "before": {
+    "id": "codebase",
+    "components": {
+      "sourceFiles": 930,
+      "sourceLines": 224082,
+      "callables": 8734,
+      "cyclomaticTotal": 44535,
+      "decisionPoints": 35801,
+      "hotspots": 1197,
+      "cyclomaticExcess": 9275,
+      "nestingExcess": 299,
+      "clonedCallables": 393,
+      "exactRedundant": 8,
+      "structuralRedundant": 243,
+      "redundantTokens": 15206,
+      "ruleViolations": 15,
+      "cycleUnits": 0,
+      "internalEdges": 193
+    },
+    "debt": {
+      "complexity": 9275,
+      "nesting": 598,
+      "duplication": 760.3,
+      "architecture": 150,
+      "total": 10783.3
+    },
+    "debtPerKLOC": 48.12,
+    "score": 34.19
+  },
+  "after": {
+    "id": "codebase",
+    "components": {
+      "sourceFiles": 988,
+      "sourceLines": 238533,
+      "callables": 9298,
+      "cyclomaticTotal": 47685,
+      "decisionPoints": 38387,
+      "hotspots": 1288,
+      "cyclomaticExcess": 10027,
+      "nestingExcess": 309,
+      "clonedCallables": 422,
+      "exactRedundant": 10,
+      "structuralRedundant": 260,
+      "redundantTokens": 16326,
+      "ruleViolations": 15,
+      "cycleUnits": 0,
+      "internalEdges": 200
+    },
+    "debt": {
+      "complexity": 10027,
+      "nesting": 618,
+      "duplication": 816.3,
+      "architecture": 150,
+      "total": 11611.3
+    },
+    "debtPerKLOC": 48.68,
+    "score": 33.93
+  },
+  "ledger": {
+    "components": {
+      "sourceFiles": 58,
+      "sourceLines": 14451,
+      "callables": 564,
+      "cyclomaticTotal": 3150,
+      "decisionPoints": 2586,
+      "hotspots": 91,
+      "cyclomaticExcess": 752,
+      "nestingExcess": 10,
+      "clonedCallables": 29,
+      "exactRedundant": 2,
+      "structuralRedundant": 17,
+      "redundantTokens": 1120,
+      "ruleViolations": 0,
+      "cycleUnits": 0,
+      "internalEdges": 7
+    },
+    "debt": {
+      "complexity": 752,
+      "nesting": 20,
+      "duplication": 56,
+      "architecture": 0,
+      "total": 828
+    },
+    "debtPerKLOC": 0.56,
+    "score": -0.26
+  },
+  "debtPerChangedKLOC": {
+    "complexity": 45.35,
+    "nesting": 1.21,
+    "duplication": 3.38,
+    "architecture": 0,
+    "total": 49.94
+  },
+  "changedCallables": {
+    "modified": 242,
+    "modifiedDecisionsBeforeAfter": [
+      3257,
+      3451
+    ],
+    "modifiedCyclomaticBeforeAfter": [
+      3499,
+      3693
+    ],
+    "added": 570,
+    "addedDecisions": 2407,
+    "deleted": 6,
+    "deletedDecisions": 15,
+    "netDecisionPoints": 2586,
+    "netFunctionBasePoints": 564
+  },
+  "gates": [
+    {
+      "name": "no_new_exact_duplicates",
+      "passed": false,
+      "detail": "+2 exact redundant callables"
+    },
+    {
+      "name": "no_new_structural_duplicates",
+      "passed": false,
+      "detail": "+17 structural redundant callables"
+    },
+    {
+      "name": "no_new_rule_violations",
+      "passed": true,
+      "detail": "0 rule-violating edges"
+    },
+    {
+      "name": "no_new_cycles",
+      "passed": true,
+      "detail": "0 units in cycles"
+    },
+    {
+      "name": "no_branch_growth_in_existing_callables",
+      "passed": false,
+      "detail": "+194 decision points in modified pre-existing callables"
+    },
+    {
+      "name": "no_hotspot_excess_growth",
+      "passed": false,
+      "detail": "+752 cyclomatic excess, +10 nesting excess"
+    }
+  ],
+  "modules": [
+    {
+      "id": "internal/service",
+      "language": "go",
+      "debtBefore": 4523.95,
+      "debtAfter": 5070.35,
+      "debtDelta": {
+        "complexity": 522,
+        "nesting": 6,
+        "duplication": 18.4,
+        "architecture": 0,
+        "total": 546.4
+      },
+      "scoreBefore": 32.69,
+      "scoreAfter": 32.14
+    },
+    {
+      "id": "internal/engine/workflow",
+      "language": "go",
+      "debtBefore": 500,
+      "debtAfter": 597,
+      "debtDelta": {
+        "complexity": 85,
+        "nesting": 12,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 97
+      },
+      "scoreBefore": 27.47,
+      "scoreAfter": 28.78
+    },
+    {
+      "id": "cmd/legato",
+      "language": "go",
+      "debtBefore": 844.03,
+      "debtAfter": 888.13,
+      "debtDelta": {
+        "complexity": 36,
+        "nesting": 0,
+        "duplication": 8.1,
+        "architecture": 0,
+        "total": 44.1
+      },
+      "scoreBefore": 34.39,
+      "scoreAfter": 34.35
+    },
+    {
+      "id": "config",
+      "language": "go",
+      "debtBefore": 224.8,
+      "debtAfter": 256.1,
+      "debtDelta": {
+        "complexity": 28,
+        "nesting": 0,
+        "duplication": 3.3,
+        "architecture": 0,
+        "total": 31.3
+      },
+      "scoreBefore": 34.69,
+      "scoreAfter": 34.05
+    },
+    {
+      "id": "internal/engine/codexusage",
+      "language": "go",
+      "debtBefore": 0,
+      "debtAfter": 18.3,
+      "debtDelta": {
+        "complexity": 13,
+        "nesting": 2,
+        "duplication": 3.3,
+        "architecture": 0,
+        "total": 18.3
+      },
+      "scoreBefore": null,
+      "scoreAfter": 42.95
+    },
+    {
+      "id": "internal/engine/claudeusage",
+      "language": "go",
+      "debtBefore": 0,
+      "debtAfter": 16.68,
+      "debtDelta": {
+        "complexity": 11,
+        "nesting": 0,
+        "duplication": 5.68,
+        "architecture": 0,
+        "total": 16.68
+      },
+      "scoreBefore": null,
+      "scoreAfter": 40.45
+    },
+    {
+      "id": "internal/engine/opencodeusage",
+      "language": "go",
+      "debtBefore": 0,
+      "debtAfter": 14.38,
+      "debtDelta": {
+        "complexity": 12,
+        "nesting": 0,
+        "duplication": 2.38,
+        "architecture": 0,
+        "total": 14.38
+      },
+      "scoreBefore": null,
+      "scoreAfter": 31.71
+    },
+    {
+      "id": "internal/tui/overlay",
+      "language": "go",
+      "debtBefore": 361.2,
+      "debtAfter": 371.2,
+      "debtDelta": {
+        "complexity": 10,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 10
+      },
+      "scoreBefore": 28.18,
+      "scoreAfter": 27.96
+    },
+    {
+      "id": "internal/handofftest",
+      "language": "go",
+      "debtBefore": 41.25,
+      "debtAfter": 51.05,
+      "debtDelta": {
+        "complexity": 7,
+        "nesting": 0,
+        "duplication": 2.8,
+        "architecture": 0,
+        "total": 9.8
+      },
+      "scoreBefore": 54.74,
+      "scoreAfter": 53.2
+    },
+    {
+      "id": "internal/engine/store",
+      "language": "go",
+      "debtBefore": 824.9,
+      "debtAfter": 833.9,
+      "debtDelta": {
+        "complexity": 10,
+        "nesting": 0,
+        "duplication": -1,
+        "architecture": 0,
+        "total": 9
+      },
+      "scoreBefore": 37.29,
+      "scoreAfter": 37.49
+    },
+    {
+      "id": "internal/server",
+      "language": "go",
+      "debtBefore": 514.05,
+      "debtAfter": 522.8,
+      "debtDelta": {
+        "complexity": 7,
+        "nesting": 0,
+        "duplication": 1.75,
+        "architecture": 0,
+        "total": 8.75
+      },
+      "scoreBefore": 48.7,
+      "scoreAfter": 48.76
+    },
+    {
+      "id": "internal/tui",
+      "language": "go",
+      "debtBefore": 441.4,
+      "debtAfter": 448.2,
+      "debtDelta": {
+        "complexity": 4,
+        "nesting": 0,
+        "duplication": 2.8,
+        "architecture": 0,
+        "total": 6.8
+      },
+      "scoreBefore": 20.98,
+      "scoreAfter": 21.17
+    },
+    {
+      "id": "internal/engine/burnlite",
+      "language": "go",
+      "debtBefore": 0,
+      "debtAfter": 4.8,
+      "debtDelta": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 4.8,
+        "architecture": 0,
+        "total": 4.8
+      },
+      "scoreBefore": 100,
+      "scoreAfter": 77.7
+    },
+    {
+      "id": "internal/engine/jira",
+      "language": "go",
+      "debtBefore": 70,
+      "debtAfter": 74.7,
+      "debtDelta": {
+        "complexity": 1,
+        "nesting": 0,
+        "duplication": 3.7,
+        "architecture": 0,
+        "total": 4.7
+      },
+      "scoreBefore": 32.71,
+      "scoreAfter": 32.43
+    },
+    {
+      "id": "internal/tui/board",
+      "language": "go",
+      "debtBefore": 69,
+      "debtAfter": 73,
+      "debtDelta": {
+        "complexity": 4,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 4
+      },
+      "scoreBefore": 35.51,
+      "scoreAfter": 34.46
+    },
+    {
+      "id": "internal/tui/agents",
+      "language": "go",
+      "debtBefore": 146.15,
+      "debtAfter": 148.15,
+      "debtDelta": {
+        "complexity": 2,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 2
+      },
+      "scoreBefore": 32.94,
+      "scoreAfter": 33.16
+    }
+  ],
+  "steps": [
+    {
+      "index": 1,
+      "parent": "9a61e9f8a021fa95a616966fe3977d4a5f6e0ccc",
+      "commit": "bc203a4304150a51d7564b7dc74ae1e6dcce444c",
+      "subject": "Merge pull request #389 from cpave3/legato/leg-649",
+      "size": {
+        "changedSourceFiles": 0,
+        "changedSupportedSourceFiles": 0,
+        "changedSupportedSourceLines": 0,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 0,
+          "callables": 0,
+          "cyclomaticTotal": 0,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": null,
+      "gatesFailed": []
+    },
+    {
+      "index": 2,
+      "parent": "bc203a4304150a51d7564b7dc74ae1e6dcce444c",
+      "commit": "4d6d56c2cea09c420a3cc701839941d770065e19",
+      "subject": "Merge pull request #395 from cpave3/legato/leg-559-588-pr-ready",
+      "size": {
+        "changedSourceFiles": 62,
+        "changedSupportedSourceFiles": 48,
+        "changedSupportedSourceLines": 4229,
+        "unsupportedChangedSourceFilesByLanguage": {
+          "typescript": 14
+        }
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 7,
+          "sourceLines": 3722,
+          "callables": 167,
+          "cyclomaticTotal": 793,
+          "decisionPoints": 626,
+          "hotspots": 22,
+          "cyclomaticExcess": 141,
+          "nestingExcess": 7,
+          "clonedCallables": 2,
+          "structuralRedundant": 1,
+          "redundantTokens": 56,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 141,
+          "nesting": 14,
+          "duplication": 2.8,
+          "architecture": 0,
+          "total": 157.8
+        },
+        "debtPerKLOC": -0.09,
+        "score": 0.04
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 33.34,
+        "nesting": 3.31,
+        "duplication": 0.66,
+        "architecture": 0,
+        "total": 37.31
+      },
+      "gatesFailed": [
+        "no_new_structural_duplicates",
+        "no_hotspot_excess_growth"
+      ]
+    },
+    {
+      "index": 3,
+      "parent": "4d6d56c2cea09c420a3cc701839941d770065e19",
+      "commit": "fee8984ccdeb6e5ba451bf94526c812cac5fe1d2",
+      "subject": "Merge pull request #401 from cpave3/legato/LEG-650-narrow-prs-output",
+      "size": {
+        "changedSourceFiles": 4,
+        "changedSupportedSourceFiles": 4,
+        "changedSupportedSourceLines": 225,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 155,
+          "callables": 5,
+          "cyclomaticTotal": 44,
+          "decisionPoints": 39,
+          "hotspots": 2,
+          "cyclomaticExcess": 12,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 12,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 12
+        },
+        "debtPerKLOC": 0.02,
+        "score": -0.01
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 53.33,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 53.33
+      },
+      "gatesFailed": [
+        "no_hotspot_excess_growth"
+      ]
+    },
+    {
+      "index": 4,
+      "parent": "fee8984ccdeb6e5ba451bf94526c812cac5fe1d2",
+      "commit": "3a223ed5243a800adb15df12b813f9540587d4f2",
+      "subject": "Merge pull request #403 from cpave3/legato/leg-651",
+      "size": {
+        "changedSourceFiles": 5,
+        "changedSupportedSourceFiles": 0,
+        "changedSupportedSourceLines": 0,
+        "unsupportedChangedSourceFilesByLanguage": {
+          "typescript": 5
+        }
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 0,
+          "callables": 0,
+          "cyclomaticTotal": 0,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": null,
+      "gatesFailed": []
+    },
+    {
+      "index": 5,
+      "parent": "3a223ed5243a800adb15df12b813f9540587d4f2",
+      "commit": "d380cd0d74449c77f505a3a2c37744cfd6990d3c",
+      "subject": "Merge pull request #402 from cpave3/legato/LEG-653-nuget-packages-pin",
+      "size": {
+        "changedSourceFiles": 1,
+        "changedSupportedSourceFiles": 1,
+        "changedSupportedSourceLines": 17,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 13,
+          "callables": 0,
+          "cyclomaticTotal": 4,
+          "decisionPoints": 4,
+          "hotspots": 0,
+          "cyclomaticExcess": 4,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 4,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 4
+        },
+        "debtPerKLOC": 0.01,
+        "score": 0
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 235.29,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 235.29
+      },
+      "gatesFailed": [
+        "no_branch_growth_in_existing_callables",
+        "no_hotspot_excess_growth"
+      ]
+    },
+    {
+      "index": 6,
+      "parent": "d380cd0d74449c77f505a3a2c37744cfd6990d3c",
+      "commit": "f740befd0cf2b2ca29ee49a604b1dfc72614ad11",
+      "subject": "Merge pull request #404 from cpave3/legato/leg-652-task-id-as-text",
+      "size": {
+        "changedSourceFiles": 5,
+        "changedSupportedSourceFiles": 4,
+        "changedSupportedSourceLines": 42,
+        "unsupportedChangedSourceFilesByLanguage": {
+          "typescript": 1
+        }
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 2,
+          "callables": 0,
+          "cyclomaticTotal": 0,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 0
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 7,
+      "parent": "f740befd0cf2b2ca29ee49a604b1dfc72614ad11",
+      "commit": "e2c149366ed598baa295615725aa408118b8ef91",
+      "subject": "Merge pull request #406 from cpave3/legato/LEG-656-ticket-update",
+      "size": {
+        "changedSourceFiles": 14,
+        "changedSupportedSourceFiles": 12,
+        "changedSupportedSourceLines": 739,
+        "unsupportedChangedSourceFilesByLanguage": {
+          "typescript": 2
+        }
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 4,
+          "sourceLines": 693,
+          "callables": 30,
+          "cyclomaticTotal": 149,
+          "decisionPoints": 119,
+          "hotspots": 4,
+          "cyclomaticExcess": 40,
+          "nestingExcess": 0,
+          "clonedCallables": 5,
+          "structuralRedundant": 3,
+          "redundantTokens": 170,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 40,
+          "nesting": 0,
+          "duplication": 8.5,
+          "architecture": 0,
+          "total": 48.5
+        },
+        "debtPerKLOC": 0.07,
+        "score": -0.03
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 54.13,
+        "nesting": 0,
+        "duplication": 11.5,
+        "architecture": 0,
+        "total": 65.63
+      },
+      "gatesFailed": [
+        "no_new_structural_duplicates",
+        "no_branch_growth_in_existing_callables",
+        "no_hotspot_excess_growth"
+      ]
+    },
+    {
+      "index": 8,
+      "parent": "e2c149366ed598baa295615725aa408118b8ef91",
+      "commit": "ae8500ddb5777dbed4cdf50fce45848ed498cab4",
+      "subject": "Merge pull request #407 from cpave3/legato/LEG-655-definition-canvas",
+      "size": {
+        "changedSourceFiles": 11,
+        "changedSupportedSourceFiles": 0,
+        "changedSupportedSourceLines": 0,
+        "unsupportedChangedSourceFilesByLanguage": {
+          "typescript": 11
+        }
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 0,
+          "callables": 0,
+          "cyclomaticTotal": 0,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": null,
+      "gatesFailed": []
+    },
+    {
+      "index": 9,
+      "parent": "ae8500ddb5777dbed4cdf50fce45848ed498cab4",
+      "commit": "2ee8cd6adbd5a822ad64c3e0626822dc441d2dbe",
+      "subject": "Merge pull request #405 from cpave3/legato/LEG-654-store-close-waits",
+      "size": {
+        "changedSourceFiles": 2,
+        "changedSupportedSourceFiles": 2,
+        "changedSupportedSourceLines": 32,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 28,
+          "callables": 1,
+          "cyclomaticTotal": 3,
+          "decisionPoints": 2,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": -0.01,
+        "score": 0
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 0
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 10,
+      "parent": "2ee8cd6adbd5a822ad64c3e0626822dc441d2dbe",
+      "commit": "3b3d3eea493797209f285021d349b44187c54574",
+      "subject": "Merge pull request #408 from cpave3/legato/leg-657",
+      "size": {
+        "changedSourceFiles": 25,
+        "changedSupportedSourceFiles": 13,
+        "changedSupportedSourceLines": 432,
+        "unsupportedChangedSourceFilesByLanguage": {
+          "sql": 1,
+          "typescript": 11
+        }
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 4,
+          "sourceLines": 404,
+          "callables": 13,
+          "cyclomaticTotal": 76,
+          "decisionPoints": 63,
+          "hotspots": 3,
+          "cyclomaticExcess": 15,
+          "nestingExcess": 0,
+          "clonedCallables": 1,
+          "structuralRedundant": 1,
+          "redundantTokens": 41,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 15,
+          "nesting": 0,
+          "duplication": 2.05,
+          "architecture": 0,
+          "total": 17.05
+        },
+        "debtPerKLOC": -0.01,
+        "score": 0
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 34.72,
+        "nesting": 0,
+        "duplication": 4.75,
+        "architecture": 0,
+        "total": 39.47
+      },
+      "gatesFailed": [
+        "no_new_structural_duplicates",
+        "no_hotspot_excess_growth"
+      ]
+    },
+    {
+      "index": 11,
+      "parent": "3b3d3eea493797209f285021d349b44187c54574",
+      "commit": "f4fca83ceb6475215d328a88b3197a3727223083",
+      "subject": "Merge pull request #417 from cpave3/legato/LEG-662-related-work-runs",
+      "size": {
+        "changedSourceFiles": 5,
+        "changedSupportedSourceFiles": 2,
+        "changedSupportedSourceLines": 19,
+        "unsupportedChangedSourceFilesByLanguage": {
+          "typescript": 3
+        }
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 13,
+          "callables": 0,
+          "cyclomaticTotal": 0,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": -2,
+          "structuralRedundant": -1,
+          "redundantTokens": -46,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": -2.3,
+          "architecture": 0,
+          "total": -2.3
+        },
+        "debtPerKLOC": -0.01,
+        "score": 0.01
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 0,
+        "nesting": 0,
+        "duplication": -121.05,
+        "architecture": 0,
+        "total": -121.05
+      },
+      "gatesFailed": []
+    },
+    {
+      "index": 12,
+      "parent": "f4fca83ceb6475215d328a88b3197a3727223083",
+      "commit": "e756ef170ec1d933e950ca999d86cfce6279f376",
+      "subject": "Merge pull request #419 from cpave3/legato/LEG-659-subscription-usage",
+      "size": {
+        "changedSourceFiles": 41,
+        "changedSupportedSourceFiles": 33,
+        "changedSupportedSourceLines": 2239,
+        "unsupportedChangedSourceFilesByLanguage": {
+          "sql": 1,
+          "typescript": 7
+        }
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 17,
+          "sourceLines": 2250,
+          "callables": 79,
+          "cyclomaticTotal": 388,
+          "decisionPoints": 309,
+          "hotspots": 11,
+          "cyclomaticExcess": 48,
+          "nestingExcess": 1,
+          "clonedCallables": 10,
+          "exactRedundant": 1,
+          "structuralRedundant": 6,
+          "redundantTokens": 510,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 4
+        },
+        "debt": {
+          "complexity": 48,
+          "nesting": 2,
+          "duplication": 25.5,
+          "architecture": 0,
+          "total": 75.5
+        },
+        "debtPerKLOC": -0.14,
+        "score": 0.07
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 21.44,
+        "nesting": 0.89,
+        "duplication": 11.39,
+        "architecture": 0,
+        "total": 33.72
+      },
+      "gatesFailed": [
+        "no_new_exact_duplicates",
+        "no_new_structural_duplicates",
+        "no_branch_growth_in_existing_callables",
+        "no_hotspot_excess_growth"
+      ]
+    },
+    {
+      "index": 13,
+      "parent": "e756ef170ec1d933e950ca999d86cfce6279f376",
+      "commit": "a33dd8ca39068d29cb6b64d6f739facbd7ee84c4",
+      "subject": "Merge pull request #418 from cpave3/legato/leg-559-599-deprecate-inline-step",
+      "size": {
+        "changedSourceFiles": 100,
+        "changedSupportedSourceFiles": 74,
+        "changedSupportedSourceLines": 5197,
+        "unsupportedChangedSourceFilesByLanguage": {
+          "sql": 1,
+          "typescript": 25
+        }
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 9,
+          "sourceLines": 4072,
+          "callables": 167,
+          "cyclomaticTotal": 909,
+          "decisionPoints": 742,
+          "hotspots": 31,
+          "cyclomaticExcess": 174,
+          "nestingExcess": -1,
+          "clonedCallables": 7,
+          "structuralRedundant": 4,
+          "redundantTokens": 144,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 174,
+          "nesting": -2,
+          "duplication": 7.2,
+          "architecture": 0,
+          "total": 179.2
+        },
+        "debtPerKLOC": -0.07,
+        "score": 0.03
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 33.48,
+        "nesting": -0.38,
+        "duplication": 1.39,
+        "architecture": 0,
+        "total": 34.48
+      },
+      "gatesFailed": [
+        "no_new_structural_duplicates",
+        "no_branch_growth_in_existing_callables",
+        "no_hotspot_excess_growth"
+      ]
+    },
+    {
+      "index": 14,
+      "parent": "a33dd8ca39068d29cb6b64d6f739facbd7ee84c4",
+      "commit": "60b19e5a32a511b91c34b328ac9d7de4770609c0",
+      "subject": "Merge pull request #425 from cpave3/legato/LEG-660-usage-profiles",
+      "size": {
+        "changedSourceFiles": 60,
+        "changedSupportedSourceFiles": 50,
+        "changedSupportedSourceLines": 1577,
+        "unsupportedChangedSourceFilesByLanguage": {
+          "sql": 2,
+          "typescript": 8
+        }
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 8,
+          "sourceLines": 1249,
+          "callables": 47,
+          "cyclomaticTotal": 293,
+          "decisionPoints": 246,
+          "hotspots": 6,
+          "cyclomaticExcess": 104,
+          "nestingExcess": 1,
+          "clonedCallables": 0,
+          "redundantTokens": -61,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 104,
+          "nesting": 2,
+          "duplication": -3.05,
+          "architecture": 0,
+          "total": 102.95
+        },
+        "debtPerKLOC": 0.18,
+        "score": -0.09
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 65.95,
+        "nesting": 1.27,
+        "duplication": -1.93,
+        "architecture": 0,
+        "total": 65.28
+      },
+      "gatesFailed": [
+        "no_branch_growth_in_existing_callables",
+        "no_hotspot_excess_growth"
+      ]
+    },
+    {
+      "index": 15,
+      "parent": "60b19e5a32a511b91c34b328ac9d7de4770609c0",
+      "commit": "bac2e695ffd46e51d4e8c27726dfdda6e1a1ccae",
+      "subject": "Merge pull request #424 from cpave3/legato/fix-config-show-sources-golden",
+      "size": {
+        "changedSourceFiles": 0,
+        "changedSupportedSourceFiles": 0,
+        "changedSupportedSourceLines": 0,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 0,
+          "callables": 0,
+          "cyclomaticTotal": 0,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": null,
+      "gatesFailed": []
+    },
+    {
+      "index": 16,
+      "parent": "bac2e695ffd46e51d4e8c27726dfdda6e1a1ccae",
+      "commit": "21336cd88c35f3a7228e3de068a66f354e84201d",
+      "subject": "Merge pull request #426 from cpave3/legato/LEG-660-startup-switch",
+      "size": {
+        "changedSourceFiles": 4,
+        "changedSupportedSourceFiles": 2,
+        "changedSupportedSourceLines": 19,
+        "unsupportedChangedSourceFilesByLanguage": {
+          "sql": 1,
+          "typescript": 1
+        }
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 9,
+          "callables": 0,
+          "cyclomaticTotal": 2,
+          "decisionPoints": 2,
+          "hotspots": 0,
+          "cyclomaticExcess": 2,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 2,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 2
+        },
+        "debtPerKLOC": 0.01,
+        "score": 0
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 105.26,
+        "nesting": 0,
+        "duplication": 0,
+        "architecture": 0,
+        "total": 105.26
+      },
+      "gatesFailed": [
+        "no_branch_growth_in_existing_callables",
+        "no_hotspot_excess_growth"
+      ]
+    },
+    {
+      "index": 17,
+      "parent": "21336cd88c35f3a7228e3de068a66f354e84201d",
+      "commit": "9678029a55062306ce643adfb78229b7291ba7ce",
+      "subject": "Merge pull request #420 from cpave3/legato/LEG-663-live-glasses-pages",
+      "size": {
+        "changedSourceFiles": 3,
+        "changedSupportedSourceFiles": 0,
+        "changedSupportedSourceLines": 0,
+        "unsupportedChangedSourceFilesByLanguage": {
+          "typescript": 3
+        }
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 0,
+          "callables": 0,
+          "cyclomaticTotal": 0,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": null,
+      "gatesFailed": []
+    },
+    {
+      "index": 18,
+      "parent": "9678029a55062306ce643adfb78229b7291ba7ce",
+      "commit": "86e6d89843d997fcdd4f5de90cb2ee7f128b98cf",
+      "subject": "Merge pull request #423 from cpave3/legato/leg-661",
+      "size": {
+        "changedSourceFiles": 13,
+        "changedSupportedSourceFiles": 0,
+        "changedSupportedSourceLines": 0,
+        "unsupportedChangedSourceFilesByLanguage": {
+          "javascript": 1,
+          "kotlin": 2,
+          "typescript": 10
+        }
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 0,
+          "callables": 0,
+          "cyclomaticTotal": 0,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": null,
+      "gatesFailed": []
+    },
+    {
+      "index": 19,
+      "parent": "86e6d89843d997fcdd4f5de90cb2ee7f128b98cf",
+      "commit": "4df5dadeb911ef5a16e6f06d4d98ee9848bbe0a0",
+      "subject": "Merge pull request #427 from cpave3/legato/6aeum288-delivery-docs",
+      "size": {
+        "changedSourceFiles": 0,
+        "changedSupportedSourceFiles": 0,
+        "changedSupportedSourceLines": 0,
+        "unsupportedChangedSourceFilesByLanguage": {}
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 0,
+          "callables": 0,
+          "cyclomaticTotal": 0,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": null,
+      "gatesFailed": []
+    },
+    {
+      "index": 20,
+      "parent": "4df5dadeb911ef5a16e6f06d4d98ee9848bbe0a0",
+      "commit": "7d7de93024f9532ccb3dd4b6b90c63f6717a9690",
+      "subject": "Merge pull request #428 from cpave3/legato/qykhugdr-watch-batches",
+      "size": {
+        "changedSourceFiles": 4,
+        "changedSupportedSourceFiles": 0,
+        "changedSupportedSourceLines": 0,
+        "unsupportedChangedSourceFilesByLanguage": {
+          "javascript": 1,
+          "typescript": 3
+        }
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 0,
+          "callables": 0,
+          "cyclomaticTotal": 0,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": null,
+      "gatesFailed": []
+    },
+    {
+      "index": 21,
+      "parent": "7d7de93024f9532ccb3dd4b6b90c63f6717a9690",
+      "commit": "bf94ed1de8f44589b150f174757bb6c1ef7f636b",
+      "subject": "Merge pull request #429 from cpave3/legato/cajixhp6-opencode-usage",
+      "size": {
+        "changedSourceFiles": 20,
+        "changedSupportedSourceFiles": 14,
+        "changedSupportedSourceLines": 611,
+        "unsupportedChangedSourceFilesByLanguage": {
+          "typescript": 6
+        }
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 2,
+          "sourceLines": 493,
+          "callables": 17,
+          "cyclomaticTotal": 88,
+          "decisionPoints": 71,
+          "hotspots": 2,
+          "cyclomaticExcess": 14,
+          "nestingExcess": 0,
+          "clonedCallables": 2,
+          "exactRedundant": 1,
+          "structuralRedundant": 1,
+          "redundantTokens": 95,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 2
+        },
+        "debt": {
+          "complexity": 14,
+          "nesting": 0,
+          "duplication": 4.75,
+          "architecture": 0,
+          "total": 18.75
+        },
+        "debtPerKLOC": -0.02,
+        "score": 0.01
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 22.91,
+        "nesting": 0,
+        "duplication": 7.77,
+        "architecture": 0,
+        "total": 30.69
+      },
+      "gatesFailed": [
+        "no_new_exact_duplicates",
+        "no_new_structural_duplicates",
+        "no_hotspot_excess_growth"
+      ]
+    },
+    {
+      "index": 22,
+      "parent": "bf94ed1de8f44589b150f174757bb6c1ef7f636b",
+      "commit": "5f7a847077b01542061656a7783dc7e58f981b78",
+      "subject": "Merge pull request #430 from cpave3/legato/8z3913fg-claude-accounts",
+      "size": {
+        "changedSourceFiles": 86,
+        "changedSupportedSourceFiles": 68,
+        "changedSupportedSourceLines": 1755,
+        "unsupportedChangedSourceFilesByLanguage": {
+          "sql": 2,
+          "typescript": 16
+        }
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 7,
+          "sourceLines": 1348,
+          "callables": 38,
+          "cyclomaticTotal": 401,
+          "decisionPoints": 363,
+          "hotspots": 10,
+          "cyclomaticExcess": 198,
+          "nestingExcess": 2,
+          "clonedCallables": 4,
+          "structuralRedundant": 2,
+          "redundantTokens": 211,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 1
+        },
+        "debt": {
+          "complexity": 198,
+          "nesting": 4,
+          "duplication": 10.55,
+          "architecture": 0,
+          "total": 212.55
+        },
+        "debtPerKLOC": 0.62,
+        "score": -0.29
+      },
+      "debtPerChangedKLOC": {
+        "complexity": 112.82,
+        "nesting": 2.28,
+        "duplication": 6.01,
+        "architecture": 0,
+        "total": 121.11
+      },
+      "gatesFailed": [
+        "no_new_structural_duplicates",
+        "no_branch_growth_in_existing_callables",
+        "no_hotspot_excess_growth"
+      ]
+    },
+    {
+      "index": 23,
+      "parent": "5f7a847077b01542061656a7783dc7e58f981b78",
+      "commit": "471bfd24a69628d985cdd7767dcb340da6a569b7",
+      "subject": "Merge pull request #431 from cpave3/legato/leg-666",
+      "size": {
+        "changedSourceFiles": 3,
+        "changedSupportedSourceFiles": 0,
+        "changedSupportedSourceLines": 0,
+        "unsupportedChangedSourceFilesByLanguage": {
+          "typescript": 3
+        }
+      },
+      "ledger": {
+        "components": {
+          "sourceFiles": 0,
+          "sourceLines": 0,
+          "callables": 0,
+          "cyclomaticTotal": 0,
+          "decisionPoints": 0,
+          "hotspots": 0,
+          "cyclomaticExcess": 0,
+          "nestingExcess": 0,
+          "clonedCallables": 0,
+          "redundantTokens": 0,
+          "ruleViolations": 0,
+          "cycleUnits": 0,
+          "internalEdges": 0
+        },
+        "debt": {
+          "complexity": 0,
+          "nesting": 0,
+          "duplication": 0,
+          "architecture": 0,
+          "total": 0
+        },
+        "debtPerKLOC": 0,
+        "score": 0
+      },
+      "debtPerChangedKLOC": null,
+      "gatesFailed": []
+    }
+  ],
+  "stepCheck": {
+    "chainStartsAtBase": true,
+    "sumOfStepDebtDelta": 828,
+    "netDebtDelta": 828,
+    "telescopes": true
+  }
+}
