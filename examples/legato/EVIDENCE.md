@@ -185,6 +185,7 @@ workflow or a person caused a quality change. Full table:
 
 The cleanup PR #434 (`471bfd24 → 41c80614`) was measured with the frozen evaluator; see [FIX-EVIDENCE.md](FIX-EVIDENCE.md).
 The independent leaf-helper batch PR #435 (`471bfd24 → 96298449`, worklist B1–B3) is in [LEAF-EVIDENCE.md](LEAF-EVIDENCE.md).
+The service, cmd and test-fake duplicate batch PR #437 (batch only `8661dc42 → e0cf802e`, plus `471bfd24 → e0cf802e` including the #436 ledger, worklist C1, C3, C5 and D8) is in [SVC-EVIDENCE.md](SVC-EVIDENCE.md).
 
 ## Bottom line
 
