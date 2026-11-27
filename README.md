@@ -1,14 +1,38 @@
 # CodeEval (POC)
 
-A local Go CLI that measures whether a Git change improves or degrades a
-codebase **in the context of that repository**: duplication against existing
-code, complexity before and after, dependency structure, scope, and code left
-obsolete. It judges the patch itself, not what the agent or workflow says
-about it. See [PRD.md](PRD.md) for the full product brief and
-[TECH.md](TECH.md) for dependencies and trade-offs.
+A local, read-only Go CLI that measures code quality **in the context of the
+repository**: duplication against existing code, complexity, nesting,
+dependency structure and rules, scope, and code left obsolete. It judges a
+change (or a snapshot) itself, not what an agent or workflow says about it.
+See [PRD.md](PRD.md) for the product brief, [TECH.md](TECH.md) for design and
+trade-offs, and [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
 
-This is a **proof of concept**. It measures structure. It does not prove a
-design is good, and it never combines dimensions into an overall score.
+This is a **proof of concept**. It measures structure. It never runs the
+evaluated code and makes no claim about correctness or design quality.
+
+## Commands at a glance
+
+| Command | What it answers | Scoring |
+|---|---|---|
+| `codeeval evaluate --base A --target B` | Did this change improve or degrade each dimension? Gives a −2…+2 score per analyzer with evidence; there is no overall score | `scoring/v1` (frozen) |
+| `codeeval history --base A --target B` | The same, for the net change and for each first-parent merge | `scoring/v1` |
+| `codeeval score --rev R` | Absolute debt and 0–100 score for a codebase, each module and each language | `scoring/v2-experimental` |
+| `codeeval score --base A --target B [--steps]` | Debt ledger for a change, where per-commit steps sum exactly to the net | v2 |
+| `codeeval explain --rev R --path P` | Which items make up a scope's debt, where they are, how much each contributes, and how to fix them | v2 |
+| `codeeval check --base A --target B\|--working-tree` | PR check: items a change introduced or worsened. Exit 3 on failure | v2 |
+| `codeeval graph --rev R --output g.html` | Interactive offline debt graph (POC) | v2 |
+| `codeeval languages` / `analyzers` / `version` | Adapters and their limits, analyzers, version | – |
+
+Languages: **Go** and **TypeScript** (Tree-sitter adapters). Other languages
+are counted as unsupported coverage, never scored as neutral. Claude Code
+templates (a skill and a Stop hook) are in
+[integrations/claude-code/](integrations/claude-code/README.md). Worked
+examples on a real repository are in [examples/legato/](examples/legato/).
+
+**scoring/v1 vs v2:** v1 is the original change-attributed −2…+2 model. Its
+code and outputs are unchanged, and the Legato v1 reports were made with a
+frozen build of it. v2 is an experimental, uncalibrated debt model added
+later. Neither v2's debt nor its score should be optimised on its own.
 
 ## Build and run
 
@@ -339,23 +363,31 @@ from misleading ones: [examples/legato/EVIDENCE.md](examples/legato/EVIDENCE.md)
 
 ## POC scope and deferred PRD work
 
-Done here: Git change input (refs and working tree), a Tree-sitter Go
-adapter, a SQLite parse/symbol index keyed by blob (rebuilt or reused per
-run), exact and structural duplication with change attribution, complexity
-deltas, dependency graph deltas and cycles, configurable forbidden rules,
-scope and locality, obsolete-code heuristics, a versioned JSON schema, a
-Markdown summary, first-parent history, and explicit coverage and
-diagnostics.
+Done here:
+- **Inputs and index:** Git change input (refs and working tree), Tree-sitter
+  Go and TypeScript adapters, and a SQLite parse/symbol index keyed by blob.
+- **v1 analyzers:** exact and structural duplication with change
+  attribution, complexity deltas, dependency graph deltas and cycles,
+  configurable forbidden rules, scope and locality, and obsolete-code
+  heuristics.
+- **v1 output:** versioned JSON and Markdown, first-parent history, and
+  explicit coverage and diagnostics.
+- **v2 (experimental):** snapshot debt per module and language, telescoping
+  deltas, advisory gates, scoped factor reports with remediation, a PR check,
+  and the graph view.
+- **Integration:** Claude Code skill and hook templates.
 
 Deferred:
 
 - C# adapter
+- calibrating v2 weights and thresholds (per language), and percentile bands
+  from a repository's own history
+- rule types the config cannot express (allow-lists, stdlib-only,
+  symbol-level), and TypeScript architecture rules for real projects
 - type-resolved references and a call graph (references are name-based)
 - detecting lines moved within a file (only symbol moves are detected)
-- incremental index across runs beyond the blob cache
-- scoring thresholds relative to change size (they are absolute today, so
-  large windows saturate at ±2)
 - cognitive complexity
-- an optional LLM judgment layer (PRD phase 6)
+- an optional LLM judgment layer (PRD phase 6); remediation text is
+  rule-based today
 - a correctness signal from independently run tests
 - calibrating any score against human review
