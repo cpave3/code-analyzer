@@ -159,6 +159,26 @@ not neutral); complexity growth below the hotspot thresholds carries no debt
 (it shows as decision points); architecture debt reflects only configured
 import-level rules; correctness is not measured.
 
+## Debt graph view (POC)
+
+```bash
+codeeval graph --repo PATH --rev REV --output debt-graph.html [--json data.json] [--max-callables N] [--config FILE]
+```
+
+This writes a self-contained, offline HTML page: a force-directed graph in the
+style of Obsidian's graph view, showing v2 debt.
+- **Nodes:** modules, plus the callables that carry complexity or nesting
+  debt or belong to a structural clone group.
+- **Links:** cyan links join clone-group members. Optional import edges
+  are shown in red where they violate a configured rule or form a cycle.
+- **Controls:** group by top-level folder, language or dominant debt
+  component; colour by debt density, component, language or folder; size by
+  debt, lines or complexity; filter by language and minimum debt; search;
+  hover and click for details.
+
+Sizes and colours are uncalibrated structural proxies, not quality verdicts.
+See `examples/legato/viz/`.
+
 ## Languages
 
 | Language | Status |

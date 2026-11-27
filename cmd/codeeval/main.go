@@ -28,6 +28,7 @@ Usage:
   codeeval history  --repo PATH --base REV --target REV [flags]
   codeeval score    --repo PATH --rev REV [flags]                 (experimental scoring/v2: absolute snapshot)
   codeeval score    --repo PATH --base REV --target REV [--steps] [flags]   (scoring/v2 delta)
+  codeeval graph    --repo PATH --rev REV --output FILE.html [--json FILE] [--max-callables N] [--config FILE]   (POC debt graph view)
   codeeval languages
   codeeval analyzers
   codeeval version
@@ -66,6 +67,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return evaluate(args[1:], stdout, stderr, true)
 	case "score":
 		return scoreCmd(args[1:], stdout, stderr)
+	case "graph":
+		return graphCmd(args[1:], stdout, stderr)
 	case "languages":
 		return listLanguages(stdout)
 	case "analyzers":

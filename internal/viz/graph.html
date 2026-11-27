@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>[[.Title]]</title>
+<style>
+:root{--bg:#16161d;--panel:rgba(28,28,38,.94);--fg:#d6d6e0;--dim:#8a8aa0;--line:#3a3a4c;--accent:#a78bfa;}
+@media (prefers-color-scheme: light){:root{--bg:#f6f6f9;--panel:rgba(255,255,255,.95);--fg:#25252f;--dim:#66667a;--line:#d5d5e0;--accent:#7c3aed;}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:13px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;overflow:hidden}
+canvas{display:block;width:100vw;height:100vh;cursor:grab}
+canvas.dragging{cursor:grabbing}
+#top{position:fixed;left:8px;right:8px;top:8px;display:flex;gap:6px;align-items:flex-start;pointer-events:none}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;pointer-events:auto;backdrop-filter:blur(6px)}
+#summary{flex:1;min-width:0}
+#summary b{font-size:15px}
+#summary .k{color:var(--dim)}
+#toggle{cursor:pointer;user-select:none;white-space:nowrap}
+#controls{position:fixed;left:8px;top:64px;width:min(300px,calc(100vw - 16px));max-height:calc(100vh - 80px);overflow:auto;display:none}
+#controls.open{display:block}
+#controls label{display:flex;align-items:center;gap:6px;margin:3px 0}
+#controls select,#controls input[type=search]{width:100%;background:transparent;color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:4px}
+#controls h4{margin:10px 0 4px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+#legend{position:fixed;left:8px;bottom:8px;max-width:calc(100vw - 16px);font-size:12px}
+#legend span.sw{display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 4px 0 8px;vertical-align:-1px}
+#detail{position:fixed;right:8px;bottom:8px;width:min(360px,calc(100vw - 16px));max-height:55vh;overflow:auto;display:none}
+#detail.open{display:block}
+#detail h3{margin:0 0 4px;font-size:14px;word-break:break-all}
+#detail table{width:100%;border-collapse:collapse;font-size:12px}
+#detail td{padding:2px 4px;border-top:1px solid var(--line)}
+#detail td:last-child{text-align:right;font-variant-numeric:tabular-nums}
+#detail .close{float:right;cursor:pointer;color:var(--dim)}
+#detail a{color:var(--accent);cursor:pointer}
+#tip{position:fixed;pointer-events:none;display:none;font-size:12px;max-width:320px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;word-break:break-all}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="top">
+  <div class="box" id="summary"></div>
+  <div class="box" id="toggle">⚙ Controls</div>
+</div>
+<div class="box" id="controls">
+  <h4>Show</h4>
+  <label><input type="checkbox" id="showCallables" checked> Callables (hotspots, clone members)</label>
+  <label><input type="checkbox" id="showClones" checked> Clone links</label>
+  <label><input type="checkbox" id="showImports"> Import edges</label>
+  <label><input type="checkbox" id="showLabels" checked> Labels</label>
+  <h4>Language</h4>
+  <select id="lang"></select>
+  <h4>Group (cluster) by</h4>
+  <select id="groupBy"><option value="group">Top-level folder</option><option value="lang">Language</option><option value="comp">Dominant debt component</option><option value="none">None</option></select>
+  <h4>Colour by</h4>
+  <select id="colorBy"><option value="density">Debt density (debt / kLOC)</option><option value="comp">Dominant debt component</option><option value="lang">Language</option><option value="group">Top-level folder</option></select>
+  <h4>Size by</h4>
+  <select id="sizeBy"><option value="debt">Total debt</option><option value="lines">Source lines</option><option value="cc">Cyclomatic complexity</option></select>
+  <h4>Min callable debt: <span id="minv"></span></h4>
+  <input type="range" id="minDebt" min="0" max="60" step="1" value="10" style="width:100%">
+  <h4>Search</h4>
+  <input type="search" id="search" placeholder="module or function name">
+  <h4>Layout</h4>
+  <label><button id="reheat">Re-run layout</button> <button id="fit">Fit</button></label>
+  <p class="k" style="color:var(--dim);font-size:11px" id="notes"></p>
+</div>
+<div class="box" id="legend"></div>
+<div class="box" id="detail"></div>
+<div class="box" id="tip"></div>
+<script>
+const D = [[.Data]];
+const $ = id => document.getElementById(id);
+const canvas = $("c"), ctx = canvas.getContext("2d");
+let W = 0, H = 0, DPR = window.devicePixelRatio || 1;
+const fmt = (v, d = 0) => (v == null ? "n/a" : Number(v).toLocaleString(undefined, {maximumFractionDigits: d, minimumFractionDigits: d}));
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+// ---------- summary ----------
+const cb = D.codebase;
+$("summary").innerHTML =
+  `<b>${D.repository}</b> <span class="mono">@${(D.revision.commit || "").slice(0, 12)}</span> · ` +
+  `<span class="k">debt</span> <b>${fmt(cb.debt.total)}</b> · <span class="k">score</span> ${fmt(cb.score, 1)} · ` +
+  `<span class="k">coverage</span> ${fmt(D.coverage.supportedByteShare * 100, 1)}% of source bytes · ` +
+  D.languages.map(l => `<span class="k">${l.id}</span> ${fmt(l.debt.total)}`).join(" · ") +
+  ` <span class="k">· ${D.scoring}</span>`;
+$("notes").innerHTML = D.notes.map(n => "• " + n).join("<br>");
+$("toggle").onclick = () => $("controls").classList.toggle("open");
+const langs = [...new Set(D.modules.map(m => m.lang))].sort();
+$("lang").innerHTML = `<option value="">All languages</option>` + langs.map(l => `<option>${l}</option>`).join("");
+
+// ---------- palettes ----------
+const COMP = {complexity: "#f59e0b", nesting: "#a78bfa", duplication: "#22d3ee", architecture: "#f43f5e", none: "#6b7280"};
+const LANG = {go: "#00add8", typescript: "#3b82f6"};
+const groupColors = {};
+const PALETTE = ["#60a5fa","#f472b6","#34d399","#fbbf24","#a78bfa","#f87171","#2dd4bf","#fb923c","#c084fc","#4ade80","#e879f9","#38bdf8"];
+function groupColor(g){ if(!(g in groupColors)) groupColors[g] = PALETTE[Object.keys(groupColors).length % PALETTE.length]; return groupColors[g]; }
+function densityColor(v){ // 0 → green, 60 → amber, 150+ → red
+  const t = Math.max(0, Math.min(1, (v || 0) / 150));
+  const stops = [[52,211,153],[251,191,36],[244,63,94]];
+  const s = t < .4 ? 0 : 1, u = t < .4 ? t / .4 : (t - .4) / .6;
+  const a = stops[s], b = stops[s + 1];
+  return `rgb(${a.map((x, i) => Math.round(x + (b[i] - x) * u)).join(",")})`;
+}
+function dominant(debt){
+  if (!debt || debt.total <= 0) return "none";
+  let best = "complexity";
+  for (const k of ["complexity","nesting","duplication","architecture"]) if (debt[k] > debt[best]) best = k;
+  return best;
+}
+
+// ---------- graph model ----------
+const modById = {};
+let nodes = [], links = [];
+function build(){
+  const showC = $("showCallables").checked, showCl = $("showClones").checked, showI = $("showImports").checked;
+  const lang = $("lang").value, min = +$("minDebt").value;
+  $("minv").textContent = min;
+  const prev = {}; for (const n of nodes) prev[n.id] = n;
+  nodes = []; links = [];
+  const add = n => { const p = prev[n.id]; if (p){ n.x = p.x; n.y = p.y; n.vx = p.vx; n.vy = p.vy; } else { n.x = (Math.random() - .5) * 600; n.y = (Math.random() - .5) * 600; n.vx = n.vy = 0; } nodes.push(n); return n; };
+  for (const m of D.modules){
+    if (lang && m.lang !== lang) continue;
+    if (m.debt.total <= 0 && m.lines < 200) continue;
+    modById[m.id] = add({id: m.id, kind: "module", label: m.id.split(":")[1], m, lang: m.lang, group: m.group, debt: m.debt.total, lines: m.lines, density: m.density, comp: dominant(m.debt)});
+  }
+  const present = new Set(nodes.map(n => n.id));
+  if (showC){
+    const inClone = new Set(); if (showCl) for (const c of D.clones) for (const id of c.members) inClone.add(id);
+    for (const c of D.callables){
+      if (!present.has(c.module)) continue;
+      const total = c.debt + c.cloneDebt;
+      if (total < min && !(inClone.has(c.id) && c.cloneDebt > 0 && min <= 20)) continue;
+      const mod = modById[c.module];
+      const comp = c.cloneDebt > c.debt ? "duplication" : (c.nest >= 4 && c.debt > 0 ? (c.cc >= 10 ? "complexity" : "nesting") : "complexity");
+      add({id: c.id, kind: "callable", label: c.name, c, lang: mod.lang, group: mod.group, debt: total, lines: c.lines, cc: c.cc, density: mod.density, comp});
+      links.push({s: c.id, t: c.module, kind: "member"});
+      present.add(c.id);
+    }
+    if (showCl) for (const g of D.clones){
+      const ms = g.members.filter(id => present.has(id));
+      for (let i = 1; i < ms.length; i++) links.push({s: ms[0], t: ms[i], kind: "clone", exact: g.exact});
+    }
+  }
+  if (showI) for (const e of D.imports) if (present.has(e.from) && present.has(e.to)) links.push({s: e.from, t: e.to, kind: "import", violation: e.violation, cycle: e.cycle});
+  const byId = {}; for (const n of nodes) byId[n.id] = n;
+  for (const l of links){ l.source = byId[l.s]; l.target = byId[l.t]; }
+  links = links.filter(l => l.source && l.target);
+  for (const n of nodes) n.nb = new Set();
+  for (const l of links){ l.source.nb.add(l.target); l.target.nb.add(l.source); }
+  layoutAnchors(); sizeNodes(); legend(); alpha = Math.max(alpha, .6);
+}
+function radius(n){
+  const by = $("sizeBy").value;
+  const v = by === "lines" ? Math.sqrt(n.lines || 0) / 4 : by === "cc" ? Math.sqrt(n.kind === "module" ? (n.m.callables || 0) : (n.cc || 0)) : Math.sqrt(Math.max(0, n.debt));
+  return n.kind === "module" ? 5 + v * .55 : 2 + v * .45;
+}
+function sizeNodes(){ for (const n of nodes) n.r = radius(n); }
+function colorOf(n){
+  const by = $("colorBy").value;
+  if (by === "density") return densityColor(n.density);
+  if (by === "comp") return COMP[n.comp];
+  if (by === "lang") return LANG[n.lang] || "#9ca3af";
+  return groupColor(n.group);
+}
+function groupKey(n){ const g = $("groupBy").value; return g === "lang" ? n.lang : g === "comp" ? n.comp : g === "group" ? n.lang + "/" + n.group : ""; }
+let anchors = {};
+function layoutAnchors(){
+  const keys = [...new Set(nodes.map(groupKey))].sort();
+  anchors = {};
+  const R = 60 + 70 * Math.sqrt(keys.length);
+  keys.forEach((k, i) => { const a = 2 * Math.PI * i / Math.max(1, keys.length); anchors[k] = keys.length > 1 ? {x: R * Math.cos(a), y: R * Math.sin(a), k} : {x: 0, y: 0, k}; });
+}
+function legend(){
+  const by = $("colorBy").value;
+  let html = "";
+  if (by === "density") html = `debt/kLOC <span class="sw" style="background:${densityColor(0)}"></span>0 <span class="sw" style="background:${densityColor(60)}"></span>60 <span class="sw" style="background:${densityColor(150)}"></span>150+`;
+  else if (by === "comp") html = Object.entries(COMP).map(([k, v]) => `<span class="sw" style="background:${v}"></span>${k}`).join("");
+  else if (by === "lang") html = Object.entries(LANG).map(([k, v]) => `<span class="sw" style="background:${v}"></span>${k}`).join("");
+  else html = [...new Set(nodes.map(n => n.group))].slice(0, 12).map(g => `<span class="sw" style="background:${groupColor(g)}"></span>${g}`).join("");
+  html += ` · <span class="k" style="color:var(--dim)">● module ⋅ callable · size: ${$("sizeBy").selectedOptions[0].text.toLowerCase()} · lines: <span style="color:#22d3ee">clone</span> <span style="color:#f43f5e">rule violation/cycle</span></span>`;
+  $("legend").innerHTML = html;
+}
+
+// ---------- simulation (Barnes–Hut) ----------
+let alpha = 1;
+function quad(ns){
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const n of ns){ if (n.x < x0) x0 = n.x; if (n.y < y0) y0 = n.y; if (n.x > x1) x1 = n.x; if (n.y > y1) y1 = n.y; }
+  const size = Math.max(x1 - x0, y1 - y0) + 1;
+  const root = {x0, y0, s: size, m: 0, cx: 0, cy: 0, kids: null, n: null};
+  const insert = (q, n, depth) => {
+    q.cx = (q.cx * q.m + n.x * n.w) / (q.m + n.w); q.cy = (q.cy * q.m + n.y * n.w) / (q.m + n.w); q.m += n.w;
+    if (!q.kids && !q.n){ q.n = n; return; }
+    if (depth > 30) return;
+    if (!q.kids){ q.kids = [null, null, null, null]; const o = q.n; q.n = null; if (o) put(q, o, depth); }
+    put(q, n, depth);
+  };
+  const put = (q, n, depth) => {
+    const h = q.s / 2, i = (n.x >= q.x0 + h ? 1 : 0) + (n.y >= q.y0 + h ? 2 : 0);
+    if (!q.kids[i]) q.kids[i] = {x0: q.x0 + (i & 1 ? h : 0), y0: q.y0 + (i & 2 ? h : 0), s: h, m: 0, cx: 0, cy: 0, kids: null, n: null};
+    insert(q.kids[i], n, depth + 1);
+  };
+  for (const n of ns) insert(root, n, 0);
+  return root;
+}
+function repel(q, n, k){
+  if (!q || q.m === 0 || q.n === n) return;
+  const dx = q.cx - n.x, dy = q.cy - n.y, d2 = dx * dx + dy * dy + 30; // softened: no blow-up when nodes coincide
+  if (q.n || (q.s * q.s) / d2 < .64){
+    const f = k * q.m / d2; n.vx -= dx * f; n.vy -= dy * f; return;
+  }
+  for (const c of q.kids) repel(c, n, k);
+}
+function tick(){
+  if (alpha < .005) return false;
+  for (const n of nodes) n.w = n.kind === "module" ? 3 : 1;
+  const q = quad(nodes);
+  for (const n of nodes) repel(q, n, 16 * alpha);
+  for (const l of links){
+    const a = l.source, b = l.target, dx = b.x - a.x, dy = b.y - a.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
+    const len = l.kind === "member" ? 10 + a.r + b.r : l.kind === "clone" ? 40 : 90;
+    const str = l.kind === "member" ? .12 : l.kind === "clone" ? .03 : .01;
+    const f = (d - len) / d * str * alpha;
+    b.vx -= dx * f; b.vy -= dy * f; a.vx += dx * f; a.vy += dy * f;
+  }
+  const g = $("groupBy").value !== "none";
+  for (const n of nodes){
+    const an = anchors[groupKey(n)] || {x: 0, y: 0};
+    const s = (g ? .035 : .006) * alpha * (n.kind === "module" ? 1 : .25);
+    n.vx += (an.x - n.x) * s; n.vy += (an.y - n.y) * s;
+    if (n === dragNode) { n.vx = n.vy = 0; continue; }
+    n.vx *= .82; n.vy *= .82;
+    const sp = Math.hypot(n.vx, n.vy); if (sp > 40){ n.vx *= 40 / sp; n.vy *= 40 / sp; }
+    n.x += n.vx; n.y += n.vy;
+  }
+  alpha *= .985;
+  return true;
+}
+
+// ---------- view ----------
+let view = {x: 0, y: 0, k: .8}, hover = null, selected = null, dragNode = null, panning = null;
+function resize(){ W = innerWidth; H = innerHeight; canvas.width = W * DPR; canvas.height = H * DPR; }
+const toWorld = (sx, sy) => ({x: (sx - W / 2) / view.k + view.x, y: (sy - H / 2) / view.k + view.y});
+function fit(){
+  if (!nodes.length) return;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const n of nodes){ x0 = Math.min(x0, n.x); y0 = Math.min(y0, n.y); x1 = Math.max(x1, n.x); y1 = Math.max(y1, n.y); }
+  view.x = (x0 + x1) / 2; view.y = (y0 + y1) / 2; view.k = Math.min(3, .9 * Math.min(W / (x1 - x0 + 80), H / (y1 - y0 + 160)));
+}
+function searchHit(n){ const s = $("search").value.trim().toLowerCase(); return s && (n.label.toLowerCase().includes(s) || n.id.toLowerCase().includes(s)); }
+function draw(){
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.fillStyle = css("--bg"); ctx.fillRect(0, 0, W, H);
+  ctx.setTransform(DPR * view.k, 0, 0, DPR * view.k, DPR * (W / 2 - view.x * view.k), DPR * (H / 2 - view.y * view.k));
+  const focus = selected || hover, searching = $("search").value.trim() !== "";
+  const lit = n => !focus || n === focus || focus.nb.has(n);
+  const lineCol = css("--line");
+  for (const l of links){
+    const on = !focus || l.source === focus || l.target === focus;
+    ctx.globalAlpha = on ? (l.kind === "member" ? .35 : .7) : .06;
+    ctx.strokeStyle = l.kind === "clone" ? (l.exact ? "#22d3ee" : "#0e7490") : l.kind === "import" ? (l.violation || l.cycle ? "#f43f5e" : lineCol) : lineCol;
+    ctx.lineWidth = (l.kind === "clone" ? 1.6 : l.kind === "import" && (l.violation || l.cycle) ? 1.4 : .7) / Math.sqrt(view.k);
+    ctx.beginPath(); ctx.moveTo(l.source.x, l.source.y); ctx.lineTo(l.target.x, l.target.y); ctx.stroke();
+  }
+  for (const n of nodes){
+    const hit = searching && searchHit(n);
+    ctx.globalAlpha = searching ? (hit ? 1 : .12) : lit(n) ? 1 : .12;
+    const col = colorOf(n);
+    if (n.kind === "module" || n === focus || hit){ ctx.shadowColor = col; ctx.shadowBlur = (n === focus || hit ? 18 : 8); }
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, 2 * Math.PI); ctx.fill();
+    ctx.shadowBlur = 0;
+    if (n.kind === "module"){ ctx.lineWidth = 1 / view.k; ctx.strokeStyle = css("--fg"); ctx.globalAlpha *= .5; ctx.stroke(); }
+  }
+  if ($("groupBy").value !== "none"){
+    const acc = {};
+    for (const n of nodes){ const k = groupKey(n); const a = acc[k] || (acc[k] = {x: 0, y: 0, w: 0, y0: Infinity, n}); const w = n.kind === "module" ? n.debt + 1 : 0; a.x += n.x * w; a.y += n.y * w; a.w += w; a.y0 = Math.min(a.y0, n.y - n.r); }
+    ctx.textAlign = "center";
+    for (const [k, a] of Object.entries(acc)){
+      if (!a.w || !k) continue;
+      const by = $("groupBy").value, name = by === "group" ? k.split("/").slice(1).join("/") + " (" + k.split("/")[0] + ")" : k;
+      ctx.globalAlpha = focus || searching ? .15 : .55;
+      ctx.fillStyle = by === "comp" ? COMP[k] : by === "lang" ? (LANG[k] || "#9ca3af") : groupColor(a.n.group);
+      ctx.font = `600 ${15 / view.k}px system-ui,sans-serif`;
+      ctx.fillText(name, a.x / a.w, a.y0 - 14 / view.k);
+    }
+  }
+  if ($("showLabels").checked){
+    ctx.fillStyle = css("--fg"); ctx.textAlign = "center";
+    for (const n of nodes){
+      const big = n.kind === "module" ? n.r * view.k > 9 : n.r * view.k > 7;
+      if (!(big || n === focus || (focus && focus.nb.has(n) && view.k > .6) || (searching && searchHit(n)))) continue;
+      ctx.globalAlpha = (!focus || lit(n)) && (!searching || searchHit(n)) ? .95 : .25;
+      ctx.font = `${(n.kind === "module" ? 12 : 10) / view.k}px system-ui,sans-serif`;
+      ctx.fillText(n.label.length > 42 ? "…" + n.label.slice(-40) : n.label, n.x, n.y - n.r - 3 / view.k);
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+function loop(){ tick(); draw(); requestAnimationFrame(loop); }
+
+// ---------- interaction ----------
+function pick(sx, sy){ const p = toWorld(sx, sy); let best = null, bd = Infinity; for (const n of nodes){ const d = Math.hypot(n.x - p.x, n.y - p.y); if (d < n.r + 4 / view.k && d < bd){ bd = d; best = n; } } return best; }
+canvas.addEventListener("pointerdown", e => { const n = pick(e.clientX, e.clientY); canvas.setPointerCapture(e.pointerId); if (n){ dragNode = n; } else panning = {x: e.clientX, y: e.clientY, vx: view.x, vy: view.y, moved: false}; canvas.classList.add("dragging"); });
+canvas.addEventListener("pointermove", e => {
+  if (dragNode){ const p = toWorld(e.clientX, e.clientY); dragNode.x = p.x; dragNode.y = p.y; dragNode.moved = true; alpha = Math.max(alpha, .2); return; }
+  if (panning){ view.x = panning.vx - (e.clientX - panning.x) / view.k; view.y = panning.vy - (e.clientY - panning.y) / view.k; panning.moved = true; return; }
+  hover = pick(e.clientX, e.clientY);
+  const tip = $("tip");
+  if (hover){ tip.style.display = "block"; tip.style.left = Math.min(e.clientX + 12, W - 330) + "px"; tip.style.top = (e.clientY + 12) + "px"; tip.innerHTML = tipHTML(hover); } else tip.style.display = "none";
+});
+canvas.addEventListener("pointerup", e => {
+  canvas.classList.remove("dragging");
+  if (dragNode){ if (!dragNode.moved) select(dragNode); dragNode.moved = false; dragNode = null; return; }
+  if (panning && !panning.moved) select(null);
+  panning = null;
+});
+canvas.addEventListener("wheel", e => { e.preventDefault(); const p = toWorld(e.clientX, e.clientY); const k = Math.min(8, Math.max(.05, view.k * Math.exp(-e.deltaY * .0015))); view.x = p.x - (e.clientX - W / 2) / k; view.y = p.y - (e.clientY - H / 2) / k; view.k = k; }, {passive: false});
+function tipHTML(n){
+  if (n.kind === "module"){ const m = n.m; return `<b>${n.label}</b> <span class="k" style="color:var(--dim)">${m.lang} module</span><br>debt ${fmt(m.debt.total, 1)} · ${fmt(m.density, 1)}/kLOC · score ${fmt(m.score, 1)}<br>${fmt(m.lines)} lines · ${m.hotspots} hotspots`; }
+  const c = n.c; return `<b>${c.name}</b><br><span class="mono">${c.file}:${c.line}</span><br>cc ${c.cc} · nesting ${c.nest} · ${c.lines} lines<br>complexity+nesting debt ${fmt(c.debt, 1)} · clone debt ${fmt(c.cloneDebt, 2)}`;
+}
+function select(n){
+  selected = n; const el = $("detail");
+  if (!n){ el.classList.remove("open"); return; }
+  el.classList.add("open");
+  let h = `<span class="close" onclick="select(null)">✕</span>`;
+  if (n.kind === "module"){
+    const m = n.m;
+    h += `<h3>${n.label}</h3><div class="k" style="color:var(--dim)">${m.lang} module · ${m.group}</div><table>` +
+      [["Total debt", fmt(m.debt.total, 2)], ["complexity", fmt(m.debt.complexity, 2)], ["nesting", fmt(m.debt.nesting, 2)], ["duplication", fmt(m.debt.duplication, 2)], ["architecture", fmt(m.debt.architecture, 2)],
+       ["Debt / kLOC", fmt(m.density, 2)], ["Score (0–100)", fmt(m.score, 2)], ["Source lines", fmt(m.lines)], ["Callables", fmt(m.callables)], ["Hotspots", fmt(m.hotspots)]].map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("") + `</table>`;
+    const cs = D.callables.filter(c => c.module === m.id).sort((a, b) => (b.debt + b.cloneDebt) - (a.debt + a.cloneDebt)).slice(0, 12);
+    if (cs.length) h += `<h4 style="margin:8px 0 2px">Largest callable debts</h4><table>` + cs.map(c => `<tr><td><a onclick="focusId('${c.id.replace(/'/g, "\\'")}')">${c.name}</a></td><td>cc ${c.cc} · ${fmt(c.debt + c.cloneDebt, 1)}</td></tr>`).join("") + `</table>`;
+    const out = D.imports.filter(e => e.from === m.id), inn = D.imports.filter(e => e.to === m.id);
+    h += `<div style="margin-top:6px;color:var(--dim)">imports ${out.length} modules · imported by ${inn.length}` + (out.some(e => e.violation) ? ` · <span style="color:#f43f5e">${out.filter(e => e.violation).length} rule violation(s)</span>` : "") + (out.some(e => e.cycle) ? ` · <span style="color:#f43f5e">in a cycle</span>` : "") + `</div>`;
+  } else {
+    const c = n.c;
+    h += `<h3>${c.name}</h3><div class="mono">${c.file}:${c.line}</div><table>` +
+      [["Cyclomatic", c.cc], ["Max nesting", c.nest], ["Lines", c.lines], ["Complexity + nesting debt", fmt(c.debt, 2)], ["Clone debt (share)", fmt(c.cloneDebt, 2)], ["Module", c.module.split(":")[1]]].map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("") + `</table>`;
+    const gs = D.clones.filter(g => g.members.includes(c.id));
+    for (const g of gs) h += `<h4 style="margin:8px 0 2px">${g.exact ? "Exact" : "Structural"} clone group · ${fmt(g.tokens)} redundant tokens</h4>` + g.members.map(id => `<div class="mono"><a onclick="focusId('${id.replace(/'/g, "\\'")}')">${id}</a></div>`).join("");
+  }
+  el.innerHTML = h;
+}
+function focusId(id){ const n = nodes.find(x => x.id === id); if (n){ view.x = n.x; view.y = n.y; view.k = Math.max(view.k, 1.5); select(n); } }
+window.select = select; window.focusId = focusId;
+for (const id of ["showCallables","showClones","showImports","lang","minDebt"]) $(id).addEventListener("input", build);
+for (const id of ["groupBy"]) $(id).addEventListener("input", () => { layoutAnchors(); alpha = .8; });
+for (const id of ["colorBy"]) $(id).addEventListener("input", legend);
+$("sizeBy").addEventListener("input", () => { sizeNodes(); legend(); alpha = Math.max(alpha, .3); });
+$("reheat").onclick = () => { for (const n of nodes){ n.x = (Math.random() - .5) * 600; n.y = (Math.random() - .5) * 600; } alpha = 1; setTimeout(fit, 2500); };
+$("fit").onclick = fit;
+addEventListener("resize", resize);
+resize(); build();
+for (let i = 0; i < 260; i++) tick();
+fit(); loop();
+</script>
+</body>
+</html>

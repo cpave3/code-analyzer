@@ -202,3 +202,32 @@ func TestV2DeterministicAndReadOnly(t *testing.T) {
 		t.Errorf("--steps without a range must be rejected, got %d", r.code)
 	}
 }
+
+func TestGraphCommandWritesSelfContainedPage(t *testing.T) {
+	dir := t.TempDir()
+	out, js := filepath.Join(dir, "g.html"), filepath.Join(dir, "g.json")
+	r := cli(t, "graph", "--repo", repos["reuse"], "--rev", "bad", "--output", out, "--json", js, "--no-cache")
+	if r.code != 0 {
+		t.Fatalf("exit %d: %s", r.code, r.stderr)
+	}
+	page, _ := os.ReadFile(out)
+	for _, want := range []string{"<canvas", "codeeval.graph/v2", "scoring/v2-experimental", "slugTag"} {
+		if !strings.Contains(string(page), want) {
+			t.Errorf("page missing %q", want)
+		}
+	}
+	if strings.Contains(string(page), "<script src=") || strings.Contains(string(page), "[[.Data]]") {
+		t.Error("page must be self-contained with data embedded")
+	}
+	var d struct {
+		Modules []struct{ ID string }
+		Clones  []struct{ Members []string }
+	}
+	data, _ := os.ReadFile(js)
+	if err := json.Unmarshal(data, &d); err != nil || len(d.Modules) == 0 || len(d.Clones) != 1 || len(d.Clones[0].Members) != 2 {
+		t.Errorf("graph data: %v %+v", err, d)
+	}
+	if r := cli(t, "graph", "--repo", repos["reuse"], "--rev", "bad"); r.code != 2 {
+		t.Errorf("missing --output must exit 2, got %d", r.code)
+	}
+}
