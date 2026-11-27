@@ -49,9 +49,11 @@ largest clone groups.
 
 What v2 shows that v1 could not:
 - **Magnitudes on one scale.** The window added 828 debt points and the
-  stack removed 224, so the stack recovered **27%** of what the window
-  added. Under v1 both were capped at −2 and +2.
-- **Additivity.** Window plus stack is +828 − 224 = +604, and the drift
+  stack removed 224, so at these pins the stack removed about **27% of this
+  formula's measured increase**. That is not 27% of actual technical debt
+  or quality restored. Under v1 both were capped at −2 and +2.
+- **Additivity (mathematical consistency under the fixed model and config,
+  not empirical calibration).** Window plus stack is +828 − 224 = +604, and the drift
   delta measures exactly +603.90. The 11 per-layer deltas sum to −224.1,
   which equals the stack delta. In both step series (23 window merges and
   40 stack commits) Σ step Δdebt equals the net Δdebt (`stepCheck.telescopes:
@@ -88,11 +90,14 @@ module level: in the window, `internal/engine/workflow` gained 97 debt
 points while its score went *up* from 27.47 to 28.78. Any per-line score
 has this property. So:
 
-- **Use debt (total and by module) as the metric to optimise.** Adding code
-  can never lower it, and splitting it by module and component shows where
-  it lives.
+- **Do not optimise either scalar on its own.** Debt avoids dilution, but it
+  is also an uncalibrated, size-sensitive structural proxy. Deleting
+  features or code, or reshaping syntax (for example splitting functions
+  below the thresholds), can lower it without improving engineering. Use it
+  with its module and component breakdown, the raw measurements and
+  evidence, and behaviour/test, coverage and scope checks.
 - Use the 0–100 score only to **compare** modules or codebases of different
-  sizes, and never as a target on its own.
+  sizes, and never as a target.
 - For changes, use **Δdebt and debt per changed kLOC** (the window was
   +49.9 per changed kLOC, the stack −132.0) plus the advisory gates.
 

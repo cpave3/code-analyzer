@@ -138,9 +138,16 @@ Properties: module debts **sum** to codebase debt; deltas are after − before
 of one snapshot function, so per-step deltas **telescope** to the net delta
 (`--steps` checks this). The **score** is `100 × h ÷ (h + debt per 1,000
 supported source lines)` with `h = 25`: a size-normalised view for comparing
-modules or codebases. **Optimise debt, not the score:** the score can be
-diluted by adding simple code (shown on Legato in
+modules or codebases. **Neither scalar should be optimised on its own.**
+The score can be diluted by adding simple code (shown on Legato in
 [examples/legato/v2/V2-EVIDENCE.md](examples/legato/v2/V2-EVIDENCE.md)).
+Debt is not diluted that way, but it is an uncalibrated, size-sensitive
+structural proxy: deleting features or code, or reshaping syntax (for
+example splitting functions below the thresholds), can lower it without
+improving engineering. Use debt together with its components, the raw
+measurements and evidence, and behaviour/test, coverage and scope checks.
+Telescoping is mathematical consistency under a fixed model and config, not
+empirical calibration.
 Deltas also report the changed-callable split into decision points versus
 function base points, debt per changed kLOC, per-module deltas, and advisory
 gates (no new exact/structural duplicates, rule violations or cycles; no
