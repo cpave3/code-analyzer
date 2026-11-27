@@ -1,0 +1,9 @@
+{
+  "configVersion": 1,
+  "architecture": {
+    "rules": [
+      {"name": "store must not depend on presentation", "from": "internal/store/**", "to": "internal/cli/**"},
+      {"name": "store must not depend on api", "from": "internal/store/**", "to": "internal/api/**"}
+    ]
+  }
+}

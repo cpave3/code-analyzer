@@ -1,0 +1,1 @@
+Go forbids import cycles; this variant exists to exercise cycle detection.
