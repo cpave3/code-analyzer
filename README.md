@@ -70,6 +70,30 @@ mise, any Go ≥ 1.26 plus gcc works. Point `PATH` at its `bin` instead.
 The scripts in `scripts/` need the same `PATH` and stop with a clear message
 if `go` is missing.
 
+### Pinned, reproducible build
+
+For a binary that another workflow pins by checksum, build from a clean,
+detached clone with `-trimpath` (no local paths in the binary, and
+`vcs.modified=false` in its build info). `W` is any scratch directory
+outside the repository:
+
+```bash
+W=$(mktemp -d)
+git -c core.hooksPath=/dev/null clone -q --no-local /home/cameron/Projects/code-evaluator "$W/src"
+git -C "$W/src" checkout -q --detach <commit>
+cd "$W/src" && env PATH=/home/cameron/.local/share/mise/installs/go/1.26.0/bin:/usr/bin:/bin \
+  GOTOOLCHAIN=local GOPROXY=off GOFLAGS=-mod=readonly CGO_ENABLED=1 \
+  go build -trimpath -o "$W/bin/codeeval" ./cmd/codeeval
+sha256sum "$W/bin/codeeval"; go version -m "$W/bin/codeeval" | grep vcs
+```
+
+The Legato cleanup pilot pins the build of `6639e38`:
+sha256 `e2ed35adaa66e85664fabf9a1dd71cb9a60b93a69df5c3d5e62ec284fba90229`
+(same host toolchain; reproduced independently). The Legato v1 reports use
+the frozen `scoring/v1` build of `5e0c679` (see
+[examples/legato/EVIDENCE.md](examples/legato/EVIDENCE.md)). Don't rebuild a
+pinned binary from a different commit under the same name.
+
 ```bash
 go build -o bin/codeeval ./cmd/codeeval
 
@@ -264,7 +288,10 @@ each wired in one file. The registration contract is tested in
 `internal/engine/contract_test.go`: a toy language and a toy analyzer are
 added through the public registries without touching existing code.
 
-### Add a language (e.g. TypeScript, C#)
+### Add a language (e.g. C#)
+
+`internal/lang/typescript/` is the most complete reference adapter (two
+grammars, tsconfig/workspace resolution, callback-inclusive complexity).
 
 1. Create `internal/lang/<name>/` and implement `lang.Adapter`
    (`internal/lang/lang.go`):
@@ -279,9 +306,9 @@ added through the public registries without touching existing code.
      fingerprints (feed tokens into `lang/fingerprint.Builder`), imports and
      refs. Report syntax errors in `ParseErrors`; don't return an error for
      them
-   - `BuildGraph(GraphInput)`: resolve only what you can. TS would read
-     `tsconfig.json` paths; C# would read `.csproj` `ProjectReference` and
-     namespaces
+   - `BuildGraph(GraphInput)`: resolve only what you can. The TS adapter
+     reads `tsconfig.json` paths and workspace `package.json` names; C#
+     would read `.csproj` `ProjectReference` and namespaces
 2. Register it in `internal/languages/languages.go`. Its `Register` call
    supersedes the existing `Declare` entry for the same extensions.
 3. Add a fixture scenario under `testdata/fixtures/` and assertions in
@@ -361,6 +388,14 @@ first-parent merges). It has the net report, a report per merge, rerun
 commands, coverage, timings and a list of findings separating useful ones
 from misleading ones: [examples/legato/EVIDENCE.md](examples/legato/EVIDENCE.md).
 
+The same folder holds, each linked from `EVIDENCE.md`:
+
+- frozen-evaluator measurements of the Legato cleanup fix batches
+  (#434–#446) and of the final combined stack (`*-EVIDENCE.md`);
+- the experimental v2 debt ledgers (`v2/`) and the TypeScript evidence
+  (`ts/`), which records partial coverage and parser gaps;
+- the debt graph (`viz/`) and sample factor reports and PR checks (`fix/`).
+
 ## POC scope and deferred PRD work
 
 Done here:
@@ -393,6 +428,9 @@ Deferred:
 - calibrating any score against human review
 
 ## For agents working on this repository
+
+`main` is the integration branch (the POC was built on
+`poc/go-first-evaluator` and merged into it). There is no remote.
 
 This project's learnings, pitfalls and open threads are kept in the engram
 identity **`assayer`**. Run `engram --as assayer boot` at the start of a

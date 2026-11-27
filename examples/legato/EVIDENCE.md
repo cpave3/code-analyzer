@@ -218,3 +218,19 @@ production source bytes are now covered, up from 62%). See
 [ts/TS-EVIDENCE.md](ts/TS-EVIDENCE.md). The Go-only results above, made with
 the frozen 0.1.0 build, are unchanged and not comparable to the
 TypeScript-inclusive numbers.
+
+## Debt graph and factor reports (codeeval 0.2.0, scoring/v2-experimental)
+
+All at the final-stack tip `bb13a424`, and uncalibrated like the rest of v2:
+
+- **[viz/](viz/):** the full interactive debt graph
+  ([debt-graph-bb13a424.html](viz/debt-graph-bb13a424.html), offline, open
+  it in a browser), its data, and three rendered views: debt density,
+  complexity and imports.
+- **[fix/](fix/):** factor reports (`codeeval explain`) for `internal/service`,
+  `internal/tui`, `engine/store` and `web`, each with locations, debt shares
+  and rule-based remediation. Also PR checks (`codeeval check`):
+  - #430 fails, +253.55 debt, under the strict `new-debt` mode. Its
+    debt rose on net, so it would also fail under `net-debt`.
+  - #444 passes, −8 net, under `net-debt`; it would fail under the strict
+    `new-debt` mode.
