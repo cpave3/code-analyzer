@@ -1,0 +1,1717 @@
+{
+  "schema": "codeeval.explain/v2",
+  "scoringVersion": "scoring/v2-experimental",
+  "tool": {
+    "name": "codeeval",
+    "version": "0.2.0-poc"
+  },
+  "configHash": "3cef63633359769f",
+  "repository": "legato-stack",
+  "weights": {
+    "cyclomaticExcessPoint": 1,
+    "nestingExcessLevel": 2,
+    "redundantTokensPerPoint": 20,
+    "ruleViolationEdge": 10,
+    "cycleUnit": 20,
+    "halfScoreDensity": 25
+  },
+  "thresholds": {
+    "hotspotCyclomatic": 10,
+    "hotspotNesting": 4,
+    "minCloneTokens": 40
+  },
+  "notes": [
+    "experimental scoring/v2: separate from and not comparable to scoring/v1 −2..+2 scores; v1 reports are unchanged",
+    "debt points = complexity (Σ max(0, cyclomatic − H + 1): debt exactly when a callable is a hotspot) + nesting (Σ max(0, depth − N + 1) × weight) + duplication (structural-clone redundant tokens ÷ tokens-per-point) + architecture (configured-rule-violating edges and units in cycles × weights)",
+    "debt is additive across modules and telescopes across commits (Δ = after − before of one snapshot function); telescoping is mathematical consistency under a fixed model and config, not empirical calibration",
+    "debt is an uncalibrated, size-sensitive structural proxy: deleting features or code, or reshaping syntax (e.g. splitting functions below the thresholds), can lower it without improving engineering; do not optimise it alone — keep the component and raw evidence, behaviour/test, coverage and scope checks",
+    "score = 100 × h ÷ (h + debt per 1,000 supported source lines), h = halfScoreDensity: a size-normalised view for comparing modules or codebases; it can be diluted by adding simple code and is never a target on its own",
+    "weights are uncalibrated defaults; the score is a structural index, not a measure of correctness, design quality or behaviour",
+    "only languages with adapters are measured; see coverage — unsupported source is not scored and not neutral",
+    "architecture debt reflects only the configured import-level rules; rules the configuration cannot express are not measured",
+    "complexity growth below the hotspot thresholds carries no debt; it is reported as decision points and checked by the existing-callable branch gate",
+    "gates are advisory checks, not merge decisions"
+  ],
+  "revision": {
+    "ref": "bb13a424dc73f3eeb98f8bce43db932a9d19f7e6",
+    "commit": "bb13a424dc73f3eeb98f8bce43db932a9d19f7e6",
+    "tree": "25b725950d6a06a99078492cededc57c2fae2ebb",
+    "commitTime": "2026-11-27T20:29:04+11:00"
+  },
+  "scope": {
+    "paths": [
+      "web"
+    ]
+  },
+  "coverage": {
+    "languages": [
+      {
+        "language": "go",
+        "supported": true,
+        "files": 990,
+        "bytes": 8338850
+      },
+      {
+        "language": "javascript",
+        "supported": false,
+        "files": 23,
+        "bytes": 128585
+      },
+      {
+        "language": "kotlin",
+        "supported": false,
+        "files": 54,
+        "bytes": 394351
+      },
+      {
+        "language": "python",
+        "supported": false,
+        "files": 5,
+        "bytes": 44436
+      },
+      {
+        "language": "rust",
+        "supported": false,
+        "files": 34,
+        "bytes": 564583
+      },
+      {
+        "language": "shell",
+        "supported": false,
+        "files": 15,
+        "bytes": 36033
+      },
+      {
+        "language": "sql",
+        "supported": false,
+        "files": 160,
+        "bytes": 171688
+      },
+      {
+        "language": "swift",
+        "supported": false,
+        "files": 2,
+        "bytes": 5345
+      },
+      {
+        "language": "typescript",
+        "supported": true,
+        "files": 565,
+        "bytes": 3771184
+      }
+    ],
+    "supportedSourceFiles": 1555,
+    "sourceFiles": 1848,
+    "supportedByteShare": 0.9,
+    "parseErrorFiles": 4
+  },
+  "totals": {
+    "sourceFiles": 459,
+    "sourceLines": 63542,
+    "callables": 2152,
+    "hotspots": 405,
+    "debt": {
+      "complexity": 6493,
+      "nesting": 192,
+      "duplication": 101.17,
+      "architecture": 180,
+      "total": 6966.17
+    },
+    "debtPerKLOC": 109.63,
+    "score": 18.57,
+    "modules": [
+      "web",
+      "web/src",
+      "web/src/components",
+      "web/src/components/agent-graph",
+      "web/src/components/board",
+      "web/src/components/handoff",
+      "web/src/components/needsYou",
+      "web/src/components/settings",
+      "web/src/components/ui",
+      "web/src/components/workflow-canvas",
+      "web/src/components/workflow-editor",
+      "web/src/components/workflow-graph",
+      "web/src/components/workflows",
+      "web/src/hooks",
+      "web/src/lib",
+      "web/src/pages",
+      "web/src/voice"
+    ]
+  },
+  "factors": [
+    {
+      "id": "cc:web/src/components/NativeAgentPanel.tsx:NativeAgentPanel",
+      "kind": "complexity",
+      "module": "web/src/components",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/components/NativeAgentPanel.tsx",
+        "startLine": 270,
+        "endLine": 1453,
+        "symbol": "NativeAgentPanel"
+      },
+      "metrics": {
+        "cyclomatic": 331,
+        "decisions": 330,
+        "lines": 1184,
+        "nesting": 5
+      },
+      "debt": 322,
+      "shareOfScopeDebt": 0.0462,
+      "cumulativeShare": 0.0462,
+      "explanation": "cyclomatic 331 is 322 point(s) at or above the hotspot threshold 10 (330 decision points, 1184 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 331) removes this factor; each point below 331 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`NativeAgentPanel` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/pages/Board.tsx:BoardPage",
+      "kind": "complexity",
+      "module": "web/src/pages",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/pages/Board.tsx",
+        "startLine": 190,
+        "endLine": 1424,
+        "symbol": "BoardPage"
+      },
+      "metrics": {
+        "cyclomatic": 297,
+        "decisions": 296,
+        "lines": 1235,
+        "nesting": 5
+      },
+      "debt": 288,
+      "shareOfScopeDebt": 0.0413,
+      "cumulativeShare": 0.0876,
+      "explanation": "cyclomatic 297 is 288 point(s) at or above the hotspot threshold 10 (296 decision points, 1235 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 297) removes this factor; each point below 297 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`BoardPage` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/components/SpawnAgentDialog.tsx:SpawnAgentDialog",
+      "kind": "complexity",
+      "module": "web/src/components",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/components/SpawnAgentDialog.tsx",
+        "startLine": 104,
+        "endLine": 1050,
+        "symbol": "SpawnAgentDialog"
+      },
+      "metrics": {
+        "cyclomatic": 250,
+        "decisions": 249,
+        "lines": 947,
+        "nesting": 5
+      },
+      "debt": 241,
+      "shareOfScopeDebt": 0.0346,
+      "cumulativeShare": 0.1222,
+      "explanation": "cyclomatic 250 is 241 point(s) at or above the hotspot threshold 10 (249 decision points, 947 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 250) removes this factor; each point below 250 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`SpawnAgentDialog` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/pages/Agents.tsx:AgentsPage",
+      "kind": "complexity",
+      "module": "web/src/pages",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/pages/Agents.tsx",
+        "startLine": 113,
+        "endLine": 1128,
+        "symbol": "AgentsPage"
+      },
+      "metrics": {
+        "cyclomatic": 247,
+        "decisions": 246,
+        "lines": 1016,
+        "nesting": 5
+      },
+      "debt": 238,
+      "shareOfScopeDebt": 0.0342,
+      "cumulativeShare": 0.1563,
+      "explanation": "cyclomatic 247 is 238 point(s) at or above the hotspot threshold 10 (246 decision points, 1016 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 247) removes this factor; each point below 247 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`AgentsPage` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/components/workflow-editor/WorkflowOutline.tsx:Outline",
+      "kind": "complexity",
+      "module": "web/src/components/workflow-editor",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/components/workflow-editor/WorkflowOutline.tsx",
+        "startLine": 194,
+        "endLine": 647,
+        "symbol": "Outline"
+      },
+      "metrics": {
+        "cyclomatic": 204,
+        "decisions": 203,
+        "lines": 454,
+        "nesting": 6
+      },
+      "debt": 195,
+      "shareOfScopeDebt": 0.028,
+      "cumulativeShare": 0.1843,
+      "explanation": "cyclomatic 204 is 195 point(s) at or above the hotspot threshold 10 (203 decision points, 454 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 204) removes this factor; each point below 204 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`Outline` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/pages/WorkflowEditPage.tsx:WorkflowEditPage",
+      "kind": "complexity",
+      "module": "web/src/pages",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/pages/WorkflowEditPage.tsx",
+        "startLine": 166,
+        "endLine": 595,
+        "symbol": "WorkflowEditPage"
+      },
+      "metrics": {
+        "cyclomatic": 193,
+        "decisions": 192,
+        "lines": 430,
+        "nesting": 4
+      },
+      "debt": 184,
+      "shareOfScopeDebt": 0.0264,
+      "cumulativeShare": 0.2107,
+      "explanation": "cyclomatic 193 is 184 point(s) at or above the hotspot threshold 10 (192 decision points, 430 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 193) removes this factor; each point below 193 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`WorkflowEditPage` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/pages/ReviewTourPage.tsx:ReviewTourPage",
+      "kind": "complexity",
+      "module": "web/src/pages",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/pages/ReviewTourPage.tsx",
+        "startLine": 53,
+        "endLine": 477,
+        "symbol": "ReviewTourPage"
+      },
+      "metrics": {
+        "cyclomatic": 109,
+        "decisions": 108,
+        "lines": 425,
+        "nesting": 4
+      },
+      "debt": 100,
+      "shareOfScopeDebt": 0.0144,
+      "cumulativeShare": 0.2251,
+      "explanation": "cyclomatic 109 is 100 point(s) at or above the hotspot threshold 10 (108 decision points, 425 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 109) removes this factor; each point below 109 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`ReviewTourPage` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/lib/nativeAgentSync.ts:reduceNativeEvent",
+      "kind": "complexity",
+      "module": "web/src/lib",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/lib/nativeAgentSync.ts",
+        "startLine": 573,
+        "endLine": 797,
+        "symbol": "reduceNativeEvent"
+      },
+      "metrics": {
+        "cyclomatic": 96,
+        "decisions": 95,
+        "lines": 225,
+        "nesting": 4
+      },
+      "debt": 87,
+      "shareOfScopeDebt": 0.0125,
+      "cumulativeShare": 0.2376,
+      "explanation": "cyclomatic 96 is 87 point(s) at or above the hotspot threshold 10 (95 decision points, 225 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 96) removes this factor; each point below 96 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`reduceNativeEvent` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/pages/Settings.tsx:SettingsPage",
+      "kind": "complexity",
+      "module": "web/src/pages",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/pages/Settings.tsx",
+        "startLine": 102,
+        "endLine": 343,
+        "symbol": "SettingsPage"
+      },
+      "metrics": {
+        "cyclomatic": 90,
+        "decisions": 89,
+        "lines": 242,
+        "nesting": 4
+      },
+      "debt": 81,
+      "shareOfScopeDebt": 0.0116,
+      "cumulativeShare": 0.2492,
+      "explanation": "cyclomatic 90 is 81 point(s) at or above the hotspot threshold 10 (89 decision points, 242 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 90) removes this factor; each point below 90 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`SettingsPage` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/lib/runNeedsYou.ts:runNeedsYou",
+      "kind": "complexity",
+      "module": "web/src/lib",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/lib/runNeedsYou.ts",
+        "startLine": 73,
+        "endLine": 165,
+        "symbol": "runNeedsYou"
+      },
+      "metrics": {
+        "cyclomatic": 87,
+        "decisions": 86,
+        "lines": 93,
+        "nesting": 3
+      },
+      "debt": 78,
+      "shareOfScopeDebt": 0.0112,
+      "cumulativeShare": 0.2604,
+      "explanation": "cyclomatic 87 is 78 point(s) at or above the hotspot threshold 10 (86 decision points, 93 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 87) removes this factor; each point below 87 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`runNeedsYou` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/components/AgentArtifactPanel.tsx:AgentArtifactPanel",
+      "kind": "complexity",
+      "module": "web/src/components",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/components/AgentArtifactPanel.tsx",
+        "startLine": 69,
+        "endLine": 430,
+        "symbol": "AgentArtifactPanel"
+      },
+      "metrics": {
+        "cyclomatic": 79,
+        "decisions": 78,
+        "lines": 362,
+        "nesting": 3
+      },
+      "debt": 70,
+      "shareOfScopeDebt": 0.01,
+      "cumulativeShare": 0.2704,
+      "explanation": "cyclomatic 79 is 70 point(s) at or above the hotspot threshold 10 (78 decision points, 362 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 79) removes this factor; each point below 79 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`AgentArtifactPanel` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/components/QuestionFocus.tsx:QuestionFocus",
+      "kind": "complexity",
+      "module": "web/src/components",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/components/QuestionFocus.tsx",
+        "startLine": 25,
+        "endLine": 292,
+        "symbol": "QuestionFocus"
+      },
+      "metrics": {
+        "cyclomatic": 77,
+        "decisions": 76,
+        "lines": 268,
+        "nesting": 3
+      },
+      "debt": 68,
+      "shareOfScopeDebt": 0.0098,
+      "cumulativeShare": 0.2802,
+      "explanation": "cyclomatic 77 is 68 point(s) at or above the hotspot threshold 10 (76 decision points, 268 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 77) removes this factor; each point below 77 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`QuestionFocus` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/pages/LearningDetailPage.tsx:LearningDetail",
+      "kind": "complexity",
+      "module": "web/src/pages",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/pages/LearningDetailPage.tsx",
+        "startLine": 18,
+        "endLine": 146,
+        "symbol": "LearningDetail"
+      },
+      "metrics": {
+        "cyclomatic": 77,
+        "decisions": 76,
+        "lines": 129,
+        "nesting": 3
+      },
+      "debt": 68,
+      "shareOfScopeDebt": 0.0098,
+      "cumulativeShare": 0.29,
+      "explanation": "cyclomatic 77 is 68 point(s) at or above the hotspot threshold 10 (76 decision points, 129 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 77) removes this factor; each point below 77 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`LearningDetail` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/pages/WorkflowRunPage.tsx:WorkflowRunPage",
+      "kind": "complexity",
+      "module": "web/src/pages",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/pages/WorkflowRunPage.tsx",
+        "startLine": 694,
+        "endLine": 839,
+        "symbol": "WorkflowRunPage"
+      },
+      "metrics": {
+        "cyclomatic": 77,
+        "decisions": 76,
+        "lines": 146,
+        "nesting": 2
+      },
+      "debt": 68,
+      "shareOfScopeDebt": 0.0098,
+      "cumulativeShare": 0.2997,
+      "explanation": "cyclomatic 77 is 68 point(s) at or above the hotspot threshold 10 (76 decision points, 146 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 77) removes this factor; each point below 77 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`WorkflowRunPage` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/lib/nativeAgentSync.ts:stateFromNativeSnapshot",
+      "kind": "complexity",
+      "module": "web/src/lib",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/lib/nativeAgentSync.ts",
+        "startLine": 327,
+        "endLine": 456,
+        "symbol": "stateFromNativeSnapshot"
+      },
+      "metrics": {
+        "cyclomatic": 75,
+        "decisions": 74,
+        "lines": 130,
+        "nesting": 4
+      },
+      "debt": 66,
+      "shareOfScopeDebt": 0.0095,
+      "cumulativeShare": 0.3092,
+      "explanation": "cyclomatic 75 is 66 point(s) at or above the hotspot threshold 10 (74 decision points, 130 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 75) removes this factor; each point below 75 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`stateFromNativeSnapshot` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/hooks/useMenuLayer.ts:useMenuLayer",
+      "kind": "complexity",
+      "module": "web/src/hooks",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/hooks/useMenuLayer.ts",
+        "startLine": 19,
+        "endLine": 152,
+        "symbol": "useMenuLayer"
+      },
+      "metrics": {
+        "cyclomatic": 72,
+        "decisions": 71,
+        "lines": 134,
+        "nesting": 4
+      },
+      "debt": 63,
+      "shareOfScopeDebt": 0.009,
+      "cumulativeShare": 0.3183,
+      "explanation": "cyclomatic 72 is 63 point(s) at or above the hotspot threshold 10 (71 decision points, 134 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 72) removes this factor; each point below 72 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`useMenuLayer` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/components/NativeAgentPanel.tsx:ToolCallCard",
+      "kind": "complexity",
+      "module": "web/src/components",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/components/NativeAgentPanel.tsx",
+        "startLine": 1686,
+        "endLine": 1914,
+        "symbol": "ToolCallCard"
+      },
+      "metrics": {
+        "cyclomatic": 65,
+        "decisions": 64,
+        "lines": 229,
+        "nesting": 3
+      },
+      "debt": 56,
+      "shareOfScopeDebt": 0.008,
+      "cumulativeShare": 0.3263,
+      "explanation": "cyclomatic 65 is 56 point(s) at or above the hotspot threshold 10 (64 decision points, 229 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 65) removes this factor; each point below 65 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`ToolCallCard` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/components/workflow-editor/StepsEditor.tsx:WithField",
+      "kind": "complexity",
+      "module": "web/src/components/workflow-editor",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/components/workflow-editor/StepsEditor.tsx",
+        "startLine": 186,
+        "endLine": 258,
+        "symbol": "WithField"
+      },
+      "metrics": {
+        "cyclomatic": 64,
+        "decisions": 63,
+        "lines": 73,
+        "nesting": 3
+      },
+      "debt": 55,
+      "shareOfScopeDebt": 0.0079,
+      "cumulativeShare": 0.3342,
+      "explanation": "cyclomatic 64 is 55 point(s) at or above the hotspot threshold 10 (63 decision points, 73 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 64) removes this factor; each point below 64 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`WithField` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/components/settings/MCPSettings.tsx:Connection",
+      "kind": "complexity",
+      "module": "web/src/components/settings",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/components/settings/MCPSettings.tsx",
+        "startLine": 159,
+        "endLine": 424,
+        "symbol": "Connection"
+      },
+      "metrics": {
+        "cyclomatic": 62,
+        "decisions": 61,
+        "lines": 266,
+        "nesting": 4
+      },
+      "debt": 53,
+      "shareOfScopeDebt": 0.0076,
+      "cumulativeShare": 0.3418,
+      "explanation": "cyclomatic 62 is 53 point(s) at or above the hotspot threshold 10 (61 decision points, 266 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 62) removes this factor; each point below 62 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`Connection` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/pages/WorkflowRunPage.tsx:Now",
+      "kind": "complexity",
+      "module": "web/src/pages",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/pages/WorkflowRunPage.tsx",
+        "startLine": 90,
+        "endLine": 202,
+        "symbol": "Now"
+      },
+      "metrics": {
+        "cyclomatic": 62,
+        "decisions": 61,
+        "lines": 113,
+        "nesting": 3
+      },
+      "debt": 53,
+      "shareOfScopeDebt": 0.0076,
+      "cumulativeShare": 0.3494,
+      "explanation": "cyclomatic 62 is 53 point(s) at or above the hotspot threshold 10 (61 decision points, 113 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 62) removes this factor; each point below 62 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`Now` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/lib/workflowExpressions.ts:pathType",
+      "kind": "complexity",
+      "module": "web/src/lib",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/lib/workflowExpressions.ts",
+        "startLine": 202,
+        "endLine": 264,
+        "symbol": "pathType"
+      },
+      "metrics": {
+        "cyclomatic": 61,
+        "decisions": 60,
+        "lines": 63,
+        "nesting": 3
+      },
+      "debt": 52,
+      "shareOfScopeDebt": 0.0075,
+      "cumulativeShare": 0.3569,
+      "explanation": "cyclomatic 61 is 52 point(s) at or above the hotspot threshold 10 (60 decision points, 63 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 61) removes this factor; each point below 61 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`pathType` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/components/AgentGraphView.tsx:AgentGraphView",
+      "kind": "complexity",
+      "module": "web/src/components",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/components/AgentGraphView.tsx",
+        "startLine": 58,
+        "endLine": 269,
+        "symbol": "AgentGraphView"
+      },
+      "metrics": {
+        "cyclomatic": 59,
+        "decisions": 58,
+        "lines": 212,
+        "nesting": 4
+      },
+      "debt": 50,
+      "shareOfScopeDebt": 0.0072,
+      "cumulativeShare": 0.364,
+      "explanation": "cyclomatic 59 is 50 point(s) at or above the hotspot threshold 10 (58 decision points, 212 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 59) removes this factor; each point below 59 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`AgentGraphView` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/components/AgentSelect.tsx:AgentSelect",
+      "kind": "complexity",
+      "module": "web/src/components",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/components/AgentSelect.tsx",
+        "startLine": 62,
+        "endLine": 265,
+        "symbol": "AgentSelect"
+      },
+      "metrics": {
+        "cyclomatic": 59,
+        "decisions": 58,
+        "lines": 204,
+        "nesting": 3
+      },
+      "debt": 50,
+      "shareOfScopeDebt": 0.0072,
+      "cumulativeShare": 0.3712,
+      "explanation": "cyclomatic 59 is 50 point(s) at or above the hotspot threshold 10 (58 decision points, 204 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 59) removes this factor; each point below 59 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`AgentSelect` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/components/MacroForm.tsx:MacroForm",
+      "kind": "complexity",
+      "module": "web/src/components",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/components/MacroForm.tsx",
+        "startLine": 38,
+        "endLine": 153,
+        "symbol": "MacroForm"
+      },
+      "metrics": {
+        "cyclomatic": 59,
+        "decisions": 58,
+        "lines": 116,
+        "nesting": 3
+      },
+      "debt": 50,
+      "shareOfScopeDebt": 0.0072,
+      "cumulativeShare": 0.3784,
+      "explanation": "cyclomatic 59 is 50 point(s) at or above the hotspot threshold 10 (58 decision points, 116 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 59) removes this factor; each point below 59 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`MacroForm` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/components/board/HandOffModal.tsx:HandOffModal",
+      "kind": "complexity",
+      "module": "web/src/components/board",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/components/board/HandOffModal.tsx",
+        "startLine": 78,
+        "endLine": 276,
+        "symbol": "HandOffModal"
+      },
+      "metrics": {
+        "cyclomatic": 59,
+        "decisions": 58,
+        "lines": 199,
+        "nesting": 4
+      },
+      "debt": 50,
+      "shareOfScopeDebt": 0.0072,
+      "cumulativeShare": 0.3856,
+      "explanation": "cyclomatic 59 is 50 point(s) at or above the hotspot threshold 10 (58 decision points, 199 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 59) removes this factor; each point below 59 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`HandOffModal` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/lib/agentGraph.ts:layoutAgentGraph",
+      "kind": "complexity",
+      "module": "web/src/lib",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/lib/agentGraph.ts",
+        "startLine": 265,
+        "endLine": 430,
+        "symbol": "layoutAgentGraph"
+      },
+      "metrics": {
+        "cyclomatic": 58,
+        "decisions": 57,
+        "lines": 166,
+        "nesting": 4
+      },
+      "debt": 49,
+      "shareOfScopeDebt": 0.007,
+      "cumulativeShare": 0.3926,
+      "explanation": "cyclomatic 58 is 49 point(s) at or above the hotspot threshold 10 (57 decision points, 166 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 58) removes this factor; each point below 58 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`layoutAgentGraph` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/components/NativeModelSettings.tsx:NativeModelSettingsForm",
+      "kind": "complexity",
+      "module": "web/src/components",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/components/NativeModelSettings.tsx",
+        "startLine": 26,
+        "endLine": 122,
+        "symbol": "NativeModelSettingsForm"
+      },
+      "metrics": {
+        "cyclomatic": 57,
+        "decisions": 56,
+        "lines": 97,
+        "nesting": 3
+      },
+      "debt": 48,
+      "shareOfScopeDebt": 0.0069,
+      "cumulativeShare": 0.3995,
+      "explanation": "cyclomatic 57 is 48 point(s) at or above the hotspot threshold 10 (56 decision points, 97 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 57) removes this factor; each point below 57 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`NativeModelSettingsForm` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/components/settings/ListSettings.tsx:EntryForm",
+      "kind": "complexity",
+      "module": "web/src/components/settings",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/components/settings/ListSettings.tsx",
+        "startLine": 162,
+        "endLine": 276,
+        "symbol": "EntryForm"
+      },
+      "metrics": {
+        "cyclomatic": 57,
+        "decisions": 56,
+        "lines": 115,
+        "nesting": 3
+      },
+      "debt": 48,
+      "shareOfScopeDebt": 0.0069,
+      "cumulativeShare": 0.4064,
+      "explanation": "cyclomatic 57 is 48 point(s) at or above the hotspot threshold 10 (56 decision points, 115 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 57) removes this factor; each point below 57 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`EntryForm` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/components/workflow-editor/WorkflowOutline.tsx:Inspector",
+      "kind": "complexity",
+      "module": "web/src/components/workflow-editor",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/components/workflow-editor/WorkflowOutline.tsx",
+        "startLine": 676,
+        "endLine": 782,
+        "symbol": "Inspector"
+      },
+      "metrics": {
+        "cyclomatic": 54,
+        "decisions": 53,
+        "lines": 107,
+        "nesting": 5
+      },
+      "debt": 45,
+      "shareOfScopeDebt": 0.0065,
+      "cumulativeShare": 0.4129,
+      "explanation": "cyclomatic 54 is 45 point(s) at or above the hotspot threshold 10 (53 decision points, 107 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 54) removes this factor; each point below 54 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`Inspector` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/components/PromptBar.tsx:PromptBar",
+      "kind": "complexity",
+      "module": "web/src/components",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/components/PromptBar.tsx",
+        "startLine": 167,
+        "endLine": 419,
+        "symbol": "PromptBar"
+      },
+      "metrics": {
+        "cyclomatic": 52,
+        "decisions": 51,
+        "lines": 253,
+        "nesting": 3
+      },
+      "debt": 43,
+      "shareOfScopeDebt": 0.0062,
+      "cumulativeShare": 0.419,
+      "explanation": "cyclomatic 52 is 43 point(s) at or above the hotspot threshold 10 (51 decision points, 253 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 52) removes this factor; each point below 52 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`PromptBar` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/pages/PlanPage.tsx:PlanPage",
+      "kind": "complexity",
+      "module": "web/src/pages",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/pages/PlanPage.tsx",
+        "startLine": 210,
+        "endLine": 367,
+        "symbol": "PlanPage"
+      },
+      "metrics": {
+        "cyclomatic": 52,
+        "decisions": 51,
+        "lines": 158,
+        "nesting": 3
+      },
+      "debt": 43,
+      "shareOfScopeDebt": 0.0062,
+      "cumulativeShare": 0.4252,
+      "explanation": "cyclomatic 52 is 43 point(s) at or above the hotspot threshold 10 (51 decision points, 158 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 52) removes this factor; each point below 52 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`PlanPage` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/components/RunWorkflowDialog.tsx:RunWorkflowDialog",
+      "kind": "complexity",
+      "module": "web/src/components",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/components/RunWorkflowDialog.tsx",
+        "startLine": 8,
+        "endLine": 76,
+        "symbol": "RunWorkflowDialog"
+      },
+      "metrics": {
+        "cyclomatic": 51,
+        "decisions": 50,
+        "lines": 69,
+        "nesting": 4
+      },
+      "debt": 42,
+      "shareOfScopeDebt": 0.006,
+      "cumulativeShare": 0.4312,
+      "explanation": "cyclomatic 51 is 42 point(s) at or above the hotspot threshold 10 (50 decision points, 69 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 51) removes this factor; each point below 51 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`RunWorkflowDialog` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/pages/WorkflowPage.tsx:WorkflowPage",
+      "kind": "complexity",
+      "module": "web/src/pages",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/pages/WorkflowPage.tsx",
+        "startLine": 164,
+        "endLine": 286,
+        "symbol": "WorkflowPage"
+      },
+      "metrics": {
+        "cyclomatic": 51,
+        "decisions": 50,
+        "lines": 123,
+        "nesting": 2
+      },
+      "debt": 42,
+      "shareOfScopeDebt": 0.006,
+      "cumulativeShare": 0.4373,
+      "explanation": "cyclomatic 51 is 42 point(s) at or above the hotspot threshold 10 (50 decision points, 123 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 51) removes this factor; each point below 51 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`WorkflowPage` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/components/ApprovalTray.tsx:ApprovalCard",
+      "kind": "complexity",
+      "module": "web/src/components",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/components/ApprovalTray.tsx",
+        "startLine": 122,
+        "endLine": 288,
+        "symbol": "ApprovalCard"
+      },
+      "metrics": {
+        "cyclomatic": 50,
+        "decisions": 49,
+        "lines": 167,
+        "nesting": 3
+      },
+      "debt": 41,
+      "shareOfScopeDebt": 0.0059,
+      "cumulativeShare": 0.4431,
+      "explanation": "cyclomatic 50 is 41 point(s) at or above the hotspot threshold 10 (49 decision points, 167 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 50) removes this factor; each point below 50 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`ApprovalCard` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/components/settings/Pickers.tsx:AgentPickerControl",
+      "kind": "complexity",
+      "module": "web/src/components/settings",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/components/settings/Pickers.tsx",
+        "startLine": 44,
+        "endLine": 102,
+        "symbol": "AgentPickerControl"
+      },
+      "metrics": {
+        "cyclomatic": 50,
+        "decisions": 49,
+        "lines": 59,
+        "nesting": 3
+      },
+      "debt": 41,
+      "shareOfScopeDebt": 0.0059,
+      "cumulativeShare": 0.449,
+      "explanation": "cyclomatic 50 is 41 point(s) at or above the hotspot threshold 10 (49 decision points, 59 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 50) removes this factor; each point below 50 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`AgentPickerControl` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/lib/agentGraph.ts:route",
+      "kind": "complexity",
+      "module": "web/src/lib",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/lib/agentGraph.ts",
+        "startLine": 588,
+        "endLine": 738,
+        "symbol": "route"
+      },
+      "metrics": {
+        "cyclomatic": 50,
+        "decisions": 49,
+        "lines": 151,
+        "nesting": 3
+      },
+      "debt": 41,
+      "shareOfScopeDebt": 0.0059,
+      "cumulativeShare": 0.4549,
+      "explanation": "cyclomatic 50 is 41 point(s) at or above the hotspot threshold 10 (49 decision points, 151 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 50) removes this factor; each point below 50 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`route` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/lib/workflowSchema.ts:check",
+      "kind": "complexity",
+      "module": "web/src/lib",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/lib/workflowSchema.ts",
+        "startLine": 369,
+        "endLine": 440,
+        "symbol": "check"
+      },
+      "metrics": {
+        "cyclomatic": 50,
+        "decisions": 49,
+        "lines": 72,
+        "nesting": 4
+      },
+      "debt": 41,
+      "shareOfScopeDebt": 0.0059,
+      "cumulativeShare": 0.4608,
+      "explanation": "cyclomatic 50 is 41 point(s) at or above the hotspot threshold 10 (49 decision points, 72 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 50) removes this factor; each point below 50 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`check` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/components/board/DetailPanel.tsx:DetailPanel",
+      "kind": "complexity",
+      "module": "web/src/components/board",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/components/board/DetailPanel.tsx",
+        "startLine": 84,
+        "endLine": 243,
+        "symbol": "DetailPanel"
+      },
+      "metrics": {
+        "cyclomatic": 49,
+        "decisions": 48,
+        "lines": 160,
+        "nesting": 2
+      },
+      "debt": 40,
+      "shareOfScopeDebt": 0.0057,
+      "cumulativeShare": 0.4665,
+      "explanation": "cyclomatic 49 is 40 point(s) at or above the hotspot threshold 10 (48 decision points, 160 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 49) removes this factor; each point below 49 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`DetailPanel` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/components/board/CardContextMenu.tsx:CardContextMenu",
+      "kind": "complexity",
+      "module": "web/src/components/board",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/components/board/CardContextMenu.tsx",
+        "startLine": 51,
+        "endLine": 198,
+        "symbol": "CardContextMenu"
+      },
+      "metrics": {
+        "cyclomatic": 48,
+        "decisions": 47,
+        "lines": 148,
+        "nesting": 3
+      },
+      "debt": 39,
+      "shareOfScopeDebt": 0.0056,
+      "cumulativeShare": 0.4721,
+      "explanation": "cyclomatic 48 is 39 point(s) at or above the hotspot threshold 10 (47 decision points, 148 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 48) removes this factor; each point below 48 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`CardContextMenu` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:web/src/pages/SessionHistoryPage.tsx:SessionDetailPanel",
+      "kind": "complexity",
+      "module": "web/src/pages",
+      "language": "typescript",
+      "location": {
+        "file": "web/src/pages/SessionHistoryPage.tsx",
+        "startLine": 148,
+        "endLine": 263,
+        "symbol": "SessionDetailPanel"
+      },
+      "metrics": {
+        "cyclomatic": 48,
+        "decisions": 47,
+        "lines": 116,
+        "nesting": 2
+      },
+      "debt": 39,
+      "shareOfScopeDebt": 0.0056,
+      "cumulativeShare": 0.4777,
+      "explanation": "cyclomatic 48 is 39 point(s) at or above the hotspot threshold 10 (47 decision points, 116 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 48) removes this factor; each point below 48 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`SessionDetailPanel` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    }
+  ],
+  "factorsOmitted": 462,
+  "concentration": {
+    "factors": 502,
+    "factorsFor50Percent": 45,
+    "factorsFor80Percent": 155
+  },
+  "guidance": [
+    "preserve behaviour: add or confirm characterisation tests for a factor's code before changing it; the evaluator does not run code",
+    "reduce decision points, do not only move them: a split that leaves the same branching in helpers removes hotspot debt but not logic (check the decision-point ledger with `codeeval check`)",
+    "keep helpers cohesive and named for one purpose; avoid creating new hotspot helpers (cc ≥ threshold) while removing a root's debt",
+    "do not delete features, inline configuration into data tables, or reshape syntax solely to lower the number; debt is an uncalibrated structural proxy",
+    "verify each fix by re-running `codeeval explain` on the same scope (the factor should disappear or shrink) and `codeeval check` on the change (gates pass, no new factors)"
+  ]
+}

@@ -1,0 +1,945 @@
+{
+  "schema": "codeeval.explain/v2",
+  "scoringVersion": "scoring/v2-experimental",
+  "tool": {
+    "name": "codeeval",
+    "version": "0.2.0-poc"
+  },
+  "configHash": "3cef63633359769f",
+  "repository": "legato-stack",
+  "weights": {
+    "cyclomaticExcessPoint": 1,
+    "nestingExcessLevel": 2,
+    "redundantTokensPerPoint": 20,
+    "ruleViolationEdge": 10,
+    "cycleUnit": 20,
+    "halfScoreDensity": 25
+  },
+  "thresholds": {
+    "hotspotCyclomatic": 10,
+    "hotspotNesting": 4,
+    "minCloneTokens": 40
+  },
+  "notes": [
+    "experimental scoring/v2: separate from and not comparable to scoring/v1 −2..+2 scores; v1 reports are unchanged",
+    "debt points = complexity (Σ max(0, cyclomatic − H + 1): debt exactly when a callable is a hotspot) + nesting (Σ max(0, depth − N + 1) × weight) + duplication (structural-clone redundant tokens ÷ tokens-per-point) + architecture (configured-rule-violating edges and units in cycles × weights)",
+    "debt is additive across modules and telescopes across commits (Δ = after − before of one snapshot function); telescoping is mathematical consistency under a fixed model and config, not empirical calibration",
+    "debt is an uncalibrated, size-sensitive structural proxy: deleting features or code, or reshaping syntax (e.g. splitting functions below the thresholds), can lower it without improving engineering; do not optimise it alone — keep the component and raw evidence, behaviour/test, coverage and scope checks",
+    "score = 100 × h ÷ (h + debt per 1,000 supported source lines), h = halfScoreDensity: a size-normalised view for comparing modules or codebases; it can be diluted by adding simple code and is never a target on its own",
+    "weights are uncalibrated defaults; the score is a structural index, not a measure of correctness, design quality or behaviour",
+    "only languages with adapters are measured; see coverage — unsupported source is not scored and not neutral",
+    "architecture debt reflects only the configured import-level rules; rules the configuration cannot express are not measured",
+    "complexity growth below the hotspot thresholds carries no debt; it is reported as decision points and checked by the existing-callable branch gate",
+    "gates are advisory checks, not merge decisions"
+  ],
+  "revision": {
+    "ref": "bb13a424dc73f3eeb98f8bce43db932a9d19f7e6",
+    "commit": "bb13a424dc73f3eeb98f8bce43db932a9d19f7e6",
+    "tree": "25b725950d6a06a99078492cededc57c2fae2ebb",
+    "commitTime": "2026-11-27T20:29:04+11:00"
+  },
+  "scope": {
+    "paths": [
+      "internal/tui"
+    ]
+  },
+  "coverage": {
+    "languages": [
+      {
+        "language": "go",
+        "supported": true,
+        "files": 990,
+        "bytes": 8338850
+      },
+      {
+        "language": "javascript",
+        "supported": false,
+        "files": 23,
+        "bytes": 128585
+      },
+      {
+        "language": "kotlin",
+        "supported": false,
+        "files": 54,
+        "bytes": 394351
+      },
+      {
+        "language": "python",
+        "supported": false,
+        "files": 5,
+        "bytes": 44436
+      },
+      {
+        "language": "rust",
+        "supported": false,
+        "files": 34,
+        "bytes": 564583
+      },
+      {
+        "language": "shell",
+        "supported": false,
+        "files": 15,
+        "bytes": 36033
+      },
+      {
+        "language": "sql",
+        "supported": false,
+        "files": 160,
+        "bytes": 171688
+      },
+      {
+        "language": "swift",
+        "supported": false,
+        "files": 2,
+        "bytes": 5345
+      },
+      {
+        "language": "typescript",
+        "supported": true,
+        "files": 565,
+        "bytes": 3771184
+      }
+    ],
+    "supportedSourceFiles": 1555,
+    "sourceFiles": 1848,
+    "supportedByteShare": 0.9,
+    "parseErrorFiles": 4
+  },
+  "totals": {
+    "sourceFiles": 72,
+    "sourceLines": 20003,
+    "callables": 802,
+    "hotspots": 114,
+    "debt": {
+      "complexity": 1041,
+      "nesting": 98,
+      "duplication": 47.13,
+      "architecture": 110,
+      "total": 1296.13
+    },
+    "debtPerKLOC": 64.8,
+    "score": 27.84,
+    "modules": [
+      "internal/tui",
+      "internal/tui/agents",
+      "internal/tui/attention",
+      "internal/tui/board",
+      "internal/tui/clipboard",
+      "internal/tui/detail",
+      "internal/tui/hotkey",
+      "internal/tui/overlay",
+      "internal/tui/plan",
+      "internal/tui/report",
+      "internal/tui/review",
+      "internal/tui/statusbar",
+      "internal/tui/theme"
+    ]
+  },
+  "factors": [
+    {
+      "id": "cc:internal/tui/app.go:App.update",
+      "kind": "complexity",
+      "module": "internal/tui",
+      "language": "go",
+      "location": {
+        "file": "internal/tui/app.go",
+        "startLine": 696,
+        "endLine": 1827,
+        "symbol": "App.update"
+      },
+      "metrics": {
+        "cyclomatic": 308,
+        "decisions": 307,
+        "lines": 1132,
+        "nesting": 6
+      },
+      "debt": 299,
+      "shareOfScopeDebt": 0.2307,
+      "cumulativeShare": 0.2307,
+      "explanation": "cyclomatic 308 is 299 point(s) at or above the hotspot threshold 10 (307 decision points, 1132 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 308) removes this factor; each point below 308 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`App.update` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/tui/agents/model.go:Model.HandleAction",
+      "kind": "complexity",
+      "module": "internal/tui/agents",
+      "language": "go",
+      "location": {
+        "file": "internal/tui/agents/model.go",
+        "startLine": 537,
+        "endLine": 673,
+        "symbol": "Model.HandleAction"
+      },
+      "metrics": {
+        "cyclomatic": 50,
+        "decisions": 49,
+        "lines": 137,
+        "nesting": 4
+      },
+      "debt": 41,
+      "shareOfScopeDebt": 0.0316,
+      "cumulativeShare": 0.2623,
+      "explanation": "cyclomatic 50 is 41 point(s) at or above the hotspot threshold 10 (49 decision points, 137 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 50) removes this factor; each point below 50 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`Model.HandleAction` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/tui/attention/model.go:Model.HandleAction",
+      "kind": "complexity",
+      "module": "internal/tui/attention",
+      "language": "go",
+      "location": {
+        "file": "internal/tui/attention/model.go",
+        "startLine": 123,
+        "endLine": 212,
+        "symbol": "Model.HandleAction"
+      },
+      "metrics": {
+        "cyclomatic": 36,
+        "decisions": 35,
+        "lines": 90,
+        "nesting": 5
+      },
+      "debt": 27,
+      "shareOfScopeDebt": 0.0208,
+      "cumulativeShare": 0.2832,
+      "explanation": "cyclomatic 36 is 27 point(s) at or above the hotspot threshold 10 (35 decision points, 90 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 36) removes this factor; each point below 36 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`Model.HandleAction` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/tui/overlay/create.go:CreateOverlay.Update",
+      "kind": "complexity",
+      "module": "internal/tui/overlay",
+      "language": "go",
+      "location": {
+        "file": "internal/tui/overlay/create.go",
+        "startLine": 98,
+        "endLine": 184,
+        "symbol": "CreateOverlay.Update"
+      },
+      "metrics": {
+        "cyclomatic": 34,
+        "decisions": 33,
+        "lines": 87,
+        "nesting": 5
+      },
+      "debt": 25,
+      "shareOfScopeDebt": 0.0193,
+      "cumulativeShare": 0.3024,
+      "explanation": "cyclomatic 34 is 25 point(s) at or above the hotspot threshold 10 (33 decision points, 87 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 34) removes this factor; each point below 34 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`CreateOverlay.Update` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/tui/app.go:App.dispatchHotkey",
+      "kind": "complexity",
+      "module": "internal/tui",
+      "language": "go",
+      "location": {
+        "file": "internal/tui/app.go",
+        "startLine": 3384,
+        "endLine": 3467,
+        "symbol": "App.dispatchHotkey"
+      },
+      "metrics": {
+        "cyclomatic": 33,
+        "decisions": 32,
+        "lines": 84,
+        "nesting": 2
+      },
+      "debt": 24,
+      "shareOfScopeDebt": 0.0185,
+      "cumulativeShare": 0.321,
+      "explanation": "cyclomatic 33 is 24 point(s) at or above the hotspot threshold 10 (32 decision points, 84 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 33) removes this factor; each point below 33 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`App.dispatchHotkey` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/tui/board/model.go:Model.handleAction",
+      "kind": "complexity",
+      "module": "internal/tui/board",
+      "language": "go",
+      "location": {
+        "file": "internal/tui/board/model.go",
+        "startLine": 248,
+        "endLine": 333,
+        "symbol": "Model.handleAction"
+      },
+      "metrics": {
+        "cyclomatic": 31,
+        "decisions": 30,
+        "lines": 86,
+        "nesting": 3
+      },
+      "debt": 22,
+      "shareOfScopeDebt": 0.017,
+      "cumulativeShare": 0.3379,
+      "explanation": "cyclomatic 31 is 22 point(s) at or above the hotspot threshold 10 (30 decision points, 86 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 31) removes this factor; each point below 31 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`Model.handleAction` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/tui/hotkey/registry.go:validate",
+      "kind": "complexity",
+      "module": "internal/tui/hotkey",
+      "language": "go",
+      "location": {
+        "file": "internal/tui/hotkey/registry.go",
+        "startLine": 359,
+        "endLine": 429,
+        "symbol": "validate"
+      },
+      "metrics": {
+        "cyclomatic": 31,
+        "decisions": 30,
+        "lines": 71,
+        "nesting": 5
+      },
+      "debt": 22,
+      "shareOfScopeDebt": 0.017,
+      "cumulativeShare": 0.3549,
+      "explanation": "cyclomatic 31 is 22 point(s) at or above the hotspot threshold 10 (30 decision points, 71 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 31) removes this factor; each point below 31 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`validate` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/tui/agents/model.go:Model.Update",
+      "kind": "complexity",
+      "module": "internal/tui/agents",
+      "language": "go",
+      "location": {
+        "file": "internal/tui/agents/model.go",
+        "startLine": 397,
+        "endLine": 511,
+        "symbol": "Model.Update"
+      },
+      "metrics": {
+        "cyclomatic": 30,
+        "decisions": 29,
+        "lines": 115,
+        "nesting": 3
+      },
+      "debt": 21,
+      "shareOfScopeDebt": 0.0162,
+      "cumulativeShare": 0.3711,
+      "explanation": "cyclomatic 30 is 21 point(s) at or above the hotspot threshold 10 (29 decision points, 115 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 30) removes this factor; each point below 30 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`Model.Update` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/tui/detail/model.go:Model.HandleAction",
+      "kind": "complexity",
+      "module": "internal/tui/detail",
+      "language": "go",
+      "location": {
+        "file": "internal/tui/detail/model.go",
+        "startLine": 279,
+        "endLine": 349,
+        "symbol": "Model.HandleAction"
+      },
+      "metrics": {
+        "cyclomatic": 29,
+        "decisions": 28,
+        "lines": 71,
+        "nesting": 4
+      },
+      "debt": 20,
+      "shareOfScopeDebt": 0.0154,
+      "cumulativeShare": 0.3865,
+      "explanation": "cyclomatic 29 is 20 point(s) at or above the hotspot threshold 10 (28 decision points, 71 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 29) removes this factor; each point below 29 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`Model.HandleAction` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/tui/overlay/card_context.go:CardContextOverlay.View",
+      "kind": "complexity",
+      "module": "internal/tui/overlay",
+      "language": "go",
+      "location": {
+        "file": "internal/tui/overlay/card_context.go",
+        "startLine": 308,
+        "endLine": 380,
+        "symbol": "CardContextOverlay.View"
+      },
+      "metrics": {
+        "cyclomatic": 27,
+        "decisions": 26,
+        "lines": 73,
+        "nesting": 4
+      },
+      "debt": 18,
+      "shareOfScopeDebt": 0.0139,
+      "cumulativeShare": 0.4004,
+      "explanation": "cyclomatic 27 is 18 point(s) at or above the hotspot threshold 10 (26 decision points, 73 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 27) removes this factor; each point below 27 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`CardContextOverlay.View` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/tui/overlay/card_context.go:CardContextOverlay.updateKey",
+      "kind": "complexity",
+      "module": "internal/tui/overlay",
+      "language": "go",
+      "location": {
+        "file": "internal/tui/overlay/card_context.go",
+        "startLine": 152,
+        "endLine": 219,
+        "symbol": "CardContextOverlay.updateKey"
+      },
+      "metrics": {
+        "cyclomatic": 27,
+        "decisions": 26,
+        "lines": 68,
+        "nesting": 4
+      },
+      "debt": 18,
+      "shareOfScopeDebt": 0.0139,
+      "cumulativeShare": 0.4143,
+      "explanation": "cyclomatic 27 is 18 point(s) at or above the hotspot threshold 10 (26 decision points, 68 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 27) removes this factor; each point below 27 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`CardContextOverlay.updateKey` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/tui/agents/list.go:Model.renderSidebarEntry",
+      "kind": "complexity",
+      "module": "internal/tui/agents",
+      "language": "go",
+      "location": {
+        "file": "internal/tui/agents/list.go",
+        "startLine": 372,
+        "endLine": 459,
+        "symbol": "Model.renderSidebarEntry"
+      },
+      "metrics": {
+        "cyclomatic": 26,
+        "decisions": 25,
+        "lines": 88,
+        "nesting": 2
+      },
+      "debt": 17,
+      "shareOfScopeDebt": 0.0131,
+      "cumulativeShare": 0.4274,
+      "explanation": "cyclomatic 26 is 17 point(s) at or above the hotspot threshold 10 (25 decision points, 88 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 26) removes this factor; each point below 26 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`Model.renderSidebarEntry` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/tui/overlay/agent_spawn.go:AgentSpawnOverlay.handleKey",
+      "kind": "complexity",
+      "module": "internal/tui/overlay",
+      "language": "go",
+      "location": {
+        "file": "internal/tui/overlay/agent_spawn.go",
+        "startLine": 506,
+        "endLine": 570,
+        "symbol": "AgentSpawnOverlay.handleKey"
+      },
+      "metrics": {
+        "cyclomatic": 26,
+        "decisions": 25,
+        "lines": 65,
+        "nesting": 3
+      },
+      "debt": 17,
+      "shareOfScopeDebt": 0.0131,
+      "cumulativeShare": 0.4405,
+      "explanation": "cyclomatic 26 is 17 point(s) at or above the hotspot threshold 10 (25 decision points, 65 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 26) removes this factor; each point below 26 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`AgentSpawnOverlay.handleKey` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/tui/detail/model.go:Model.renderHeader",
+      "kind": "complexity",
+      "module": "internal/tui/detail",
+      "language": "go",
+      "location": {
+        "file": "internal/tui/detail/model.go",
+        "startLine": 663,
+        "endLine": 762,
+        "symbol": "Model.renderHeader"
+      },
+      "metrics": {
+        "cyclomatic": 25,
+        "decisions": 24,
+        "lines": 100,
+        "nesting": 2
+      },
+      "debt": 16,
+      "shareOfScopeDebt": 0.0123,
+      "cumulativeShare": 0.4529,
+      "explanation": "cyclomatic 25 is 16 point(s) at or above the hotspot threshold 10 (24 decision points, 100 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 25) removes this factor; each point below 25 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`Model.renderHeader` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/tui/overlay/workflow_trigger.go:WorkflowTriggerOverlay.Update",
+      "kind": "complexity",
+      "module": "internal/tui/overlay",
+      "language": "go",
+      "location": {
+        "file": "internal/tui/overlay/workflow_trigger.go",
+        "startLine": 46,
+        "endLine": 108,
+        "symbol": "WorkflowTriggerOverlay.Update"
+      },
+      "metrics": {
+        "cyclomatic": 24,
+        "decisions": 23,
+        "lines": 63,
+        "nesting": 4
+      },
+      "debt": 15,
+      "shareOfScopeDebt": 0.0116,
+      "cumulativeShare": 0.4645,
+      "explanation": "cyclomatic 24 is 15 point(s) at or above the hotspot threshold 10 (23 decision points, 63 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 24) removes this factor; each point below 24 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`WorkflowTriggerOverlay.Update` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/tui/plan/model.go:Model.HandleAction",
+      "kind": "complexity",
+      "module": "internal/tui/plan",
+      "language": "go",
+      "location": {
+        "file": "internal/tui/plan/model.go",
+        "startLine": 148,
+        "endLine": 204,
+        "symbol": "Model.HandleAction"
+      },
+      "metrics": {
+        "cyclomatic": 24,
+        "decisions": 23,
+        "lines": 57,
+        "nesting": 3
+      },
+      "debt": 15,
+      "shareOfScopeDebt": 0.0116,
+      "cumulativeShare": 0.476,
+      "explanation": "cyclomatic 24 is 15 point(s) at or above the hotspot threshold 10 (23 decision points, 57 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 24) removes this factor; each point below 24 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`Model.HandleAction` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/tui/board/view.go:Model.panelTask",
+      "kind": "complexity",
+      "module": "internal/tui/board",
+      "language": "go",
+      "location": {
+        "file": "internal/tui/board/view.go",
+        "startLine": 352,
+        "endLine": 431,
+        "symbol": "Model.panelTask"
+      },
+      "metrics": {
+        "cyclomatic": 21,
+        "decisions": 20,
+        "lines": 80,
+        "nesting": 2
+      },
+      "debt": 12,
+      "shareOfScopeDebt": 0.0093,
+      "cumulativeShare": 0.4853,
+      "explanation": "cyclomatic 21 is 12 point(s) at or above the hotspot threshold 10 (20 decision points, 80 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 21) removes this factor; each point below 21 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`Model.panelTask` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/tui/overlay/group.go:GroupOverlay.Update",
+      "kind": "complexity",
+      "module": "internal/tui/overlay",
+      "language": "go",
+      "location": {
+        "file": "internal/tui/overlay/group.go",
+        "startLine": 51,
+        "endLine": 98,
+        "symbol": "GroupOverlay.Update"
+      },
+      "metrics": {
+        "cyclomatic": 21,
+        "decisions": 20,
+        "lines": 48,
+        "nesting": 4
+      },
+      "debt": 12,
+      "shareOfScopeDebt": 0.0093,
+      "cumulativeShare": 0.4945,
+      "explanation": "cyclomatic 21 is 12 point(s) at or above the hotspot threshold 10 (20 decision points, 48 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 21) removes this factor; each point below 21 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`GroupOverlay.Update` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "dup:internal/tui/overlay/move_workspace.go:buildMWShortcuts",
+      "kind": "duplication",
+      "module": "internal/tui/overlay",
+      "language": "go",
+      "location": {
+        "file": "internal/tui/overlay/move_workspace.go",
+        "startLine": 72,
+        "endLine": 109,
+        "symbol": "buildMWShortcuts"
+      },
+      "metrics": {
+        "exact": 0,
+        "members": 2,
+        "membersInScope": 2,
+        "tokens": 209
+      },
+      "debt": 10.45,
+      "shareOfScopeDebt": 0.0081,
+      "cumulativeShare": 0.5026,
+      "explanation": "structural clone group of 2 callables (2 in scope); 209 redundant tokens attributed to this scope",
+      "related": [
+        {
+          "file": "internal/tui/overlay/move_workspace.go",
+          "startLine": 72,
+          "endLine": 109,
+          "symbol": "buildMWShortcuts"
+        },
+        {
+          "file": "internal/tui/overlay/workspace.go",
+          "startLine": 72,
+          "endLine": 110,
+          "symbol": "buildWSShortcuts"
+        }
+      ],
+      "remediation": {
+        "strategy": "consolidate duplicated callables",
+        "target": "one implementation instead of 2 copies",
+        "steps": [
+          "confirm the copies have the same semantics (structural clones may differ in literals or names that matter)",
+          "move one implementation to a module every caller may import under the configured architecture rules",
+          "replace the other copies with calls; delete the copies"
+        ],
+        "acceptance": [
+          "the clone group shrinks to one member (or is removed)",
+          "no new architecture rule violations",
+          "tests for every caller pass"
+        ],
+        "caution": "structural similarity is a candidate signal, not proof of equivalence; if semantics differ or layering forbids a shared home, record a won't-fix with the reason"
+      }
+    },
+    {
+      "id": "cc:internal/tui/agents/conversation.go:Model.conversationWithRuns",
+      "kind": "complexity",
+      "module": "internal/tui/agents",
+      "language": "go",
+      "location": {
+        "file": "internal/tui/agents/conversation.go",
+        "startLine": 202,
+        "endLine": 278,
+        "symbol": "Model.conversationWithRuns"
+      },
+      "metrics": {
+        "cyclomatic": 19,
+        "decisions": 18,
+        "lines": 77,
+        "nesting": 3
+      },
+      "debt": 10,
+      "shareOfScopeDebt": 0.0077,
+      "cumulativeShare": 0.5103,
+      "explanation": "cyclomatic 19 is 10 point(s) at or above the hotspot threshold 10 (18 decision points, 77 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 19) removes this factor; each point below 19 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`Model.conversationWithRuns` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    }
+  ],
+  "factorsOmitted": 146,
+  "concentration": {
+    "factors": 166,
+    "factorsFor50Percent": 19,
+    "factorsFor80Percent": 67
+  },
+  "guidance": [
+    "preserve behaviour: add or confirm characterisation tests for a factor's code before changing it; the evaluator does not run code",
+    "reduce decision points, do not only move them: a split that leaves the same branching in helpers removes hotspot debt but not logic (check the decision-point ledger with `codeeval check`)",
+    "keep helpers cohesive and named for one purpose; avoid creating new hotspot helpers (cc ≥ threshold) while removing a root's debt",
+    "do not delete features, inline configuration into data tables, or reshape syntax solely to lower the number; debt is an uncalibrated structural proxy",
+    "verify each fix by re-running `codeeval explain` on the same scope (the factor should disappear or shrink) and `codeeval check` on the change (gates pass, no new factors)"
+  ]
+}

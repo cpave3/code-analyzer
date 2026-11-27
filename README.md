@@ -159,6 +159,38 @@ not neutral); complexity growth below the hotspot thresholds carries no debt
 (it shows as decision points); architecture debt reflects only configured
 import-level rules; correctness is not measured.
 
+## Debt factor reports and PR checks (for fixing, by people or agents)
+
+```bash
+# Why does this module, application, path or glob carry debt? Largest factors first.
+codeeval explain --repo PATH --rev REV [--path internal/service] [--path 'web/**/*.tsx'] [--top N] [--detailed N]
+# What did this change add? Exit 3 when the check fails.
+codeeval check --repo PATH --base REV (--target REV | --working-tree) [--path P] \
+  [--fail-on new-debt|net-debt|gates|none] [--top N]
+```
+
+Every **factor** is one item of v2 debt in scope. It has a `kind`
+(`complexity`, `nesting`, `duplication`, `rule_violation` or `cycle`), a
+location (file, lines, symbol), metrics, debt points, its share and
+cumulative share of the scope's debt, an explanation, related locations
+(clone members, cycle edges), and deterministic **remediation**: strategy,
+target, steps, acceptance criteria and caution.
+- **explain:** factors add up exactly to the scope's debt. A concentration
+  line shows how many factors carry 50% and 80% of it.
+- **check:** lists the factors a change *introduced* or *worsened* in scope.
+  For a worsened factor the target is relative to its pre-change value. It
+  also lists what the change improved, the decision-point and base-point
+  split, and the advisory gates.
+- **Fail modes:** `new-debt` (any new or worsened factor), `net-debt` (debt
+  in scope rises), `gates`, or `none`.
+
+JSON schemas are `codeeval.explain/v2` and `codeeval.check/v2`. Claude Code
+templates (a skill and a Stop hook) are in
+[integrations/claude-code/](integrations/claude-code/README.md), with Legato
+samples in `examples/legato/fix/`. The remediation text is rule-based guidance,
+not a guarantee. The numbers are uncalibrated structural proxies, and nothing
+here checks behaviour.
+
 ## Debt graph view (POC)
 
 ```bash

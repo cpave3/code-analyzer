@@ -6,6 +6,7 @@ import (
 
 	"github.com/cameron/code-evaluator/internal/change"
 	"github.com/cameron/code-evaluator/internal/config"
+	"github.com/cameron/code-evaluator/internal/gitsrc"
 	"github.com/cameron/code-evaluator/internal/index"
 	"github.com/cameron/code-evaluator/internal/lang"
 )
@@ -25,6 +26,11 @@ func (e *Evaluator) ResolveSnapshot(ref string) (string, *index.Snapshot, error)
 		return "", nil, fmt.Errorf("index %s: %w", short(sha), err)
 	}
 	return sha, s, nil
+}
+
+// WorktreeSnapshot indexes the tracked files of the working tree.
+func (e *Evaluator) WorktreeSnapshot() (*index.Snapshot, error) {
+	return e.snapshot(gitsrc.WorktreeRev)
 }
 
 // ChangeSet computes the change context between two snapshots.

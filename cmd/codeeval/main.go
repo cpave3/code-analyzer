@@ -28,6 +28,9 @@ Usage:
   codeeval history  --repo PATH --base REV --target REV [flags]
   codeeval score    --repo PATH --rev REV [flags]                 (experimental scoring/v2: absolute snapshot)
   codeeval score    --repo PATH --base REV --target REV [--steps] [flags]   (scoring/v2 delta)
+  codeeval explain  --repo PATH --rev REV [--path P ...] [--top N]                     (scoring/v2 debt factors for a scope)
+  codeeval check    --repo PATH --base REV (--target REV | --working-tree) [--path P ...] [--fail-on new-debt|net-debt|gates|none] [--top N]
+                                                                                    (PR check: factors introduced/worsened; exit 3 on failure)
   codeeval graph    --repo PATH --rev REV --output FILE.html [--json FILE] [--max-callables N] [--config FILE]   (POC debt graph view)
   codeeval languages
   codeeval analyzers
@@ -67,6 +70,10 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return evaluate(args[1:], stdout, stderr, true)
 	case "score":
 		return scoreCmd(args[1:], stdout, stderr)
+	case "explain":
+		return explainCmd(args[1:], stdout, stderr)
+	case "check":
+		return checkCmd(args[1:], stdout, stderr)
 	case "graph":
 		return graphCmd(args[1:], stdout, stderr)
 	case "languages":

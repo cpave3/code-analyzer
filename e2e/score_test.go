@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"math"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -229,5 +230,121 @@ func TestGraphCommandWritesSelfContainedPage(t *testing.T) {
 	}
 	if r := cli(t, "graph", "--repo", repos["reuse"], "--rev", "bad"); r.code != 2 {
 		t.Errorf("missing --output must exit 2, got %d", r.code)
+	}
+}
+
+func TestExplainListsFactorsForAScope(t *testing.T) {
+	r := cli(t, "explain", "--repo", repos["complexity"], "--rev", "bad", "--path", "pricing", "--format", "json", "--no-cache")
+	if r.code != 0 {
+		t.Fatalf("exit %d: %s", r.code, r.stderr)
+	}
+	var e scorev2.ExplainReport
+	if err := json.Unmarshal([]byte(r.stdout), &e); err != nil {
+		t.Fatal(err)
+	}
+	if e.Schema != scorev2.ExplainSchema || len(e.Factors) == 0 {
+		t.Fatalf("want factors: %+v", e)
+	}
+	f := e.Factors[0]
+	if f.Location.File != "pricing/pricing.go" || f.Location.Symbol != "Discount" || f.Debt <= 0 || f.Remediation.Strategy == "" || len(f.Remediation.Acceptance) == 0 {
+		t.Errorf("first factor should be Discount with remediation: %+v", f)
+	}
+	sum := 0.0
+	for _, x := range e.Factors {
+		sum += x.Debt
+	}
+	if !near(sum, e.Totals.Debt.Total) || !near(e.Factors[len(e.Factors)-1].CumulativeShare, 1) {
+		t.Errorf("factors must add up to the scope debt: %.2f vs %.2f", sum, e.Totals.Debt.Total)
+	}
+	// Whole-codebase explain equals the v2 snapshot debt.
+	all := cli(t, "explain", "--repo", repos["consolidate"], "--rev", "bad", "--format", "json", "--no-cache", "--top", "0")
+	var ea scorev2.ExplainReport
+	json.Unmarshal([]byte(all.stdout), &ea)
+	if s := snapshotV2(t, "consolidate", "bad"); !near(ea.Totals.Debt.Total, s.Codebase.Debt.Total) {
+		t.Errorf("explain total %.2f != snapshot debt %.2f", ea.Totals.Debt.Total, s.Codebase.Debt.Total)
+	}
+	// An out-of-scope path has no factors.
+	none := cli(t, "explain", "--repo", repos["complexity"], "--rev", "bad", "--path", "nope", "--format", "json", "--no-cache")
+	var en scorev2.ExplainReport
+	json.Unmarshal([]byte(none.stdout), &en)
+	if len(en.Factors) != 0 || !strings.Contains(none.stderr, "no measured source files") {
+		t.Errorf("unmatched scope should be empty and warn: %+v %s", en.Factors, none.stderr)
+	}
+}
+
+func TestCheckReportsIntroducedFactorsAndExitCodes(t *testing.T) {
+	bad := cli(t, "check", "--repo", repos["complexity"], "--base", "base", "--target", "bad", "--format", "json", "--no-cache")
+	if bad.code != 3 {
+		t.Fatalf("new hotspot should fail the default check: exit %d %s", bad.code, bad.stderr)
+	}
+	var c scorev2.CheckReport
+	if err := json.Unmarshal([]byte(bad.stdout), &c); err != nil {
+		t.Fatal(err)
+	}
+	if !c.Failed || len(c.Factors) == 0 || c.Factors[0].Location.Symbol != "Discount" || c.Factors[0].Change == "" {
+		t.Errorf("Discount should be reported as introduced/worsened: %+v", c.Factors)
+	}
+	if r := cli(t, "check", "--repo", repos["complexity"], "--base", "base", "--target", "good", "--no-cache", "--format", "none"); r.code != 0 {
+		t.Errorf("extraction should pass: exit %d", r.code)
+	}
+	if r := cli(t, "check", "--repo", repos["complexity"], "--base", "base", "--target", "bad", "--fail-on", "none", "--no-cache", "--format", "none"); r.code != 0 {
+		t.Errorf("--fail-on none is advisory: exit %d", r.code)
+	}
+	dup := cli(t, "check", "--repo", repos["reuse"], "--base", "base", "--target", "bad", "--format", "json", "--no-cache")
+	var d scorev2.CheckReport
+	json.Unmarshal([]byte(dup.stdout), &d)
+	if dup.code != 3 || len(d.Factors) != 1 || d.Factors[0].Kind != scorev2.KindDuplicate || len(d.Factors[0].Related) != 2 {
+		t.Errorf("reimplementation should be a duplication factor with both members: %+v", d.Factors)
+	}
+	lay := cli(t, scoreArgsCmd("check", "layering", "--base", "base", "--target", "bad", "--format", "json")...)
+	var l scorev2.CheckReport
+	json.Unmarshal([]byte(lay.stdout), &l)
+	if lay.code != 3 || len(l.Factors) != 1 || l.Factors[0].Kind != scorev2.KindViolation {
+		t.Errorf("layering violation should be a rule_violation factor: %+v", l.Factors)
+	}
+}
+
+func scoreArgsCmd(cmd, scenario string, args ...string) []string {
+	out := append([]string{cmd, "--repo", repos[scenario], "--no-cache"}, args...)
+	if c := scenarios[scenario].Config; c != "" {
+		out = append(out, "--config", c)
+	}
+	return out
+}
+
+func TestStopHookBlocksOnceOnNewDebt(t *testing.T) {
+	dir := t.TempDir()
+	s := scenarios["complexity"]
+	if _, err := s.BuildRepo(dir); err != nil {
+		t.Fatal(err)
+	}
+	gitT(t, dir, "checkout", "-q", "base")
+	// Working tree: apply the nesting-heavy variant without committing.
+	if err := s.Materialize("bad", dir); err != nil {
+		t.Fatal(err)
+	}
+	hook, _ := filepath.Abs("../integrations/claude-code/hooks/codeeval-stop-check.sh")
+	run := func(stdin string) (int, string) {
+		cmd := exec.Command("bash", hook)
+		cmd.Env = append(os.Environ(), "CODEEVAL_BIN="+binary, "CODEEVAL_BASE=base", "CLAUDE_PROJECT_DIR="+dir, "CODEEVAL_FAIL_ON=new-debt")
+		cmd.Stdin = strings.NewReader(stdin)
+		var errb strings.Builder
+		cmd.Stderr = &errb
+		err := cmd.Run()
+		code := 0
+		if ee, ok := err.(*exec.ExitError); ok {
+			code = ee.ExitCode()
+		}
+		return code, errb.String()
+	}
+	code, msg := run(`{"session_id":"x","stop_hook_active":false}`)
+	if code != 2 || !strings.Contains(msg, "Discount") || !strings.Contains(msg, "Fix these") {
+		t.Fatalf("hook should block with the fix list: exit %d\n%s", code, msg)
+	}
+	if code, _ := run(`{"stop_hook_active": true}`); code != 0 {
+		t.Errorf("hook must not block twice in a row: exit %d", code)
+	}
+	if st := gitT(t, dir, "status", "--porcelain"); !strings.Contains(st, "pricing.go") {
+		t.Errorf("hook must not touch the working tree: %q", st)
 	}
 }

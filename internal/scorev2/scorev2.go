@@ -174,7 +174,12 @@ type CallableDebt struct {
 	Cyclomatic int     `json:"cyclomatic"`
 	Nesting    int     `json:"nesting"`
 	Lines      int     `json:"lines"`
+	Decisions  int     `json:"decisions"`
 	Debt       float64 `json:"debt"`
+	CCDebt     float64 `json:"cyclomaticDebt"`
+	NestDebt   float64 `json:"nestingDebt"`
+	Language   string  `json:"language"`
+	Key        string  `json:"-"`
 }
 
 // CloneMember is one member of a clone group.
@@ -183,11 +188,14 @@ type CloneMember struct {
 	File      string `json:"file"`
 	Name      string `json:"name"`
 	StartLine int    `json:"startLine"`
+	EndLine   int    `json:"endLine"`
 	Tokens    int    `json:"tokens"`
+	Key       string `json:"-"`
 }
 
 // CloneGroup is a structural clone group with its debt.
 type CloneGroup struct {
+	Key             string        `json:"-"`
 	Exact           bool          `json:"exact"`
 	RedundantTokens float64       `json:"redundantTokens"`
 	Debt            float64       `json:"debt"`
@@ -308,7 +316,8 @@ func Analyze(snap *index.Snapshot, cfg *config.Config, w Weights) *Analysis {
 		u.Components.NestingExcess += ne
 		if d := float64(ce)*w.CyclomaticExcess + float64(ne)*w.NestingExcess; d > 0 {
 			a.Callables = append(a.Callables, CallableDebt{Module: u.ID, File: s.File, Name: s.DisplayName(), StartLine: s.StartLine, EndLine: s.EndLine,
-				Cyclomatic: m.Cyclomatic, Nesting: m.MaxNesting, Lines: m.Lines, Debt: d})
+				Cyclomatic: m.Cyclomatic, Nesting: m.MaxNesting, Lines: m.Lines, Decisions: m.Decisions, Debt: d,
+				CCDebt: float64(ce) * w.CyclomaticExcess, NestDebt: float64(ne) * w.NestingExcess, Language: f.Language, Key: s.Key})
 		}
 	}
 	sort.SliceStable(a.Callables, func(i, j int) bool {
@@ -359,7 +368,7 @@ func Analyze(snap *index.Snapshot, cfg *config.Config, w Weights) *Analysis {
 		sort.Slice(g, func(i, j int) bool { return g[i].Key < g[j].Key })
 		n := float64(len(g))
 		a.Codebase.Components.StructRedundant += len(g) - 1
-		cg := CloneGroup{Exact: true}
+		cg := CloneGroup{Exact: true, Key: k}
 		for _, s := range g {
 			f := snap.Files[s.File]
 			u := mod(f)
@@ -367,7 +376,7 @@ func Analyze(snap *index.Snapshot, cfg *config.Config, w Weights) *Analysis {
 			u.Components.ClonedCallables++
 			u.Components.RedundantTokens += share
 			cg.RedundantTokens += share
-			cg.Members = append(cg.Members, CloneMember{Module: u.ID, File: s.File, Name: s.DisplayName(), StartLine: s.StartLine, Tokens: s.Tokens})
+			cg.Members = append(cg.Members, CloneMember{Module: u.ID, File: s.File, Name: s.DisplayName(), StartLine: s.StartLine, EndLine: s.EndLine, Tokens: s.Tokens, Key: s.Key})
 			if s.ExactFP != g[0].ExactFP {
 				cg.Exact = false
 			}

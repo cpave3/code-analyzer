@@ -1,0 +1,228 @@
+{
+  "schema": "codeeval.check/v2",
+  "scoringVersion": "scoring/v2-experimental",
+  "tool": {
+    "name": "codeeval",
+    "version": "0.2.0-poc"
+  },
+  "configHash": "3cef63633359769f",
+  "repository": "legato-stack",
+  "weights": {
+    "cyclomaticExcessPoint": 1,
+    "nestingExcessLevel": 2,
+    "redundantTokensPerPoint": 20,
+    "ruleViolationEdge": 10,
+    "cycleUnit": 20,
+    "halfScoreDensity": 25
+  },
+  "thresholds": {
+    "hotspotCyclomatic": 10,
+    "hotspotNesting": 4,
+    "minCloneTokens": 40
+  },
+  "notes": [
+    "experimental scoring/v2: separate from and not comparable to scoring/v1 −2..+2 scores; v1 reports are unchanged",
+    "debt points = complexity (Σ max(0, cyclomatic − H + 1): debt exactly when a callable is a hotspot) + nesting (Σ max(0, depth − N + 1) × weight) + duplication (structural-clone redundant tokens ÷ tokens-per-point) + architecture (configured-rule-violating edges and units in cycles × weights)",
+    "debt is additive across modules and telescopes across commits (Δ = after − before of one snapshot function); telescoping is mathematical consistency under a fixed model and config, not empirical calibration",
+    "debt is an uncalibrated, size-sensitive structural proxy: deleting features or code, or reshaping syntax (e.g. splitting functions below the thresholds), can lower it without improving engineering; do not optimise it alone — keep the component and raw evidence, behaviour/test, coverage and scope checks",
+    "score = 100 × h ÷ (h + debt per 1,000 supported source lines), h = halfScoreDensity: a size-normalised view for comparing modules or codebases; it can be diluted by adding simple code and is never a target on its own",
+    "weights are uncalibrated defaults; the score is a structural index, not a measure of correctness, design quality or behaviour",
+    "only languages with adapters are measured; see coverage — unsupported source is not scored and not neutral",
+    "architecture debt reflects only the configured import-level rules; rules the configuration cannot express are not measured",
+    "complexity growth below the hotspot thresholds carries no debt; it is reported as decision points and checked by the existing-callable branch gate",
+    "gates are advisory checks, not merge decisions"
+  ],
+  "base": {
+    "ref": "4cf88e48425163499193263ffec92c72adbe6c82",
+    "commit": "4cf88e48425163499193263ffec92c72adbe6c82",
+    "tree": "4fbb5b2b4febb7e188641b2c73e7127e9b181fca",
+    "commitTime": "2026-11-27T20:29:04+11:00"
+  },
+  "target": {
+    "ref": "bb13a424dc73f3eeb98f8bce43db932a9d19f7e6",
+    "commit": "bb13a424dc73f3eeb98f8bce43db932a9d19f7e6",
+    "tree": "25b725950d6a06a99078492cededc57c2fae2ebb",
+    "commitTime": "2026-11-27T20:29:04+11:00"
+  },
+  "scope": {
+    "paths": []
+  },
+  "size": {
+    "changedSourceFiles": 1,
+    "changedSupportedSourceFiles": 1,
+    "changedSupportedSourceLines": 63,
+    "unsupportedChangedSourceFilesByLanguage": {}
+  },
+  "ledger": {
+    "components": {
+      "sourceFiles": 0,
+      "sourceLines": 13,
+      "callables": 1,
+      "cyclomaticTotal": 1,
+      "decisionPoints": 0,
+      "hotspots": 1,
+      "cyclomaticExcess": -8,
+      "nestingExcess": 0,
+      "clonedCallables": 0,
+      "redundantTokens": 0,
+      "ruleViolations": 0,
+      "cycleUnits": 0,
+      "internalEdges": 0
+    },
+    "debt": {
+      "complexity": -8,
+      "nesting": 0,
+      "duplication": 0,
+      "architecture": 0,
+      "total": -8
+    },
+    "debtPerKLOC": -0.03,
+    "score": 0.01
+  },
+  "changedCallables": {
+    "modified": 1,
+    "modifiedDecisionsBeforeAfter": [
+      66,
+      57
+    ],
+    "modifiedCyclomaticBeforeAfter": [
+      67,
+      58
+    ],
+    "added": 1,
+    "addedDecisions": 9,
+    "deleted": 0,
+    "deletedDecisions": 0,
+    "netDecisionPoints": 0,
+    "netFunctionBasePoints": 1
+  },
+  "gates": [
+    {
+      "name": "no_new_exact_duplicates",
+      "passed": true,
+      "detail": "0 exact redundant callables"
+    },
+    {
+      "name": "no_new_structural_duplicates",
+      "passed": true,
+      "detail": "0 structural redundant callables"
+    },
+    {
+      "name": "no_new_rule_violations",
+      "passed": true,
+      "detail": "0 rule-violating edges"
+    },
+    {
+      "name": "no_new_cycles",
+      "passed": true,
+      "detail": "0 units in cycles"
+    },
+    {
+      "name": "no_branch_growth_in_existing_callables",
+      "passed": true,
+      "detail": "-9 decision points in modified pre-existing callables"
+    },
+    {
+      "name": "no_hotspot_excess_growth",
+      "passed": true,
+      "detail": "-8 cyclomatic excess, 0 nesting excess"
+    }
+  ],
+  "factors": [
+    {
+      "id": "cc:internal/service/agent_sandbox.go:withClaudeAccounts",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/agent_sandbox.go",
+        "startLine": 443,
+        "endLine": 470,
+        "symbol": "withClaudeAccounts"
+      },
+      "metrics": {
+        "cyclomatic": 10,
+        "decisions": 9,
+        "lines": 28,
+        "nesting": 2
+      },
+      "debt": 1,
+      "shareOfScopeDebt": 0,
+      "cumulativeShare": 0,
+      "explanation": "cyclomatic 10 is 1 point(s) at or above the hotspot threshold 10 (9 decision points, 28 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 10) removes this factor; each point below 10 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`withClaudeAccounts` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      },
+      "change": "introduced",
+      "debtDelta": 1
+    }
+  ],
+  "improved": [
+    {
+      "id": "cc:internal/service/agent_sandbox.go:agentService.sandboxPrefix",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/agent_sandbox.go",
+        "startLine": 48,
+        "endLine": 263,
+        "symbol": "agentService.sandboxPrefix"
+      },
+      "metrics": {
+        "cyclomatic": 67,
+        "decisions": 66,
+        "lines": 216,
+        "nesting": 3
+      },
+      "debt": 58,
+      "shareOfScopeDebt": 0,
+      "cumulativeShare": 0,
+      "explanation": "cyclomatic 67 is 58 point(s) at or above the hotspot threshold 10 (66 decision points, 216 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 67) removes this factor; each point below 67 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`agentService.sandboxPrefix` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      },
+      "change": "reduced",
+      "debtDelta": -9
+    }
+  ],
+  "scopeDebtBefore": 19598.65,
+  "scopeDebtAfter": 19590.65,
+  "failed": false,
+  "failOn": "net-debt",
+  "guidance": [
+    "preserve behaviour: add or confirm characterisation tests for a factor's code before changing it; the evaluator does not run code",
+    "reduce decision points, do not only move them: a split that leaves the same branching in helpers removes hotspot debt but not logic (check the decision-point ledger with `codeeval check`)",
+    "keep helpers cohesive and named for one purpose; avoid creating new hotspot helpers (cc ≥ threshold) while removing a root's debt",
+    "do not delete features, inline configuration into data tables, or reshape syntax solely to lower the number; debt is an uncalibrated structural proxy",
+    "verify each fix by re-running `codeeval explain` on the same scope (the factor should disappear or shrink) and `codeeval check` on the change (gates pass, no new factors)"
+  ]
+}

@@ -1,0 +1,1383 @@
+{
+  "schema": "codeeval.explain/v2",
+  "scoringVersion": "scoring/v2-experimental",
+  "tool": {
+    "name": "codeeval",
+    "version": "0.2.0-poc"
+  },
+  "configHash": "3cef63633359769f",
+  "repository": "legato-stack",
+  "weights": {
+    "cyclomaticExcessPoint": 1,
+    "nestingExcessLevel": 2,
+    "redundantTokensPerPoint": 20,
+    "ruleViolationEdge": 10,
+    "cycleUnit": 20,
+    "halfScoreDensity": 25
+  },
+  "thresholds": {
+    "hotspotCyclomatic": 10,
+    "hotspotNesting": 4,
+    "minCloneTokens": 40
+  },
+  "notes": [
+    "experimental scoring/v2: separate from and not comparable to scoring/v1 −2..+2 scores; v1 reports are unchanged",
+    "debt points = complexity (Σ max(0, cyclomatic − H + 1): debt exactly when a callable is a hotspot) + nesting (Σ max(0, depth − N + 1) × weight) + duplication (structural-clone redundant tokens ÷ tokens-per-point) + architecture (configured-rule-violating edges and units in cycles × weights)",
+    "debt is additive across modules and telescopes across commits (Δ = after − before of one snapshot function); telescoping is mathematical consistency under a fixed model and config, not empirical calibration",
+    "debt is an uncalibrated, size-sensitive structural proxy: deleting features or code, or reshaping syntax (e.g. splitting functions below the thresholds), can lower it without improving engineering; do not optimise it alone — keep the component and raw evidence, behaviour/test, coverage and scope checks",
+    "score = 100 × h ÷ (h + debt per 1,000 supported source lines), h = halfScoreDensity: a size-normalised view for comparing modules or codebases; it can be diluted by adding simple code and is never a target on its own",
+    "weights are uncalibrated defaults; the score is a structural index, not a measure of correctness, design quality or behaviour",
+    "only languages with adapters are measured; see coverage — unsupported source is not scored and not neutral",
+    "architecture debt reflects only the configured import-level rules; rules the configuration cannot express are not measured",
+    "complexity growth below the hotspot thresholds carries no debt; it is reported as decision points and checked by the existing-callable branch gate",
+    "gates are advisory checks, not merge decisions"
+  ],
+  "revision": {
+    "ref": "bb13a424dc73f3eeb98f8bce43db932a9d19f7e6",
+    "commit": "bb13a424dc73f3eeb98f8bce43db932a9d19f7e6",
+    "tree": "25b725950d6a06a99078492cededc57c2fae2ebb",
+    "commitTime": "2026-11-27T20:29:04+11:00"
+  },
+  "scope": {
+    "paths": [
+      "internal/engine/store"
+    ]
+  },
+  "coverage": {
+    "languages": [
+      {
+        "language": "go",
+        "supported": true,
+        "files": 990,
+        "bytes": 8338850
+      },
+      {
+        "language": "javascript",
+        "supported": false,
+        "files": 23,
+        "bytes": 128585
+      },
+      {
+        "language": "kotlin",
+        "supported": false,
+        "files": 54,
+        "bytes": 394351
+      },
+      {
+        "language": "python",
+        "supported": false,
+        "files": 5,
+        "bytes": 44436
+      },
+      {
+        "language": "rust",
+        "supported": false,
+        "files": 34,
+        "bytes": 564583
+      },
+      {
+        "language": "shell",
+        "supported": false,
+        "files": 15,
+        "bytes": 36033
+      },
+      {
+        "language": "sql",
+        "supported": false,
+        "files": 160,
+        "bytes": 171688
+      },
+      {
+        "language": "swift",
+        "supported": false,
+        "files": 2,
+        "bytes": 5345
+      },
+      {
+        "language": "typescript",
+        "supported": true,
+        "files": 565,
+        "bytes": 3771184
+      }
+    ],
+    "supportedSourceFiles": 1555,
+    "sourceFiles": 1848,
+    "supportedByteShare": 0.9,
+    "parseErrorFiles": 4
+  },
+  "totals": {
+    "sourceFiles": 89,
+    "sourceLines": 20004,
+    "callables": 953,
+    "hotspots": 62,
+    "debt": {
+      "complexity": 403,
+      "nesting": 14,
+      "duplication": 416.9,
+      "architecture": 0,
+      "total": 833.9
+    },
+    "debtPerKLOC": 41.69,
+    "score": 37.49,
+    "modules": [
+      "internal/engine/store"
+    ]
+  },
+  "factors": [
+    {
+      "id": "cc:internal/engine/store/store.go:prepareMigration",
+      "kind": "complexity",
+      "module": "internal/engine/store",
+      "language": "go",
+      "location": {
+        "file": "internal/engine/store/store.go",
+        "startLine": 364,
+        "endLine": 683,
+        "symbol": "prepareMigration"
+      },
+      "metrics": {
+        "cyclomatic": 93,
+        "decisions": 92,
+        "lines": 320,
+        "nesting": 4
+      },
+      "debt": 84,
+      "shareOfScopeDebt": 0.1007,
+      "cumulativeShare": 0.1007,
+      "explanation": "cyclomatic 93 is 84 point(s) at or above the hotspot threshold 10 (92 decision points, 320 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 93) removes this factor; each point below 93 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`prepareMigration` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "dup:internal/engine/store/review_loops.go:Store.ClosedLoopReviewers",
+      "kind": "duplication",
+      "module": "internal/engine/store",
+      "language": "go",
+      "location": {
+        "file": "internal/engine/store/review_loops.go",
+        "startLine": 1115,
+        "endLine": 1123,
+        "symbol": "Store.ClosedLoopReviewers"
+      },
+      "metrics": {
+        "exact": 0,
+        "members": 30,
+        "membersInScope": 30,
+        "tokens": 44
+      },
+      "debt": 63.8,
+      "shareOfScopeDebt": 0.0765,
+      "cumulativeShare": 0.1772,
+      "explanation": "structural clone group of 30 callables (30 in scope); 1276 redundant tokens attributed to this scope",
+      "related": [
+        {
+          "file": "internal/engine/store/review_loops.go",
+          "startLine": 1115,
+          "endLine": 1123,
+          "symbol": "Store.ClosedLoopReviewers"
+        },
+        {
+          "file": "internal/engine/store/agent_conversation_recovery.go",
+          "startLine": 41,
+          "endLine": 46,
+          "symbol": "Store.ConversationStorageDirs"
+        },
+        {
+          "file": "internal/engine/store/resource.go",
+          "startLine": 148,
+          "endLine": 153,
+          "symbol": "Store.ListChosenExecutionResources"
+        },
+        {
+          "file": "internal/engine/store/resource.go",
+          "startLine": 157,
+          "endLine": 162,
+          "symbol": "Store.ListExecutionResources"
+        },
+        {
+          "file": "internal/engine/store/oauth_attempts.go",
+          "startLine": 188,
+          "endLine": 192,
+          "symbol": "Store.ListOAuthAttempts"
+        },
+        {
+          "file": "internal/engine/store/integration_attention.go",
+          "startLine": 76,
+          "endLine": 81,
+          "symbol": "Store.ListOpenIntegrationAttention"
+        },
+        {
+          "file": "internal/engine/store/plan.go",
+          "startLine": 183,
+          "endLine": 187,
+          "symbol": "Store.ListPlanComments"
+        },
+        {
+          "file": "internal/engine/store/plan.go",
+          "startLine": 331,
+          "endLine": 335,
+          "symbol": "Store.ListPlanMessages"
+        },
+        {
+          "file": "internal/engine/store/plan.go",
+          "startLine": 106,
+          "endLine": 110,
+          "symbol": "Store.ListPlanQuestions"
+        },
+        {
+          "file": "internal/engine/store/plan.go",
+          "startLine": 168,
+          "endLine": 172,
+          "symbol": "Store.ListPlanResponses"
+        },
+        {
+          "file": "internal/engine/store/plan.go",
+          "startLine": 306,
+          "endLine": 310,
+          "symbol": "Store.ListPlanRevisions"
+        },
+        {
+          "file": "internal/engine/store/plan.go",
+          "startLine": 21,
+          "endLine": 25,
+          "symbol": "Store.ListPlansByTask"
+        },
+        {
+          "file": "internal/engine/store/reeve_watches.go",
+          "startLine": 55,
+          "endLine": 59,
+          "symbol": "Store.ListReeveWatchEvents"
+        },
+        {
+          "file": "internal/engine/store/review.go",
+          "startLine": 453,
+          "endLine": 458,
+          "symbol": "Store.ListReviewChapterHunks"
+        },
+        {
+          "file": "internal/engine/store/review.go",
+          "startLine": 123,
+          "endLine": 127,
+          "symbol": "Store.ListReviewFindingsByPass"
+        },
+        {
+          "file": "internal/engine/store/review.go",
+          "startLine": 108,
+          "endLine": 112,
+          "symbol": "Store.ListReviewHunkNotesByPass"
+        },
+        {
+          "file": "internal/engine/store/review_loops.go",
+          "startLine": 993,
+          "endLine": 997,
+          "symbol": "Store.ListReviewLoopFindings"
+        },
+        {
+          "file": "internal/engine/store/review_loops.go",
+          "startLine": 873,
+          "endLine": 877,
+          "symbol": "Store.ListReviewLoopItems"
+        },
+        {
+          "file": "internal/engine/store/review_loops.go",
+          "startLine": 937,
+          "endLine": 941,
+          "symbol": "Store.ListReviewLoopPRs"
+        },
+        {
+          "file": "internal/engine/store/review_loops.go",
+          "startLine": 986,
+          "endLine": 990,
+          "symbol": "Store.ListReviewLoopPasses"
+        },
+        {
+          "file": "internal/engine/store/review.go",
+          "startLine": 102,
+          "endLine": 106,
+          "symbol": "Store.ListReviewMessagesByPass"
+        },
+        {
+          "file": "internal/engine/store/review.go",
+          "startLine": 79,
+          "endLine": 83,
+          "symbol": "Store.ListReviewPasses"
+        },
+        {
+          "file": "internal/engine/store/review.go",
+          "startLine": 94,
+          "endLine": 100,
+          "symbol": "Store.ListReviewStepsByPass"
+        },
+        {
+          "file": "internal/engine/store/review.go",
+          "startLine": 64,
+          "endLine": 69,
+          "symbol": "Store.ListReviewToursByTask"
+        },
+        {
+          "file": "internal/engine/store/handoff_reviews.go",
+          "startLine": 1297,
+          "endLine": 1302,
+          "symbol": "Store.ListRunReviewLoopsAuthoredBy"
+        },
+        {
+          "file": "internal/engine/store/swarm.go",
+          "startLine": 70,
+          "endLine": 75,
+          "symbol": "Store.ListSubtasksByParent"
+        },
+        {
+          "file": "internal/engine/store/store.go",
+          "startLine": 1073,
+          "endLine": 1078,
+          "symbol": "Store.ListSyncLogs"
+        },
+        {
+          "file": "internal/engine/store/task_notes.go",
+          "startLine": 10,
+          "endLine": 14,
+          "symbol": "Store.ListTaskNotes"
+        },
+        {
+          "file": "internal/engine/store/swarm.go",
+          "startLine": 245,
+          "endLine": 252,
+          "symbol": "Store.ListUnackedSwarmEvents"
+        },
+        {
+          "file": "internal/engine/store/subagent_activity.go",
+          "startLine": 123,
+          "endLine": 128,
+          "symbol": "Store.OpenSubagents"
+        }
+      ],
+      "remediation": {
+        "strategy": "consolidate duplicated callables",
+        "target": "one implementation instead of 30 copies",
+        "steps": [
+          "confirm the copies have the same semantics (structural clones may differ in literals or names that matter)",
+          "move one implementation to a module every caller may import under the configured architecture rules",
+          "replace the other copies with calls; delete the copies"
+        ],
+        "acceptance": [
+          "the clone group shrinks to one member (or is removed)",
+          "no new architecture rule violations",
+          "tests for every caller pass"
+        ],
+        "caution": "structural similarity is a candidate signal, not proof of equivalence; if semantics differ or layering forbids a shared home, record a won't-fix with the reason"
+      }
+    },
+    {
+      "id": "dup:internal/engine/store/execution.go:Store.GetExecution",
+      "kind": "duplication",
+      "module": "internal/engine/store",
+      "language": "go",
+      "location": {
+        "file": "internal/engine/store/execution.go",
+        "startLine": 70,
+        "endLine": 88,
+        "symbol": "Store.GetExecution"
+      },
+      "metrics": {
+        "exact": 0,
+        "members": 9,
+        "membersInScope": 9,
+        "tokens": 65
+      },
+      "debt": 26,
+      "shareOfScopeDebt": 0.0312,
+      "cumulativeShare": 0.2084,
+      "explanation": "structural clone group of 9 callables (9 in scope); 520 redundant tokens attributed to this scope",
+      "related": [
+        {
+          "file": "internal/engine/store/execution.go",
+          "startLine": 70,
+          "endLine": 88,
+          "symbol": "Store.GetExecution"
+        },
+        {
+          "file": "internal/engine/store/learning_curation.go",
+          "startLine": 163,
+          "endLine": 172,
+          "symbol": "Store.GetLearningCurationGeneration"
+        },
+        {
+          "file": "internal/engine/store/learning_curation.go",
+          "startLine": 54,
+          "endLine": 63,
+          "symbol": "Store.GetLearningCurationGenerationByAttempt"
+        },
+        {
+          "file": "internal/engine/store/learning.go",
+          "startLine": 415,
+          "endLine": 424,
+          "symbol": "Store.GetLearningIncorporation"
+        },
+        {
+          "file": "internal/engine/store/learning_prompt.go",
+          "startLine": 74,
+          "endLine": 83,
+          "symbol": "Store.GetLearningPromptManifest"
+        },
+        {
+          "file": "internal/engine/store/learning.go",
+          "startLine": 38,
+          "endLine": 47,
+          "symbol": "Store.GetLearningReflectionRequest"
+        },
+        {
+          "file": "internal/engine/store/learning.go",
+          "startLine": 49,
+          "endLine": 58,
+          "symbol": "Store.GetLearningReflectionRequestByAttempt"
+        },
+        {
+          "file": "internal/engine/store/workflow_trigger.go",
+          "startLine": 86,
+          "endLine": 95,
+          "symbol": "Store.GetTaskTransition"
+        },
+        {
+          "file": "internal/engine/store/workflow_trigger.go",
+          "startLine": 66,
+          "endLine": 75,
+          "symbol": "Store.LatestTaskTransition"
+        }
+      ],
+      "remediation": {
+        "strategy": "consolidate duplicated callables",
+        "target": "one implementation instead of 9 copies",
+        "steps": [
+          "confirm the copies have the same semantics (structural clones may differ in literals or names that matter)",
+          "move one implementation to a module every caller may import under the configured architecture rules",
+          "replace the other copies with calls; delete the copies"
+        ],
+        "acceptance": [
+          "the clone group shrinks to one member (or is removed)",
+          "no new architecture rule violations",
+          "tests for every caller pass"
+        ],
+        "caution": "structural similarity is a candidate signal, not proof of equivalence; if semantics differ or layering forbids a shared home, record a won't-fix with the reason"
+      }
+    },
+    {
+      "id": "dup:internal/engine/store/review.go:Store.GetActiveReviewPass",
+      "kind": "duplication",
+      "module": "internal/engine/store",
+      "language": "go",
+      "location": {
+        "file": "internal/engine/store/review.go",
+        "startLine": 85,
+        "endLine": 92,
+        "symbol": "Store.GetActiveReviewPass"
+      },
+      "metrics": {
+        "exact": 0,
+        "members": 8,
+        "membersInScope": 8,
+        "tokens": 59
+      },
+      "debt": 20.65,
+      "shareOfScopeDebt": 0.0248,
+      "cumulativeShare": 0.2332,
+      "explanation": "structural clone group of 8 callables (8 in scope); 413 redundant tokens attributed to this scope",
+      "related": [
+        {
+          "file": "internal/engine/store/review.go",
+          "startLine": 85,
+          "endLine": 92,
+          "symbol": "Store.GetActiveReviewPass"
+        },
+        {
+          "file": "internal/engine/store/review.go",
+          "startLine": 54,
+          "endLine": 61,
+          "symbol": "Store.GetDefaultReviewTour"
+        },
+        {
+          "file": "internal/engine/store/reeve_change_sets.go",
+          "startLine": 47,
+          "endLine": 54,
+          "symbol": "Store.GetReeveChangeSet"
+        },
+        {
+          "file": "internal/engine/store/reeve_peers.go",
+          "startLine": 35,
+          "endLine": 42,
+          "symbol": "Store.GetReevePeer"
+        },
+        {
+          "file": "internal/engine/store/review.go",
+          "startLine": 184,
+          "endLine": 196,
+          "symbol": "Store.GetReviewPassPlan"
+        },
+        {
+          "file": "internal/engine/store/review.go",
+          "startLine": 286,
+          "endLine": 293,
+          "symbol": "Store.GetReviewStep"
+        },
+        {
+          "file": "internal/engine/store/review.go",
+          "startLine": 44,
+          "endLine": 51,
+          "symbol": "Store.GetReviewTour"
+        },
+        {
+          "file": "internal/engine/store/handoff.go",
+          "startLine": 200,
+          "endLine": 207,
+          "symbol": "Store.HandoffObservation"
+        }
+      ],
+      "remediation": {
+        "strategy": "consolidate duplicated callables",
+        "target": "one implementation instead of 8 copies",
+        "steps": [
+          "confirm the copies have the same semantics (structural clones may differ in literals or names that matter)",
+          "move one implementation to a module every caller may import under the configured architecture rules",
+          "replace the other copies with calls; delete the copies"
+        ],
+        "acceptance": [
+          "the clone group shrinks to one member (or is removed)",
+          "no new architecture rule violations",
+          "tests for every caller pass"
+        ],
+        "caution": "structural similarity is a candidate signal, not proof of equivalence; if semantics differ or layering forbids a shared home, record a won't-fix with the reason"
+      }
+    },
+    {
+      "id": "dup:internal/engine/store/pr_reviews_seen.go:Store.GitHubAppLogins",
+      "kind": "duplication",
+      "module": "internal/engine/store",
+      "language": "go",
+      "location": {
+        "file": "internal/engine/store/pr_reviews_seen.go",
+        "startLine": 64,
+        "endLine": 68,
+        "symbol": "Store.GitHubAppLogins"
+      },
+      "metrics": {
+        "exact": 0,
+        "members": 11,
+        "membersInScope": 11,
+        "tokens": 41
+      },
+      "debt": 20.5,
+      "shareOfScopeDebt": 0.0246,
+      "cumulativeShare": 0.2578,
+      "explanation": "structural clone group of 11 callables (11 in scope); 410 redundant tokens attributed to this scope",
+      "related": [
+        {
+          "file": "internal/engine/store/pr_reviews_seen.go",
+          "startLine": 64,
+          "endLine": 68,
+          "symbol": "Store.GitHubAppLogins"
+        },
+        {
+          "file": "internal/engine/store/launch_messages.go",
+          "startLine": 37,
+          "endLine": 42,
+          "symbol": "Store.ListLaunchMessages"
+        },
+        {
+          "file": "internal/engine/store/reeve_peers.go",
+          "startLine": 105,
+          "endLine": 109,
+          "symbol": "Store.ListReeveInbox"
+        },
+        {
+          "file": "internal/engine/store/reeve_peers.go",
+          "startLine": 45,
+          "endLine": 49,
+          "symbol": "Store.ListReevePeers"
+        },
+        {
+          "file": "internal/engine/store/repository_guidance.go",
+          "startLine": 21,
+          "endLine": 25,
+          "symbol": "Store.ListRepositoryGuidance"
+        },
+        {
+          "file": "internal/engine/store/repository_preset.go",
+          "startLine": 32,
+          "endLine": 36,
+          "symbol": "Store.ListRepositoryPresets"
+        },
+        {
+          "file": "internal/engine/store/credential.go",
+          "startLine": 57,
+          "endLine": 61,
+          "symbol": "Store.ListSecrets"
+        },
+        {
+          "file": "internal/engine/store/settings.go",
+          "startLine": 75,
+          "endLine": 79,
+          "symbol": "Store.ListSettingEntries"
+        },
+        {
+          "file": "internal/engine/store/settings.go",
+          "startLine": 19,
+          "endLine": 23,
+          "symbol": "Store.ListSettings"
+        },
+        {
+          "file": "internal/engine/store/subscription_usage.go",
+          "startLine": 14,
+          "endLine": 18,
+          "symbol": "Store.ListSubscriptionUsage"
+        },
+        {
+          "file": "internal/engine/store/workflow_trigger_switches.go",
+          "startLine": 14,
+          "endLine": 18,
+          "symbol": "Store.WorkflowTriggerSwitches"
+        }
+      ],
+      "remediation": {
+        "strategy": "consolidate duplicated callables",
+        "target": "one implementation instead of 11 copies",
+        "steps": [
+          "confirm the copies have the same semantics (structural clones may differ in literals or names that matter)",
+          "move one implementation to a module every caller may import under the configured architecture rules",
+          "replace the other copies with calls; delete the copies"
+        ],
+        "acceptance": [
+          "the clone group shrinks to one member (or is removed)",
+          "no new architecture rule violations",
+          "tests for every caller pass"
+        ],
+        "caution": "structural similarity is a candidate signal, not proof of equivalence; if semantics differ or layering forbids a shared home, record a won't-fix with the reason"
+      }
+    },
+    {
+      "id": "cc:internal/engine/store/store.go:Store.migrate",
+      "kind": "complexity",
+      "module": "internal/engine/store",
+      "language": "go",
+      "location": {
+        "file": "internal/engine/store/store.go",
+        "startLine": 225,
+        "endLine": 317,
+        "symbol": "Store.migrate"
+      },
+      "metrics": {
+        "cyclomatic": 28,
+        "decisions": 27,
+        "lines": 93,
+        "nesting": 4
+      },
+      "debt": 19,
+      "shareOfScopeDebt": 0.0228,
+      "cumulativeShare": 0.2805,
+      "explanation": "cyclomatic 28 is 19 point(s) at or above the hotspot threshold 10 (27 decision points, 93 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 28) removes this factor; each point below 28 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`Store.migrate` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/engine/store/review_loops.go:openReviewLoopTx",
+      "kind": "complexity",
+      "module": "internal/engine/store",
+      "language": "go",
+      "location": {
+        "file": "internal/engine/store/review_loops.go",
+        "startLine": 438,
+        "endLine": 507,
+        "symbol": "openReviewLoopTx"
+      },
+      "metrics": {
+        "cyclomatic": 27,
+        "decisions": 26,
+        "lines": 70,
+        "nesting": 2
+      },
+      "debt": 18,
+      "shareOfScopeDebt": 0.0216,
+      "cumulativeShare": 0.3021,
+      "explanation": "cyclomatic 27 is 18 point(s) at or above the hotspot threshold 10 (26 decision points, 70 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 27) removes this factor; each point below 27 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`openReviewLoopTx` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/engine/store/columns.go:Store.SyncColumnMappings",
+      "kind": "complexity",
+      "module": "internal/engine/store",
+      "language": "go",
+      "location": {
+        "file": "internal/engine/store/columns.go",
+        "startLine": 23,
+        "endLine": 127,
+        "symbol": "Store.SyncColumnMappings"
+      },
+      "metrics": {
+        "cyclomatic": 24,
+        "decisions": 23,
+        "lines": 105,
+        "nesting": 4
+      },
+      "debt": 15,
+      "shareOfScopeDebt": 0.018,
+      "cumulativeShare": 0.3201,
+      "explanation": "cyclomatic 24 is 15 point(s) at or above the hotspot threshold 10 (23 decision points, 105 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 24) removes this factor; each point below 24 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`Store.SyncColumnMappings` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/engine/store/learning_curation.go:Store.ApplyLearningCuration",
+      "kind": "complexity",
+      "module": "internal/engine/store",
+      "language": "go",
+      "location": {
+        "file": "internal/engine/store/learning_curation.go",
+        "startLine": 177,
+        "endLine": 252,
+        "symbol": "Store.ApplyLearningCuration"
+      },
+      "metrics": {
+        "cyclomatic": 24,
+        "decisions": 23,
+        "lines": 76,
+        "nesting": 3
+      },
+      "debt": 15,
+      "shareOfScopeDebt": 0.018,
+      "cumulativeShare": 0.3381,
+      "explanation": "cyclomatic 24 is 15 point(s) at or above the hotspot threshold 10 (23 decision points, 76 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 24) removes this factor; each point below 24 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`Store.ApplyLearningCuration` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/engine/store/task_native_session.go:Store.RecordTaskNativeSession",
+      "kind": "complexity",
+      "module": "internal/engine/store",
+      "language": "go",
+      "location": {
+        "file": "internal/engine/store/task_native_session.go",
+        "startLine": 183,
+        "endLine": 252,
+        "symbol": "Store.RecordTaskNativeSession"
+      },
+      "metrics": {
+        "cyclomatic": 24,
+        "decisions": 23,
+        "lines": 70,
+        "nesting": 1
+      },
+      "debt": 15,
+      "shareOfScopeDebt": 0.018,
+      "cumulativeShare": 0.3561,
+      "explanation": "cyclomatic 24 is 15 point(s) at or above the hotspot threshold 10 (23 decision points, 70 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 24) removes this factor; each point below 24 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`Store.RecordTaskNativeSession` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/engine/store/learning_curation.go:Store.ApplyLearningProposalDecision",
+      "kind": "complexity",
+      "module": "internal/engine/store",
+      "language": "go",
+      "location": {
+        "file": "internal/engine/store/learning_curation.go",
+        "startLine": 77,
+        "endLine": 161,
+        "symbol": "Store.ApplyLearningProposalDecision"
+      },
+      "metrics": {
+        "cyclomatic": 23,
+        "decisions": 22,
+        "lines": 85,
+        "nesting": 3
+      },
+      "debt": 14,
+      "shareOfScopeDebt": 0.0168,
+      "cumulativeShare": 0.3729,
+      "explanation": "cyclomatic 23 is 14 point(s) at or above the hotspot threshold 10 (22 decision points, 85 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 23) removes this factor; each point below 23 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`Store.ApplyLearningProposalDecision` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/engine/store/workflow.go:Store.FailWorkflowStepWith",
+      "kind": "complexity",
+      "module": "internal/engine/store",
+      "language": "go",
+      "location": {
+        "file": "internal/engine/store/workflow.go",
+        "startLine": 759,
+        "endLine": 827,
+        "symbol": "Store.FailWorkflowStepWith"
+      },
+      "metrics": {
+        "cyclomatic": 23,
+        "decisions": 22,
+        "lines": 69,
+        "nesting": 3
+      },
+      "debt": 14,
+      "shareOfScopeDebt": 0.0168,
+      "cumulativeShare": 0.3897,
+      "explanation": "cyclomatic 23 is 14 point(s) at or above the hotspot threshold 10 (22 decision points, 69 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 23) removes this factor; each point below 23 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`Store.FailWorkflowStepWith` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/engine/store/mcp_connections.go:Store.UpdateMCPConnection",
+      "kind": "complexity",
+      "module": "internal/engine/store",
+      "language": "go",
+      "location": {
+        "file": "internal/engine/store/mcp_connections.go",
+        "startLine": 114,
+        "endLine": 161,
+        "symbol": "Store.UpdateMCPConnection"
+      },
+      "metrics": {
+        "cyclomatic": 22,
+        "decisions": 21,
+        "lines": 48,
+        "nesting": 2
+      },
+      "debt": 13,
+      "shareOfScopeDebt": 0.0156,
+      "cumulativeShare": 0.4053,
+      "explanation": "cyclomatic 22 is 13 point(s) at or above the hotspot threshold 10 (21 decision points, 48 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 22) removes this factor; each point below 22 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`Store.UpdateMCPConnection` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "dup:internal/engine/store/repository_guidance.go:Store.DeleteRepositoryGuidance",
+      "kind": "duplication",
+      "module": "internal/engine/store",
+      "language": "go",
+      "location": {
+        "file": "internal/engine/store/repository_guidance.go",
+        "startLine": 28,
+        "endLine": 39,
+        "symbol": "Store.DeleteRepositoryGuidance"
+      },
+      "metrics": {
+        "exact": 0,
+        "members": 5,
+        "membersInScope": 5,
+        "tokens": 65
+      },
+      "debt": 13,
+      "shareOfScopeDebt": 0.0156,
+      "cumulativeShare": 0.4209,
+      "explanation": "structural clone group of 5 callables (5 in scope); 260 redundant tokens attributed to this scope",
+      "related": [
+        {
+          "file": "internal/engine/store/repository_guidance.go",
+          "startLine": 28,
+          "endLine": 39,
+          "symbol": "Store.DeleteRepositoryGuidance"
+        },
+        {
+          "file": "internal/engine/store/repository_preset.go",
+          "startLine": 39,
+          "endLine": 50,
+          "symbol": "Store.DeleteRepositoryPreset"
+        },
+        {
+          "file": "internal/engine/store/integration_tokens.go",
+          "startLine": 156,
+          "endLine": 167,
+          "symbol": "Store.RevokeIntegrationToken"
+        },
+        {
+          "file": "internal/engine/store/integration_tokens.go",
+          "startLine": 113,
+          "endLine": 124,
+          "symbol": "Store.RevokeMainIntegrationToken"
+        },
+        {
+          "file": "internal/engine/store/execution_broker.go",
+          "startLine": 38,
+          "endLine": 49,
+          "symbol": "Store.SetExecutionReadOnly"
+        }
+      ],
+      "remediation": {
+        "strategy": "consolidate duplicated callables",
+        "target": "one implementation instead of 5 copies",
+        "steps": [
+          "confirm the copies have the same semantics (structural clones may differ in literals or names that matter)",
+          "move one implementation to a module every caller may import under the configured architecture rules",
+          "replace the other copies with calls; delete the copies"
+        ],
+        "acceptance": [
+          "the clone group shrinks to one member (or is removed)",
+          "no new architecture rule violations",
+          "tests for every caller pass"
+        ],
+        "caution": "structural similarity is a candidate signal, not proof of equivalence; if semantics differ or layering forbids a shared home, record a won't-fix with the reason"
+      }
+    },
+    {
+      "id": "cc:internal/engine/store/handoff_reviews.go:Store.CheckReviewLoopWrite",
+      "kind": "complexity",
+      "module": "internal/engine/store",
+      "language": "go",
+      "location": {
+        "file": "internal/engine/store/handoff_reviews.go",
+        "startLine": 540,
+        "endLine": 604,
+        "symbol": "Store.CheckReviewLoopWrite"
+      },
+      "metrics": {
+        "cyclomatic": 20,
+        "decisions": 19,
+        "lines": 65,
+        "nesting": 2
+      },
+      "debt": 11,
+      "shareOfScopeDebt": 0.0132,
+      "cumulativeShare": 0.434,
+      "explanation": "cyclomatic 20 is 11 point(s) at or above the hotspot threshold 10 (19 decision points, 65 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 20) removes this factor; each point below 20 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`Store.CheckReviewLoopWrite` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/engine/store/handoff_reviews.go:Store.HoldHandoffReviewForRetry",
+      "kind": "complexity",
+      "module": "internal/engine/store",
+      "language": "go",
+      "location": {
+        "file": "internal/engine/store/handoff_reviews.go",
+        "startLine": 978,
+        "endLine": 1026,
+        "symbol": "Store.HoldHandoffReviewForRetry"
+      },
+      "metrics": {
+        "cyclomatic": 20,
+        "decisions": 19,
+        "lines": 49,
+        "nesting": 3
+      },
+      "debt": 11,
+      "shareOfScopeDebt": 0.0132,
+      "cumulativeShare": 0.4472,
+      "explanation": "cyclomatic 20 is 11 point(s) at or above the hotspot threshold 10 (19 decision points, 49 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 20) removes this factor; each point below 20 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`Store.HoldHandoffReviewForRetry` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/engine/store/workflow_wait.go:Store.FailRecordedWorkflowStep",
+      "kind": "complexity",
+      "module": "internal/engine/store",
+      "language": "go",
+      "location": {
+        "file": "internal/engine/store/workflow_wait.go",
+        "startLine": 206,
+        "endLine": 285,
+        "symbol": "Store.FailRecordedWorkflowStep"
+      },
+      "metrics": {
+        "cyclomatic": 20,
+        "decisions": 19,
+        "lines": 80,
+        "nesting": 3
+      },
+      "debt": 11,
+      "shareOfScopeDebt": 0.0132,
+      "cumulativeShare": 0.4604,
+      "explanation": "cyclomatic 20 is 11 point(s) at or above the hotspot threshold 10 (19 decision points, 80 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 20) removes this factor; each point below 20 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`Store.FailRecordedWorkflowStep` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "dup:internal/engine/store/approval_devices.go:Store.GetApprovalDevice",
+      "kind": "duplication",
+      "module": "internal/engine/store",
+      "language": "go",
+      "location": {
+        "file": "internal/engine/store/approval_devices.go",
+        "startLine": 53,
+        "endLine": 62,
+        "symbol": "Store.GetApprovalDevice"
+      },
+      "metrics": {
+        "exact": 0,
+        "members": 4,
+        "membersInScope": 4,
+        "tokens": 70
+      },
+      "debt": 10.5,
+      "shareOfScopeDebt": 0.0126,
+      "cumulativeShare": 0.473,
+      "explanation": "structural clone group of 4 callables (4 in scope); 210 redundant tokens attributed to this scope",
+      "related": [
+        {
+          "file": "internal/engine/store/approval_devices.go",
+          "startLine": 53,
+          "endLine": 62,
+          "symbol": "Store.GetApprovalDevice"
+        },
+        {
+          "file": "internal/engine/store/attention.go",
+          "startLine": 65,
+          "endLine": 74,
+          "symbol": "Store.GetAttentionItem"
+        },
+        {
+          "file": "internal/engine/store/plan.go",
+          "startLine": 10,
+          "endLine": 19,
+          "symbol": "Store.GetPlan"
+        },
+        {
+          "file": "internal/engine/store/credential.go",
+          "startLine": 34,
+          "endLine": 43,
+          "symbol": "Store.GetSecret"
+        }
+      ],
+      "remediation": {
+        "strategy": "consolidate duplicated callables",
+        "target": "one implementation instead of 4 copies",
+        "steps": [
+          "confirm the copies have the same semantics (structural clones may differ in literals or names that matter)",
+          "move one implementation to a module every caller may import under the configured architecture rules",
+          "replace the other copies with calls; delete the copies"
+        ],
+        "acceptance": [
+          "the clone group shrinks to one member (or is removed)",
+          "no new architecture rule violations",
+          "tests for every caller pass"
+        ],
+        "caution": "structural similarity is a candidate signal, not proof of equivalence; if semantics differ or layering forbids a shared home, record a won't-fix with the reason"
+      }
+    },
+    {
+      "id": "dup:internal/engine/store/approval.go:Store.CountApprovals",
+      "kind": "duplication",
+      "module": "internal/engine/store",
+      "language": "go",
+      "location": {
+        "file": "internal/engine/store/approval.go",
+        "startLine": 178,
+        "endLine": 182,
+        "symbol": "Store.CountApprovals"
+      },
+      "metrics": {
+        "exact": 0,
+        "members": 6,
+        "membersInScope": 6,
+        "tokens": 40
+      },
+      "debt": 10,
+      "shareOfScopeDebt": 0.012,
+      "cumulativeShare": 0.485,
+      "explanation": "structural clone group of 6 callables (6 in scope); 200 redundant tokens attributed to this scope",
+      "related": [
+        {
+          "file": "internal/engine/store/approval.go",
+          "startLine": 178,
+          "endLine": 182,
+          "symbol": "Store.CountApprovals"
+        },
+        {
+          "file": "internal/engine/store/plan.go",
+          "startLine": 139,
+          "endLine": 146,
+          "symbol": "Store.CountUnansweredRequiredPlanQuestions"
+        },
+        {
+          "file": "internal/engine/store/handoff.go",
+          "startLine": 238,
+          "endLine": 242,
+          "symbol": "Store.HasHandoffPackets"
+        },
+        {
+          "file": "internal/engine/store/reeve_watches.go",
+          "startLine": 106,
+          "endLine": 110,
+          "symbol": "Store.HasReeveWatchEventKind"
+        },
+        {
+          "file": "internal/engine/store/reeve_watches.go",
+          "startLine": 96,
+          "endLine": 102,
+          "symbol": "Store.TaskActivityMark"
+        },
+        {
+          "file": "internal/engine/store/workflow.go",
+          "startLine": 1114,
+          "endLine": 1121,
+          "symbol": "Store.WorkflowAttemptInUse"
+        }
+      ],
+      "remediation": {
+        "strategy": "consolidate duplicated callables",
+        "target": "one implementation instead of 6 copies",
+        "steps": [
+          "confirm the copies have the same semantics (structural clones may differ in literals or names that matter)",
+          "move one implementation to a module every caller may import under the configured architecture rules",
+          "replace the other copies with calls; delete the copies"
+        ],
+        "acceptance": [
+          "the clone group shrinks to one member (or is removed)",
+          "no new architecture rule violations",
+          "tests for every caller pass"
+        ],
+        "caution": "structural similarity is a candidate signal, not proof of equivalence; if semantics differ or layering forbids a shared home, record a won't-fix with the reason"
+      }
+    },
+    {
+      "id": "dup:internal/engine/store/handoff_notices.go:Store.ClaimHandoffNotice",
+      "kind": "duplication",
+      "module": "internal/engine/store",
+      "language": "go",
+      "location": {
+        "file": "internal/engine/store/handoff_notices.go",
+        "startLine": 10,
+        "endLine": 17,
+        "symbol": "Store.ClaimHandoffNotice"
+      },
+      "metrics": {
+        "exact": 0,
+        "members": 4,
+        "membersInScope": 4,
+        "tokens": 61
+      },
+      "debt": 9.15,
+      "shareOfScopeDebt": 0.011,
+      "cumulativeShare": 0.496,
+      "explanation": "structural clone group of 4 callables (4 in scope); 183 redundant tokens attributed to this scope",
+      "related": [
+        {
+          "file": "internal/engine/store/handoff_notices.go",
+          "startLine": 10,
+          "endLine": 17,
+          "symbol": "Store.ClaimHandoffNotice"
+        },
+        {
+          "file": "internal/engine/store/approval_devices.go",
+          "startLine": 221,
+          "endLine": 228,
+          "symbol": "Store.ClaimInstanceValue"
+        },
+        {
+          "file": "internal/engine/store/workers.go",
+          "startLine": 103,
+          "endLine": 111,
+          "symbol": "Store.SetWorkerRefused"
+        },
+        {
+          "file": "internal/engine/store/workers.go",
+          "startLine": 91,
+          "endLine": 98,
+          "symbol": "Store.SetWorkerUnreachable"
+        }
+      ],
+      "remediation": {
+        "strategy": "consolidate duplicated callables",
+        "target": "one implementation instead of 4 copies",
+        "steps": [
+          "confirm the copies have the same semantics (structural clones may differ in literals or names that matter)",
+          "move one implementation to a module every caller may import under the configured architecture rules",
+          "replace the other copies with calls; delete the copies"
+        ],
+        "acceptance": [
+          "the clone group shrinks to one member (or is removed)",
+          "no new architecture rule violations",
+          "tests for every caller pass"
+        ],
+        "caution": "structural similarity is a candidate signal, not proof of equivalence; if semantics differ or layering forbids a shared home, record a won't-fix with the reason"
+      }
+    }
+  ],
+  "factorsOmitted": 114,
+  "concentration": {
+    "factors": 134,
+    "factorsFor50Percent": 21,
+    "factorsFor80Percent": 63
+  },
+  "guidance": [
+    "preserve behaviour: add or confirm characterisation tests for a factor's code before changing it; the evaluator does not run code",
+    "reduce decision points, do not only move them: a split that leaves the same branching in helpers removes hotspot debt but not logic (check the decision-point ledger with `codeeval check`)",
+    "keep helpers cohesive and named for one purpose; avoid creating new hotspot helpers (cc ≥ threshold) while removing a root's debt",
+    "do not delete features, inline configuration into data tables, or reshape syntax solely to lower the number; debt is an uncalibrated structural proxy",
+    "verify each fix by re-running `codeeval explain` on the same scope (the factor should disappear or shrink) and `codeeval check` on the change (gates pass, no new factors)"
+  ]
+}

@@ -1,0 +1,1701 @@
+{
+  "schema": "codeeval.explain/v2",
+  "scoringVersion": "scoring/v2-experimental",
+  "tool": {
+    "name": "codeeval",
+    "version": "0.2.0-poc"
+  },
+  "configHash": "3cef63633359769f",
+  "repository": "legato-stack",
+  "weights": {
+    "cyclomaticExcessPoint": 1,
+    "nestingExcessLevel": 2,
+    "redundantTokensPerPoint": 20,
+    "ruleViolationEdge": 10,
+    "cycleUnit": 20,
+    "halfScoreDensity": 25
+  },
+  "thresholds": {
+    "hotspotCyclomatic": 10,
+    "hotspotNesting": 4,
+    "minCloneTokens": 40
+  },
+  "notes": [
+    "experimental scoring/v2: separate from and not comparable to scoring/v1 −2..+2 scores; v1 reports are unchanged",
+    "debt points = complexity (Σ max(0, cyclomatic − H + 1): debt exactly when a callable is a hotspot) + nesting (Σ max(0, depth − N + 1) × weight) + duplication (structural-clone redundant tokens ÷ tokens-per-point) + architecture (configured-rule-violating edges and units in cycles × weights)",
+    "debt is additive across modules and telescopes across commits (Δ = after − before of one snapshot function); telescoping is mathematical consistency under a fixed model and config, not empirical calibration",
+    "debt is an uncalibrated, size-sensitive structural proxy: deleting features or code, or reshaping syntax (e.g. splitting functions below the thresholds), can lower it without improving engineering; do not optimise it alone — keep the component and raw evidence, behaviour/test, coverage and scope checks",
+    "score = 100 × h ÷ (h + debt per 1,000 supported source lines), h = halfScoreDensity: a size-normalised view for comparing modules or codebases; it can be diluted by adding simple code and is never a target on its own",
+    "weights are uncalibrated defaults; the score is a structural index, not a measure of correctness, design quality or behaviour",
+    "only languages with adapters are measured; see coverage — unsupported source is not scored and not neutral",
+    "architecture debt reflects only the configured import-level rules; rules the configuration cannot express are not measured",
+    "complexity growth below the hotspot thresholds carries no debt; it is reported as decision points and checked by the existing-callable branch gate",
+    "gates are advisory checks, not merge decisions"
+  ],
+  "revision": {
+    "ref": "bb13a424dc73f3eeb98f8bce43db932a9d19f7e6",
+    "commit": "bb13a424dc73f3eeb98f8bce43db932a9d19f7e6",
+    "tree": "25b725950d6a06a99078492cededc57c2fae2ebb",
+    "commitTime": "2026-11-27T20:29:04+11:00"
+  },
+  "scope": {
+    "paths": [
+      "internal/service"
+    ]
+  },
+  "coverage": {
+    "languages": [
+      {
+        "language": "go",
+        "supported": true,
+        "files": 990,
+        "bytes": 8338850
+      },
+      {
+        "language": "javascript",
+        "supported": false,
+        "files": 23,
+        "bytes": 128585
+      },
+      {
+        "language": "kotlin",
+        "supported": false,
+        "files": 54,
+        "bytes": 394351
+      },
+      {
+        "language": "python",
+        "supported": false,
+        "files": 5,
+        "bytes": 44436
+      },
+      {
+        "language": "rust",
+        "supported": false,
+        "files": 34,
+        "bytes": 564583
+      },
+      {
+        "language": "shell",
+        "supported": false,
+        "files": 15,
+        "bytes": 36033
+      },
+      {
+        "language": "sql",
+        "supported": false,
+        "files": 160,
+        "bytes": 171688
+      },
+      {
+        "language": "swift",
+        "supported": false,
+        "files": 2,
+        "bytes": 5345
+      },
+      {
+        "language": "typescript",
+        "supported": true,
+        "files": 565,
+        "bytes": 3771184
+      }
+    ],
+    "supportedSourceFiles": 1555,
+    "sourceFiles": 1848,
+    "supportedByteShare": 0.9,
+    "parseErrorFiles": 4
+  },
+  "totals": {
+    "sourceFiles": 331,
+    "sourceLines": 96395,
+    "callables": 3778,
+    "hotspots": 606,
+    "debt": {
+      "complexity": 4618,
+      "nesting": 242,
+      "duplication": 72.45,
+      "architecture": 0,
+      "total": 4932.45
+    },
+    "debtPerKLOC": 51.17,
+    "score": 32.82,
+    "modules": [
+      "internal/service"
+    ]
+  },
+  "factors": [
+    {
+      "id": "cc:internal/service/agent.go:agentService.SpawnAgent",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/agent.go",
+        "startLine": 837,
+        "endLine": 1693,
+        "symbol": "agentService.SpawnAgent"
+      },
+      "metrics": {
+        "cyclomatic": 287,
+        "decisions": 286,
+        "lines": 857,
+        "nesting": 5
+      },
+      "debt": 278,
+      "shareOfScopeDebt": 0.0564,
+      "cumulativeShare": 0.0564,
+      "explanation": "cyclomatic 287 is 278 point(s) at or above the hotspot threshold 10 (286 decision points, 857 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 287) removes this factor; each point below 287 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`agentService.SpawnAgent` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/sandbox_plan.go:BuildSandboxPlan",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/sandbox_plan.go",
+        "startLine": 414,
+        "endLine": 742,
+        "symbol": "BuildSandboxPlan"
+      },
+      "metrics": {
+        "cyclomatic": 96,
+        "decisions": 95,
+        "lines": 329,
+        "nesting": 4
+      },
+      "debt": 87,
+      "shareOfScopeDebt": 0.0176,
+      "cumulativeShare": 0.074,
+      "explanation": "cyclomatic 96 is 87 point(s) at or above the hotspot threshold 10 (95 decision points, 329 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 96) removes this factor; each point below 96 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`BuildSandboxPlan` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/task_handoff.go:TaskHandoffService.HandOff",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/task_handoff.go",
+        "startLine": 203,
+        "endLine": 396,
+        "symbol": "TaskHandoffService.HandOff"
+      },
+      "metrics": {
+        "cyclomatic": 69,
+        "decisions": 68,
+        "lines": 194,
+        "nesting": 2
+      },
+      "debt": 60,
+      "shareOfScopeDebt": 0.0122,
+      "cumulativeShare": 0.0862,
+      "explanation": "cyclomatic 69 is 60 point(s) at or above the hotspot threshold 10 (68 decision points, 194 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 69) removes this factor; each point below 69 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`TaskHandoffService.HandOff` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/agent_sandbox.go:agentService.sandboxPrefix",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/agent_sandbox.go",
+        "startLine": 49,
+        "endLine": 240,
+        "symbol": "agentService.sandboxPrefix"
+      },
+      "metrics": {
+        "cyclomatic": 58,
+        "decisions": 57,
+        "lines": 192,
+        "nesting": 3
+      },
+      "debt": 49,
+      "shareOfScopeDebt": 0.0099,
+      "cumulativeShare": 0.0961,
+      "explanation": "cyclomatic 58 is 49 point(s) at or above the hotspot threshold 10 (57 decision points, 192 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 58) removes this factor; each point below 58 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`agentService.sandboxPrefix` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/learning_curation.go:validateCuratorOperation",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/learning_curation.go",
+        "startLine": 414,
+        "endLine": 498,
+        "symbol": "validateCuratorOperation"
+      },
+      "metrics": {
+        "cyclomatic": 54,
+        "decisions": 53,
+        "lines": 85,
+        "nesting": 2
+      },
+      "debt": 45,
+      "shareOfScopeDebt": 0.0091,
+      "cumulativeShare": 0.1052,
+      "explanation": "cyclomatic 54 is 45 point(s) at or above the hotspot threshold 10 (53 decision points, 85 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 54) removes this factor; each point below 54 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`validateCuratorOperation` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/handoff.go:validateHandoffInput",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/handoff.go",
+        "startLine": 383,
+        "endLine": 487,
+        "symbol": "validateHandoffInput"
+      },
+      "metrics": {
+        "cyclomatic": 48,
+        "decisions": 47,
+        "lines": 105,
+        "nesting": 3
+      },
+      "debt": 39,
+      "shareOfScopeDebt": 0.0079,
+      "cumulativeShare": 0.1131,
+      "explanation": "cyclomatic 48 is 39 point(s) at or above the hotspot threshold 10 (47 decision points, 105 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 48) removes this factor; each point below 48 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`validateHandoffInput` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/handoff_export.go:renderHandoffMarkdown",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/handoff_export.go",
+        "startLine": 12,
+        "endLine": 178,
+        "symbol": "renderHandoffMarkdown"
+      },
+      "metrics": {
+        "cyclomatic": 47,
+        "decisions": 46,
+        "lines": 167,
+        "nesting": 5
+      },
+      "debt": 38,
+      "shareOfScopeDebt": 0.0077,
+      "cumulativeShare": 0.1208,
+      "explanation": "cyclomatic 47 is 38 point(s) at or above the hotspot threshold 10 (46 decision points, 167 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 47) removes this factor; each point below 47 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`renderHandoffMarkdown` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/agent_graph_workflow.go:AgentGraphService.workflowPlaces",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/agent_graph_workflow.go",
+        "startLine": 17,
+        "endLine": 161,
+        "symbol": "AgentGraphService.workflowPlaces"
+      },
+      "metrics": {
+        "cyclomatic": 46,
+        "decisions": 45,
+        "lines": 145,
+        "nesting": 3
+      },
+      "debt": 37,
+      "shareOfScopeDebt": 0.0075,
+      "cumulativeShare": 0.1283,
+      "explanation": "cyclomatic 46 is 37 point(s) at or above the hotspot threshold 10 (45 decision points, 145 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 46) removes this factor; each point below 46 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`AgentGraphService.workflowPlaces` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/mcp_connections.go:MCPConnectionService.update",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/mcp_connections.go",
+        "startLine": 424,
+        "endLine": 546,
+        "symbol": "MCPConnectionService.update"
+      },
+      "metrics": {
+        "cyclomatic": 45,
+        "decisions": 44,
+        "lines": 123,
+        "nesting": 2
+      },
+      "debt": 36,
+      "shareOfScopeDebt": 0.0073,
+      "cumulativeShare": 0.1356,
+      "explanation": "cyclomatic 45 is 36 point(s) at or above the hotspot threshold 10 (44 decision points, 123 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 45) removes this factor; each point below 45 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`MCPConnectionService.update` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/pr_branches.go:prTrackingService.syncTask",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/pr_branches.go",
+        "startLine": 367,
+        "endLine": 488,
+        "symbol": "prTrackingService.syncTask"
+      },
+      "metrics": {
+        "cyclomatic": 45,
+        "decisions": 44,
+        "lines": 122,
+        "nesting": 5
+      },
+      "debt": 36,
+      "shareOfScopeDebt": 0.0073,
+      "cumulativeShare": 0.1429,
+      "explanation": "cyclomatic 45 is 36 point(s) at or above the hotspot threshold 10 (44 decision points, 122 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 45) removes this factor; each point below 45 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`prTrackingService.syncTask` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/workflow_loop.go:WorkflowService.runStep",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/workflow_loop.go",
+        "startLine": 187,
+        "endLine": 326,
+        "symbol": "WorkflowService.runStep"
+      },
+      "metrics": {
+        "cyclomatic": 45,
+        "decisions": 44,
+        "lines": 140,
+        "nesting": 3
+      },
+      "debt": 36,
+      "shareOfScopeDebt": 0.0073,
+      "cumulativeShare": 0.1502,
+      "explanation": "cyclomatic 45 is 36 point(s) at or above the hotspot threshold 10 (44 decision points, 140 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 45) removes this factor; each point below 45 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`WorkflowService.runStep` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/review_pass_submit.go:ReviewPassService.post",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/review_pass_submit.go",
+        "startLine": 455,
+        "endLine": 623,
+        "symbol": "ReviewPassService.post"
+      },
+      "metrics": {
+        "cyclomatic": 44,
+        "decisions": 43,
+        "lines": 169,
+        "nesting": 3
+      },
+      "debt": 35,
+      "shareOfScopeDebt": 0.0071,
+      "cumulativeShare": 0.1573,
+      "explanation": "cyclomatic 44 is 35 point(s) at or above the hotspot threshold 10 (43 decision points, 169 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 44) removes this factor; each point below 44 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`ReviewPassService.post` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/review.go:ReviewService.EditAnnotation",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/review.go",
+        "startLine": 696,
+        "endLine": 804,
+        "symbol": "ReviewService.EditAnnotation"
+      },
+      "metrics": {
+        "cyclomatic": 41,
+        "decisions": 40,
+        "lines": 109,
+        "nesting": 3
+      },
+      "debt": 32,
+      "shareOfScopeDebt": 0.0065,
+      "cumulativeShare": 0.1638,
+      "explanation": "cyclomatic 41 is 32 point(s) at or above the hotspot threshold 10 (40 decision points, 109 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 41) removes this factor; each point below 41 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`ReviewService.EditAnnotation` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/card_needs_you.go:NeedsYouByTask",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/card_needs_you.go",
+        "startLine": 85,
+        "endLine": 199,
+        "symbol": "NeedsYouByTask"
+      },
+      "metrics": {
+        "cyclomatic": 40,
+        "decisions": 39,
+        "lines": 115,
+        "nesting": 4
+      },
+      "debt": 31,
+      "shareOfScopeDebt": 0.0063,
+      "cumulativeShare": 0.1701,
+      "explanation": "cyclomatic 40 is 31 point(s) at or above the hotspot threshold 10 (39 decision points, 115 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 40) removes this factor; each point below 40 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`NeedsYouByTask` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/learning_curation.go:LearningService.PrepareLearningPacket",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/learning_curation.go",
+        "startLine": 78,
+        "endLine": 217,
+        "symbol": "LearningService.PrepareLearningPacket"
+      },
+      "metrics": {
+        "cyclomatic": 39,
+        "decisions": 38,
+        "lines": 140,
+        "nesting": 3
+      },
+      "debt": 30,
+      "shareOfScopeDebt": 0.0061,
+      "cumulativeShare": 0.1762,
+      "explanation": "cyclomatic 39 is 30 point(s) at or above the hotspot threshold 10 (38 decision points, 140 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 39) removes this factor; each point below 39 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`LearningService.PrepareLearningPacket` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/oauth_flow.go:OAuthFlowService.Begin",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/oauth_flow.go",
+        "startLine": 153,
+        "endLine": 277,
+        "symbol": "OAuthFlowService.Begin"
+      },
+      "metrics": {
+        "cyclomatic": 39,
+        "decisions": 38,
+        "lines": 125,
+        "nesting": 3
+      },
+      "debt": 30,
+      "shareOfScopeDebt": 0.0061,
+      "cumulativeShare": 0.1823,
+      "explanation": "cyclomatic 39 is 30 point(s) at or above the hotspot threshold 10 (38 decision points, 125 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 39) removes this factor; each point below 39 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`OAuthFlowService.Begin` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/reeve_prompt.go:ReeveSnapshot",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/reeve_prompt.go",
+        "startLine": 97,
+        "endLine": 208,
+        "symbol": "ReeveSnapshot"
+      },
+      "metrics": {
+        "cyclomatic": 38,
+        "decisions": 37,
+        "lines": 112,
+        "nesting": 4
+      },
+      "debt": 29,
+      "shareOfScopeDebt": 0.0059,
+      "cumulativeShare": 0.1881,
+      "explanation": "cyclomatic 38 is 29 point(s) at or above the hotspot threshold 10 (37 decision points, 112 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 38) removes this factor; each point below 38 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`ReeveSnapshot` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/usage_profile.go:UsagePolicyService.evaluate",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/usage_profile.go",
+        "startLine": 111,
+        "endLine": 227,
+        "symbol": "UsagePolicyService.evaluate"
+      },
+      "metrics": {
+        "cyclomatic": 38,
+        "decisions": 37,
+        "lines": 117,
+        "nesting": 4
+      },
+      "debt": 29,
+      "shareOfScopeDebt": 0.0059,
+      "cumulativeShare": 0.194,
+      "explanation": "cyclomatic 38 is 29 point(s) at or above the hotspot threshold 10 (37 decision points, 117 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 38) removes this factor; each point below 38 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`UsagePolicyService.evaluate` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/review_pass_run.go:ReviewRunCaller.open",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/review_pass_run.go",
+        "startLine": 622,
+        "endLine": 750,
+        "symbol": "ReviewRunCaller.open"
+      },
+      "metrics": {
+        "cyclomatic": 37,
+        "decisions": 36,
+        "lines": 129,
+        "nesting": 3
+      },
+      "debt": 28,
+      "shareOfScopeDebt": 0.0057,
+      "cumulativeShare": 0.1997,
+      "explanation": "cyclomatic 37 is 28 point(s) at or above the hotspot threshold 10 (36 decision points, 129 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 37) removes this factor; each point below 37 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`ReviewRunCaller.open` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/workflow_ticket_update.go:TicketUpdateExecutor.Start",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/workflow_ticket_update.go",
+        "startLine": 115,
+        "endLine": 229,
+        "symbol": "TicketUpdateExecutor.Start"
+      },
+      "metrics": {
+        "cyclomatic": 37,
+        "decisions": 36,
+        "lines": 115,
+        "nesting": 3
+      },
+      "debt": 28,
+      "shareOfScopeDebt": 0.0057,
+      "cumulativeShare": 0.2054,
+      "explanation": "cyclomatic 37 is 28 point(s) at or above the hotspot threshold 10 (36 decision points, 115 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 37) removes this factor; each point below 37 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`TicketUpdateExecutor.Start` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/review_pass_run.go:ReviewRunCaller.disputed",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/review_pass_run.go",
+        "startLine": 1260,
+        "endLine": 1346,
+        "symbol": "ReviewRunCaller.disputed"
+      },
+      "metrics": {
+        "cyclomatic": 36,
+        "decisions": 35,
+        "lines": 87,
+        "nesting": 3
+      },
+      "debt": 27,
+      "shareOfScopeDebt": 0.0055,
+      "cumulativeShare": 0.2108,
+      "explanation": "cyclomatic 36 is 27 point(s) at or above the hotspot threshold 10 (35 decision points, 87 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 36) removes this factor; each point below 36 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`ReviewRunCaller.disputed` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/task_handoff_worker.go:HandoffWorkerService.Accept",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/task_handoff_worker.go",
+        "startLine": 190,
+        "endLine": 315,
+        "symbol": "HandoffWorkerService.Accept"
+      },
+      "metrics": {
+        "cyclomatic": 36,
+        "decisions": 35,
+        "lines": 126,
+        "nesting": 3
+      },
+      "debt": 27,
+      "shareOfScopeDebt": 0.0055,
+      "cumulativeShare": 0.2163,
+      "explanation": "cyclomatic 36 is 27 point(s) at or above the hotspot threshold 10 (35 decision points, 126 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 36) removes this factor; each point below 36 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`HandoffWorkerService.Accept` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/burnlite_migration.go:BurnliteConnections.Migrate",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/burnlite_migration.go",
+        "startLine": 66,
+        "endLine": 198,
+        "symbol": "BurnliteConnections.Migrate"
+      },
+      "metrics": {
+        "cyclomatic": 34,
+        "decisions": 33,
+        "lines": 133,
+        "nesting": 3
+      },
+      "debt": 25,
+      "shareOfScopeDebt": 0.0051,
+      "cumulativeShare": 0.2214,
+      "explanation": "cyclomatic 34 is 25 point(s) at or above the hotspot threshold 10 (33 decision points, 133 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 34) removes this factor; each point below 34 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`BurnliteConnections.Migrate` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/task_handoff_worker.go:validateHandoffCall",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/task_handoff_worker.go",
+        "startLine": 141,
+        "endLine": 181,
+        "symbol": "validateHandoffCall"
+      },
+      "metrics": {
+        "cyclomatic": 34,
+        "decisions": 33,
+        "lines": 41,
+        "nesting": 2
+      },
+      "debt": 25,
+      "shareOfScopeDebt": 0.0051,
+      "cumulativeShare": 0.2265,
+      "explanation": "cyclomatic 34 is 25 point(s) at or above the hotspot threshold 10 (33 decision points, 41 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 34) removes this factor; each point below 34 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`validateHandoffCall` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/pr_tracking.go:prTrackingService.pollInternal",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/pr_tracking.go",
+        "startLine": 360,
+        "endLine": 470,
+        "symbol": "prTrackingService.pollInternal"
+      },
+      "metrics": {
+        "cyclomatic": 33,
+        "decisions": 32,
+        "lines": 111,
+        "nesting": 4
+      },
+      "debt": 24,
+      "shareOfScopeDebt": 0.0049,
+      "cumulativeShare": 0.2313,
+      "explanation": "cyclomatic 33 is 24 point(s) at or above the hotspot threshold 10 (32 decision points, 111 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 33) removes this factor; each point below 33 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`prTrackingService.pollInternal` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/review_pass_submit.go:ReviewPassService.validate",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/review_pass_submit.go",
+        "startLine": 183,
+        "endLine": 266,
+        "symbol": "ReviewPassService.validate"
+      },
+      "metrics": {
+        "cyclomatic": 33,
+        "decisions": 32,
+        "lines": 84,
+        "nesting": 3
+      },
+      "debt": 24,
+      "shareOfScopeDebt": 0.0049,
+      "cumulativeShare": 0.2362,
+      "explanation": "cyclomatic 33 is 24 point(s) at or above the hotspot threshold 10 (32 decision points, 84 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 33) removes this factor; each point below 33 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`ReviewPassService.validate` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/swarm.go:swarmService.CreateAdhocSwarm",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/swarm.go",
+        "startLine": 633,
+        "endLine": 757,
+        "symbol": "swarmService.CreateAdhocSwarm"
+      },
+      "metrics": {
+        "cyclomatic": 33,
+        "decisions": 32,
+        "lines": 125,
+        "nesting": 2
+      },
+      "debt": 24,
+      "shareOfScopeDebt": 0.0049,
+      "cumulativeShare": 0.2411,
+      "explanation": "cyclomatic 33 is 24 point(s) at or above the hotspot threshold 10 (32 decision points, 125 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 33) removes this factor; each point below 33 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`swarmService.CreateAdhocSwarm` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/agent_ui_studio.go:StudioNote",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/agent_ui_studio.go",
+        "startLine": 65,
+        "endLine": 126,
+        "symbol": "StudioNote"
+      },
+      "metrics": {
+        "cyclomatic": 32,
+        "decisions": 31,
+        "lines": 62,
+        "nesting": 3
+      },
+      "debt": 23,
+      "shareOfScopeDebt": 0.0047,
+      "cumulativeShare": 0.2457,
+      "explanation": "cyclomatic 32 is 23 point(s) at or above the hotspot threshold 10 (31 decision points, 62 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 32) removes this factor; each point below 32 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`StudioNote` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/credential_broker.go:NewCredentialBroker",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/credential_broker.go",
+        "startLine": 245,
+        "endLine": 330,
+        "symbol": "NewCredentialBroker"
+      },
+      "metrics": {
+        "cyclomatic": 32,
+        "decisions": 31,
+        "lines": 86,
+        "nesting": 3
+      },
+      "debt": 23,
+      "shareOfScopeDebt": 0.0047,
+      "cumulativeShare": 0.2504,
+      "explanation": "cyclomatic 32 is 23 point(s) at or above the hotspot threshold 10 (31 decision points, 86 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 32) removes this factor; each point below 32 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`NewCredentialBroker` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/handoff.go:ReviewService.SubmitHandoff",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/handoff.go",
+        "startLine": 57,
+        "endLine": 170,
+        "symbol": "ReviewService.SubmitHandoff"
+      },
+      "metrics": {
+        "cyclomatic": 32,
+        "decisions": 31,
+        "lines": 114,
+        "nesting": 2
+      },
+      "debt": 23,
+      "shareOfScopeDebt": 0.0047,
+      "cumulativeShare": 0.255,
+      "explanation": "cyclomatic 32 is 23 point(s) at or above the hotspot threshold 10 (31 decision points, 114 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 32) removes this factor; each point below 32 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`ReviewService.SubmitHandoff` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/reeve_watch.go:ReeveWatcher.news",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/reeve_watch.go",
+        "startLine": 485,
+        "endLine": 586,
+        "symbol": "ReeveWatcher.news"
+      },
+      "metrics": {
+        "cyclomatic": 32,
+        "decisions": 31,
+        "lines": 102,
+        "nesting": 3
+      },
+      "debt": 23,
+      "shareOfScopeDebt": 0.0047,
+      "cumulativeShare": 0.2597,
+      "explanation": "cyclomatic 32 is 23 point(s) at or above the hotspot threshold 10 (31 decision points, 102 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 32) removes this factor; each point below 32 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`ReeveWatcher.news` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/report.go:reportService.GenerateReport",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/report.go",
+        "startLine": 35,
+        "endLine": 243,
+        "symbol": "reportService.GenerateReport"
+      },
+      "metrics": {
+        "cyclomatic": 32,
+        "decisions": 31,
+        "lines": 209,
+        "nesting": 3
+      },
+      "debt": 23,
+      "shareOfScopeDebt": 0.0047,
+      "cumulativeShare": 0.2644,
+      "explanation": "cyclomatic 32 is 23 point(s) at or above the hotspot threshold 10 (31 decision points, 209 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 32) removes this factor; each point below 32 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`reportService.GenerateReport` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/review_steward.go:ReviewPassService.routeItems",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/review_steward.go",
+        "startLine": 238,
+        "endLine": 335,
+        "symbol": "ReviewPassService.routeItems"
+      },
+      "metrics": {
+        "cyclomatic": 32,
+        "decisions": 31,
+        "lines": 98,
+        "nesting": 3
+      },
+      "debt": 23,
+      "shareOfScopeDebt": 0.0047,
+      "cumulativeShare": 0.269,
+      "explanation": "cyclomatic 32 is 23 point(s) at or above the hotspot threshold 10 (31 decision points, 98 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 32) removes this factor; each point below 32 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`ReviewPassService.routeItems` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/agent_conversation.go:conversationTail",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/agent_conversation.go",
+        "startLine": 174,
+        "endLine": 303,
+        "symbol": "conversationTail"
+      },
+      "metrics": {
+        "cyclomatic": 30,
+        "decisions": 29,
+        "lines": 130,
+        "nesting": 4
+      },
+      "debt": 21,
+      "shareOfScopeDebt": 0.0043,
+      "cumulativeShare": 0.2733,
+      "explanation": "cyclomatic 30 is 21 point(s) at or above the hotspot threshold 10 (29 decision points, 130 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 30) removes this factor; each point below 30 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`conversationTail` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/agent_ui_components.go:validateUIComponent",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/agent_ui_components.go",
+        "startLine": 125,
+        "endLine": 203,
+        "symbol": "validateUIComponent"
+      },
+      "metrics": {
+        "cyclomatic": 30,
+        "decisions": 29,
+        "lines": 79,
+        "nesting": 3
+      },
+      "debt": 21,
+      "shareOfScopeDebt": 0.0043,
+      "cumulativeShare": 0.2775,
+      "explanation": "cyclomatic 30 is 21 point(s) at or above the hotspot threshold 10 (29 decision points, 79 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 30) removes this factor; each point below 30 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`validateUIComponent` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/reeve_changes.go:ChangeSetService.run",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/reeve_changes.go",
+        "startLine": 698,
+        "endLine": 795,
+        "symbol": "ChangeSetService.run"
+      },
+      "metrics": {
+        "cyclomatic": 30,
+        "decisions": 29,
+        "lines": 98,
+        "nesting": 3
+      },
+      "debt": 21,
+      "shareOfScopeDebt": 0.0043,
+      "cumulativeShare": 0.2818,
+      "explanation": "cyclomatic 30 is 21 point(s) at or above the hotspot threshold 10 (29 decision points, 98 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 30) removes this factor; each point below 30 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`ChangeSetService.run` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/workflow_agent_wait.go:WorkflowService.agentOutputs",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/workflow_agent_wait.go",
+        "startLine": 344,
+        "endLine": 439,
+        "symbol": "WorkflowService.agentOutputs"
+      },
+      "metrics": {
+        "cyclomatic": 30,
+        "decisions": 29,
+        "lines": 96,
+        "nesting": 3
+      },
+      "debt": 21,
+      "shareOfScopeDebt": 0.0043,
+      "cumulativeShare": 0.2861,
+      "explanation": "cyclomatic 30 is 21 point(s) at or above the hotspot threshold 10 (29 decision points, 96 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 30) removes this factor; each point below 30 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`WorkflowService.agentOutputs` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/agent.go:agentService.endGoneSessionFor",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/agent.go",
+        "startLine": 2361,
+        "endLine": 2434,
+        "symbol": "agentService.endGoneSessionFor"
+      },
+      "metrics": {
+        "cyclomatic": 29,
+        "decisions": 28,
+        "lines": 74,
+        "nesting": 3
+      },
+      "debt": 20,
+      "shareOfScopeDebt": 0.0041,
+      "cumulativeShare": 0.2901,
+      "explanation": "cyclomatic 29 is 20 point(s) at or above the hotspot threshold 10 (28 decision points, 74 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 29) removes this factor; each point below 29 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`agentService.endGoneSessionFor` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/reeve_voice.go:ReeveVoice.Status",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/reeve_voice.go",
+        "startLine": 160,
+        "endLine": 241,
+        "symbol": "ReeveVoice.Status"
+      },
+      "metrics": {
+        "cyclomatic": 29,
+        "decisions": 28,
+        "lines": 82,
+        "nesting": 3
+      },
+      "debt": 20,
+      "shareOfScopeDebt": 0.0041,
+      "cumulativeShare": 0.2942,
+      "explanation": "cyclomatic 29 is 20 point(s) at or above the hotspot threshold 10 (28 decision points, 82 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 29) removes this factor; each point below 29 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`ReeveVoice.Status` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    },
+    {
+      "id": "cc:internal/service/report_export.go:ExportReportMarkdown",
+      "kind": "complexity",
+      "module": "internal/service",
+      "language": "go",
+      "location": {
+        "file": "internal/service/report_export.go",
+        "startLine": 10,
+        "endLine": 145,
+        "symbol": "ExportReportMarkdown"
+      },
+      "metrics": {
+        "cyclomatic": 29,
+        "decisions": 28,
+        "lines": 136,
+        "nesting": 3
+      },
+      "debt": 20,
+      "shareOfScopeDebt": 0.0041,
+      "cumulativeShare": 0.2982,
+      "explanation": "cyclomatic 29 is 20 point(s) at or above the hotspot threshold 10 (28 decision points, 136 lines)",
+      "remediation": {
+        "strategy": "reduce branching in this callable",
+        "target": "cyclomatic ≤ 9 (now 29) removes this factor; each point below 29 removes 1 debt point",
+        "steps": [
+          "identify independent responsibilities (validation, mapping, side effects) and extract each into a cohesive, well-named function",
+          "replace repeated condition chains with early returns / guard clauses, or a lookup only where the mapping is genuinely data",
+          "remove duplicated or dead branches; merge conditions that lead to the same outcome",
+          "keep each extracted helper below the hotspot threshold"
+        ],
+        "acceptance": [
+          "`ExportReportMarkdown` cyclomatic ≤ 9, or a justified won't-fix",
+          "no new hotspot callables introduced in the same change",
+          "decision points across the changed callables do not increase",
+          "existing and characterisation tests pass"
+        ],
+        "caution": "large roots usually need several focused changes; split work per responsibility and verify between steps"
+      }
+    }
+  ],
+  "factorsOmitted": 671,
+  "concentration": {
+    "factors": 711,
+    "factorsFor50Percent": 103,
+    "factorsFor80Percent": 292
+  },
+  "guidance": [
+    "preserve behaviour: add or confirm characterisation tests for a factor's code before changing it; the evaluator does not run code",
+    "reduce decision points, do not only move them: a split that leaves the same branching in helpers removes hotspot debt but not logic (check the decision-point ledger with `codeeval check`)",
+    "keep helpers cohesive and named for one purpose; avoid creating new hotspot helpers (cc ≥ threshold) while removing a root's debt",
+    "do not delete features, inline configuration into data tables, or reshape syntax solely to lower the number; debt is an uncalibrated structural proxy",
+    "verify each fix by re-running `codeeval explain` on the same scope (the factor should disappear or shrink) and `codeeval check` on the change (gates pass, no new factors)"
+  ]
+}
