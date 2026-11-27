@@ -189,6 +189,7 @@ The service, cmd and test-fake duplicate batch PR #437 (batch only `8661dc42 →
 Three independent batches, each from `471bfd24`, are in [BATCHES-439-441-EVIDENCE.md](BATCHES-439-441-EVIDENCE.md): #439 sandbox-plan (`1b322d6c`), #440 config-macros (`7b6de497`) and #441 small-extracts (`b9696a9c`).
 The independent TUI-boundary batch PR #442 (`471bfd24 → c05e6bdb`, worklist G) is in [TUI-EVIDENCE.md](TUI-EVIDENCE.md).
 The #439 updated head (`6af114f8`, with the `1b322d6c → 6af114f8` increment) and the independent review-loop batch #443 (`471bfd24 → f3ddb233`) are in [SANDBOX-REVIEWLOOP-EVIDENCE.md](SANDBOX-REVIEWLOOP-EVIDENCE.md).
+Three independent batches, each from `471bfd24`, are in [BATCHES-444-446-EVIDENCE.md](BATCHES-444-446-EVIDENCE.md): #444 sandbox-prefix (`94ce0d0d`), #445 Claude account resolution (`3faa8213`) and #446 resume preparation (`8a2e03d7`).
 
 ## Bottom line
 
