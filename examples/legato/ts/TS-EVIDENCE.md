@@ -32,7 +32,7 @@ per-merge steps and per-language ledgers) and
 | Production source files measured at `471bfd24` | 988 of 1,846 | **1,553 of 1,846** |
 | Share of production source bytes | 61.8% | **90.0%** |
 | Changed source files measured in the window | 201 of 296 | **282 of 293**: 11 still unsupported (SQL 7, JS 2, Kotlin 2). The total drops from 296 to 293 because the TS adapter classifies 3 more paths as tests (`tests/`, `e2e/`, `__mocks__`, `.stories.`) |
-| Merges with no measurable code | 6 (#403, #407, #420, #423, #428, #431) | **0** |
+| Merges with no measurable code | 6 (#403, #407, #420, #423, #428, #431) | **0**: every merge now has some measurable code, but not full coverage (SQL, JS, Kotlin and other files in those merges remain unmeasured) |
 
 Still not measured: SQL 160 files, Kotlin 54, Rust 34, JavaScript 23,
 shell 15, Python 5, Swift 2. TypeScript **test** files (434) are classified
@@ -50,7 +50,9 @@ come from gaps in tree-sitter-typescript 0.23.2, not from Legato's code:
 - `typeof import("…")` inside type arguments is not parsed.
 
 Symbols in error regions are excluded from duplication. The files are
-reported as `parse_error` diagnostics. **Import resolution:** 0 unresolved
+reported as `parse_error` diagnostics. Extraction in those 4 source files is
+partial. Byte coverage (90%) measures what was parsed, not the semantic
+accuracy of the extraction or the metrics. **Import resolution:** 0 unresolved
 internal imports. An alias into `node_modules` (`desktop`'s `react` →
 `node_modules/@types/react`) is treated as external.
 
@@ -93,7 +95,7 @@ Largest reduction: `WorkflowsTab` 25 → 14 (`web/src/pages/WorkflowsPage.tsx`).
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | Go | 33.93 | 11,611.30 | 10,027 | 618 | 816.30 | 150 | 238,533 | 48.68 | 1,288 |
 | TypeScript | 19.21 | 8,203.45 | 7,599 | 242 | 102.45 | 260 | 78,035 | 105.13 | 488 |
-| Codebase | 28.54 | 19,814.75 | | | | | 316,568 | | |
+| Codebase (mixed-language total; TS complexity includes inline callbacks and JSX conditionals) | 28.54 | 19,814.75 | | | | | 316,568 | | |
 
 The TypeScript debt density is about twice Go's, but **the two are not
 directly comparable**. The TS adapter measures inline callbacks and JSX
@@ -117,8 +119,9 @@ because no TS rules exist. The cycles are:
 `web/src/components`, `components/agent-graph`, `components/needsYou`,
 `components/settings`, `components/ui`, `components/workflow-graph`,
 `web/src/hooks`, `web/src/lib` and `web/src/voice`. Directory cycles are
-legal in TypeScript. They indicate coupling, not build errors, and whether
-they matter is a design judgement.
+legal in TypeScript. They are graph findings: with no configured TypeScript
+architecture rules they are **not demonstrated policy violations**, and
+whether they matter is a design judgement.
 
 **Largest TypeScript clone groups:** a local `ok(res)` helper exactly
 duplicated in 6 files under `web/src/lib` (`jobClones`, `mcpConnections`,
@@ -156,7 +159,9 @@ TypeScript delta is 0 and its Go delta is unchanged at −224.10.
 
 **Adds:**
 - Legato's web, desktop, browser-extension and Even Hub code is now in the
-  picture. Every merge in the window is measurable.
+  picture. Every merge in the window now has some measurable code, though
+  coverage is partial (90% of source bytes; SQL, JS, Kotlin and others are
+  still unmeasured).
 - TypeScript complexity growth in the window (+465 modified cc) is more than
   double Go's (+194), concentrated in `startGlance` and the workflow editor
   and graph components.
