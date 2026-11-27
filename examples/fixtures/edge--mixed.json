@@ -2,7 +2,7 @@
   "schema": "codeeval.report/v1",
   "tool": {
     "name": "codeeval",
-    "version": "0.1.0-poc"
+    "version": "0.2.0-poc"
   },
   "scoringVersion": "scoring/v1",
   "configVersion": 1,
@@ -16,9 +16,9 @@
     "commitTime": "2026-01-01T00:00:00Z"
   },
   "target": {
-    "ref": "a9819571523cc248df11260300f73d7d683cc709",
-    "commit": "a9819571523cc248df11260300f73d7d683cc709",
-    "tree": "c4ed0b23a4a4b8db09d57e390bab968296a5f2b3",
+    "ref": "b46fadae94f1098774c9a56ea4ab3598c8199274",
+    "commit": "b46fadae94f1098774c9a56ea4ab3598c8199274",
+    "tree": "dd8365918856f6ee0a14fe4dd61edbd2fd628dea",
     "commitTime": "2026-01-01T00:00:00Z"
   },
   "scoreScale": "-2 significant degradation, -1 degradation, 0 neutral/mixed, +1 improvement, +2 significant improvement; null = not scored (unsupported, error or not assessed). No combined score.",
@@ -49,20 +49,45 @@
     },
     {
       "id": "typescript",
+      "supported": true,
+      "adapterVersion": "ts-adapter/1+tree-sitter-typescript/0.23.2",
+      "capabilities": {
+        "complexity": "cyclomatic = 1 + if/for/for-in-of/while/do/case/catch/ternary/\u0026\u0026/||/??; nesting counts if/loops/switch/try-catch and nested function literals (inner callbacks count toward the enclosing callable); else-if not nested",
+        "dependencies": "directory-level graph from import/export-from/import()/require resolved via relative paths, tsconfig paths and workspace package names; type-only imports included; test files excluded",
+        "fingerprints": "exact token text and structural kinds (identifiers/literals/JSX text abstracted), comments ignored",
+        "references": "name-based identifier references; member access recorded as object.property; no type resolution",
+        "symbols": "functions, classes, methods, interfaces, type aliases, enums, and top-level const/let/var bound to arrow functions or function expressions (incl. memo/forwardRef wrappers)"
+      },
+      "limits": [
+        "no type checking: references are matched by name, not resolved",
+        "inner callbacks and nested function literals are measured as part of their enclosing callable (as Go func literals are)",
+        "graph units are directories; directory cycles are legal in TypeScript and indicate coupling, not build errors",
+        "node_modules, package exports maps and re-export chains are not followed",
+        "each file is parsed with the TSX grammar, falling back to the TypeScript grammar when that yields fewer syntax errors"
+      ],
+      "filesInTarget": 1,
+      "filesInTargetByClass": {
+        "source": 1
+      },
+      "filesChanged": 0,
+      "linesChanged": 0
+    },
+    {
+      "id": "kotlin",
       "supported": false,
-      "note": "unsupported: planned adapter: tree-sitter-typescript; graph from import/export + tsconfig paths",
+      "note": "unsupported: no adapter",
       "filesInTarget": 1,
       "filesInTargetByClass": {
         "source": 1
       },
       "filesChanged": 1,
-      "linesChanged": 3
+      "linesChanged": 4
     }
   ],
   "change": {
     "filesChanged": 2,
-    "linesAdded": 12,
-    "linesDeleted": 6,
+    "linesAdded": 14,
+    "linesDeleted": 5,
     "files": [
       {
         "status": "modified",
@@ -74,13 +99,13 @@
         "linesDeleted": 5
       },
       {
-        "status": "modified",
-        "path": "web/app.ts",
-        "language": "typescript",
+        "status": "added",
+        "path": "web/App.kt",
+        "language": "kotlin",
         "supported": false,
         "class": "source",
-        "linesAdded": 2,
-        "linesDeleted": 1
+        "linesAdded": 4,
+        "linesDeleted": 0
       }
     ],
     "symbols": [
@@ -183,7 +208,7 @@
       "rationale": [
         "callables with ≥40 tokens in production source are compared repository-wide (base 0, target 0)",
         "introduced 0 redundant instance(s), removed 0; 0 pre-existing group(s) touched but unchanged in size",
-        "partial coverage: score reflects 1 analysed file(s); 1 unsupported (typescript:1) and 0 with parse errors are not reflected"
+        "partial coverage: score reflects 1 analysed file(s); 1 unsupported (kotlin:1) and 0 with parse errors are not reflected"
       ],
       "measurements": [
         {
@@ -252,7 +277,7 @@
         "changedCodeFiles": 2,
         "analyzed": 1,
         "unsupportedByLanguage": {
-          "typescript": 1
+          "kotlin": 1
         },
         "withParseErrors": 0,
         "nonCodeFiles": 0
@@ -271,7 +296,7 @@
         "modified callables: 0 increased, 0 decreased; net cyclomatic Δ+0",
         "added callables: 1 (cyclomatic 4); deleted callables: 1 (cyclomatic 2)",
         "changed-scope cyclomatic 2→4 (Δ+2), hotspots 0→0",
-        "partial coverage: score reflects 1 analysed file(s); 1 unsupported (typescript:1) and 0 with parse errors are not reflected"
+        "partial coverage: score reflects 1 analysed file(s); 1 unsupported (kotlin:1) and 0 with parse errors are not reflected"
       ],
       "measurements": [
         {
@@ -394,7 +419,7 @@
         "changedCodeFiles": 2,
         "analyzed": 1,
         "unsupportedByLanguage": {
-          "typescript": 1
+          "kotlin": 1
         },
         "withParseErrors": 0,
         "nonCodeFiles": 0
@@ -411,15 +436,16 @@
       "summary": "internal edges 0→0 (+0/-0); cycles 0→0; rule violations 0→0",
       "rationale": [
         "go: Go package imports (non-test files), internal packages resolved via nearest go.mod",
+        "typescript: TypeScript directory imports (non-test files): relative specifiers, tsconfig paths and workspace packages; node_modules are external",
         "no architecture rules configured: boundary violations not assessed",
-        "partial coverage: score reflects 1 analysed file(s); 1 unsupported (typescript:1) and 0 with parse errors are not reflected"
+        "partial coverage: score reflects 1 analysed file(s); 1 unsupported (kotlin:1) and 0 with parse errors are not reflected"
       ],
       "measurements": [
         {
           "metric": "internal_units",
           "scope": "repository",
-          "before": 1,
-          "after": 1,
+          "before": 2,
+          "after": 2,
           "delta": 0,
           "unit": "units"
         },
@@ -479,7 +505,7 @@
         "changedCodeFiles": 2,
         "analyzed": 1,
         "unsupportedByLanguage": {
-          "typescript": 1
+          "kotlin": 1
         },
         "withParseErrors": 0,
         "nonCodeFiles": 0
@@ -495,7 +521,7 @@
       "scoreRule": "no newly orphaned functions (methods alone are low confidence and not scored) → 0",
       "summary": "0 callable(s) newly unreferenced but kept; 0 unreferenced callable(s) removed",
       "rationale": [
-        "partial coverage: score reflects 1 analysed file(s); 1 unsupported (typescript:1) and 0 with parse errors are not reflected"
+        "partial coverage: score reflects 1 analysed file(s); 1 unsupported (kotlin:1) and 0 with parse errors are not reflected"
       ],
       "measurements": [
         {
@@ -522,7 +548,7 @@
         "changedCodeFiles": 2,
         "analyzed": 1,
         "unsupportedByLanguage": {
-          "typescript": 1
+          "kotlin": 1
         },
         "withParseErrors": 0,
         "nonCodeFiles": 0
@@ -540,7 +566,7 @@
       "rationale": [
         "affected callers are counted by identifier name (qualified by package name across packages), without type resolution",
         "a focused change scores 0: scope has no improvement direction",
-        "partial coverage: score reflects 1 analysed file(s); 1 unsupported (typescript:1) and 0 with parse errors are not reflected"
+        "partial coverage: score reflects 1 analysed file(s); 1 unsupported (kotlin:1) and 0 with parse errors are not reflected"
       ],
       "measurements": [
         {
@@ -558,7 +584,7 @@
           "before": null,
           "after": null,
           "delta": null,
-          "value": 12,
+          "value": 14,
           "unit": "lines"
         },
         {
@@ -567,7 +593,7 @@
           "before": null,
           "after": null,
           "delta": null,
-          "value": 6,
+          "value": 5,
           "unit": "lines"
         },
         {
@@ -688,7 +714,7 @@
           "evidence": [
             {
               "side": "target",
-              "commit": "a9819571523cc248df11260300f73d7d683cc709",
+              "commit": "b46fadae94f1098774c9a56ea4ab3598c8199274",
               "file": "util/util.go",
               "symbol": "Classify",
               "startLine": 11,
@@ -730,7 +756,7 @@
         "changedCodeFiles": 2,
         "analyzed": 1,
         "unsupportedByLanguage": {
-          "typescript": 1
+          "kotlin": 1
         },
         "withParseErrors": 0,
         "nonCodeFiles": 0
@@ -792,8 +818,8 @@
         "severity": "info",
         "code": "unsupported_language",
         "message": "changed file in a language without an adapter is not analysed",
-        "file": "web/app.ts",
-        "language": "typescript"
+        "file": "web/App.kt",
+        "language": "kotlin"
       }
     ],
     "snapshotCountByCode": {}
@@ -808,6 +834,11 @@
     "go: no call graph or interface dispatch resolution",
     "go: build tags and GOOS/GOARCH file variants are all indexed together",
     "go: import cycles are compile errors in Go; detected cycles indicate non-building code",
+    "typescript: no type checking: references are matched by name, not resolved",
+    "typescript: inner callbacks and nested function literals are measured as part of their enclosing callable (as Go func literals are)",
+    "typescript: graph units are directories; directory cycles are legal in TypeScript and indicate coupling, not build errors",
+    "typescript: node_modules, package exports maps and re-export chains are not followed",
+    "typescript: each file is parsed with the TSX grammar, falling back to the TypeScript grammar when that yields fewer syntax errors",
     "csharp: no adapter — files are counted as unsupported coverage, never scored",
     "java: no adapter — files are counted as unsupported coverage, never scored",
     "javascript: no adapter — files are counted as unsupported coverage, never scored",
@@ -816,7 +847,6 @@
     "rust: no adapter — files are counted as unsupported coverage, never scored",
     "shell: no adapter — files are counted as unsupported coverage, never scored",
     "sql: no adapter — files are counted as unsupported coverage, never scored",
-    "swift: no adapter — files are counted as unsupported coverage, never scored",
-    "typescript: no adapter — files are counted as unsupported coverage, never scored"
+    "swift: no adapter — files are counted as unsupported coverage, never scored"
   ]
 }

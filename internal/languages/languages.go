@@ -5,18 +5,19 @@ package languages
 import (
 	"github.com/cameron/code-evaluator/internal/lang"
 	"github.com/cameron/code-evaluator/internal/lang/golang"
+	"github.com/cameron/code-evaluator/internal/lang/typescript"
 )
 
-// Default returns the registry used by the CLI: the Go adapter plus declared,
+// Default returns the registry used by the CLI: the Go and TypeScript adapters plus declared,
 // explicitly unsupported languages so their files are counted as coverage
 // gaps rather than ignored.
 func Default() *lang.Registry {
 	r := lang.NewRegistry()
 	must(r.Register(golang.New()))
+	must(r.Register(typescript.New()))
 
-	// Planned next adapters (Tree-sitter grammars exist for both). Declared
-	// only: files are reported as unsupported, never scored.
-	r.Declare(lang.Declared{ID: "typescript", Extensions: []string{".ts", ".tsx", ".mts", ".cts"}, Note: "planned adapter: tree-sitter-typescript; graph from import/export + tsconfig paths"})
+	// Planned next adapter (a Tree-sitter grammar exists). Declared only:
+	// files are reported as unsupported, never scored.
 	r.Declare(lang.Declared{ID: "csharp", Extensions: []string{".cs"}, Note: "planned adapter: tree-sitter-c-sharp; graph from using/namespace + .csproj ProjectReference"})
 
 	// Other recognised languages, reported as unsupported coverage.

@@ -26,3 +26,8 @@ Variants of a scenario implement the same behaviour (same tests) but differ in q
 | reuse | good | 0 | 0 | 0 | 0 | 0 | n/a (not_assessed) | [md](reuse--good.md) · [json](reuse--good.json) |
 | scope | bad | 0 | 0 | 0 | -1 | 0 | n/a (not_assessed) | [md](scope--bad.md) · [json](scope--bad.json) |
 | scope | good | 0 | 0 | 0 | 0 | 0 | n/a (not_assessed) | [md](scope--good.md) · [json](scope--good.json) |
+| ts | cycle | 0 | 0 | -2 | 0 | 0 | n/a (not_assessed) | [md](ts--cycle.md) · [json](ts--cycle.json) |
+| ts | extract-good | 0 | 0 | 0 | 0 | 0 | n/a (not_assessed) | [md](ts--extract-good.md) · [json](ts--extract-good.json) |
+| ts | nest-bad | 0 | -1 | 0 | 0 | 0 | n/a (not_assessed) | [md](ts--nest-bad.md) · [json](ts--nest-bad.json) |
+| ts | reuse-bad | -1 | 0 | 0 | 0 | 0 | n/a (not_assessed) | [md](ts--reuse-bad.md) · [json](ts--reuse-bad.json) |
+| ts | reuse-good | 0 | 0 | 0 | 0 | 0 | n/a (not_assessed) | [md](ts--reuse-good.md) · [json](ts--reuse-good.json) |

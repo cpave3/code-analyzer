@@ -1,0 +1,1 @@
+TypeScript fixture: not built or run by the Go test runner

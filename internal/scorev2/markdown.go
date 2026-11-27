@@ -83,6 +83,14 @@ func WriteSnapshotMarkdown(w io.Writer, r *SnapshotReport, modules int) {
 	fmt.Fprintf(w, "| duplication | redundant tokens %s (structural redundant %d, exact %d, cloned callables %d) | %s |\n", f2(c.RedundantTokens), c.StructRedundant, c.ExactRedundant, c.ClonedCallables, f2(d.Duplication))
 	fmt.Fprintf(w, "| architecture | rule-violating edges %d, units in cycles %d (internal edges %d) | %s |\n\n", c.RuleViolations, c.CycleUnits, c.InternalEdges, f2(d.Architecture))
 
+	if len(r.Languages) > 1 {
+		fmt.Fprint(w, "## By language\n\n| Language | Score | Debt | Debt/kLOC | Lines | Callables | Hotspots | Complexity | Nesting | Duplication | Architecture |\n|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n")
+		for _, l := range r.Languages {
+			fmt.Fprintf(w, "| %s | %s | %s | %s | %d | %d | %d | %s | %s | %s | %s |\n", l.ID, opt(l.Score), f2(l.Debt.Total), opt(l.DebtPerKLOC), l.Components.SourceLines, l.Components.Callables, l.Components.Hotspots,
+				f2(l.Debt.Complexity), f2(l.Debt.Nesting), f2(l.Debt.Duplication), f2(l.Debt.Architecture))
+		}
+		fmt.Fprint(w, "\nComplexity is measured per language adapter; cyclomatic counts are not directly comparable across languages (see adapter capability notes).\n\n")
+	}
 	n := len(r.Modules)
 	if modules > 0 && n > modules {
 		n = modules
@@ -158,6 +166,14 @@ func WriteDeltaMarkdown(w io.Writer, r *DeltaReport, modules int) {
 	fmt.Fprintf(w, "| score (0–100) | %s | %s | %s | |\n", opt(b.Score), opt(a.Score), optSigned(l.Score))
 	fmt.Fprintf(w, "| debt / kLOC | %s | %s | %s | |\n\n", opt(b.DebtPerKLOC), opt(a.DebtPerKLOC), optSigned(l.DebtPerKLOC))
 
+	if len(r.Languages) > 1 {
+		fmt.Fprint(w, "| Language | Debt before → after | Δ total | Δ complexity | Δ nesting | Δ duplication | Δ architecture | Score before → after |\n|---|---|---:|---:|---:|---:|---:|---|\n")
+		for _, x := range r.Languages {
+			fmt.Fprintf(w, "| %s | %s → %s | %s | %s | %s | %s | %s | %s → %s |\n", x.Language, f2(x.Before.Debt.Total), f2(x.After.Debt.Total), sf(x.Ledger.Debt.Total),
+				sf(x.Ledger.Debt.Complexity), sf(x.Ledger.Debt.Nesting), sf(x.Ledger.Debt.Duplication), sf(x.Ledger.Debt.Architecture), opt(x.Before.Score), opt(x.After.Score))
+		}
+		fmt.Fprintln(w)
+	}
 	bc, ac, lc := b.Components, a.Components, l.Components
 	fmt.Fprint(w, "| Raw component | Before | After | Δ |\n|---|---:|---:|---:|\n")
 	rows := []struct {

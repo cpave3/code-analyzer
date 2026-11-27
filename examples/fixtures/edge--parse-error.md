@@ -2,7 +2,7 @@
 
 - **Base:** `558cf05221d55f55ce1588532914292c021130ee` (558cf05221d55f55ce1588532914292c021130ee) tree `81e6e56ea3ff` 2026-01-01T00:00:00Z
 - **Target:** `fcb21f565aaeb3f3e13a0831ecbdc8552c4d38e0` (fcb21f565aaeb3f3e13a0831ecbdc8552c4d38e0) tree `97fc22c1ac8d` 2026-01-01T00:00:00Z
-- **Mode:** commits · schema `codeeval.report/v1` · scoring/v1 · config v1 `d5b3653d4ad9faa0` · tool 0.1.0-poc
+- **Mode:** commits · schema `codeeval.report/v1` · scoring/v1 · config v1 `d5b3653d4ad9faa0` · tool 0.2.0-poc
 - **Change:** 1 files, +1/-1 lines, 2 changed symbols
 
 Scale: -2 significant degradation, -1 degradation, 0 neutral/mixed, +1 improvement, +2 significant improvement; null = not scored (unsupported, error or not assessed). No combined score.
@@ -23,7 +23,7 @@ Scale: -2 significant degradation, -1 degradation, 0 neutral/mixed, +1 improveme
 | Language | Supported | Files in target | Changed files | Changed lines | Note |
 |---|---|---:|---:|---:|---|
 | go | yes | 1 | 1 | 2 |  |
-| typescript | no | 1 | 0 | 0 | unsupported: planned adapter: tree-sitter-typescript; graph from import/export + tsconfig paths |
+| typescript | yes | 1 | 0 | 0 |  |
 
 Changed files by class: 
 source 1 (+1/-1); 
@@ -98,12 +98,13 @@ internal edges 0→0 (+0/-0); cycles 0→0; rule violations 0→0
 Coverage: 1 changed code file(s) in scope, 0 analysed, 1 with parse errors, unsupported {}, excluded by class {}, non-code 0
 
 - go: Go package imports (non-test files), internal packages resolved via nearest go.mod
+- typescript: TypeScript directory imports (non-test files): relative specifiers, tsconfig paths and workspace packages; node_modules are external
 - no architecture rules configured: boundary violations not assessed
 - partial coverage: score reflects 0 analysed file(s); 0 unsupported (none) and 1 with parse errors are not reflected
 
 | Metric | Scope | Before | After | Δ | Value |
 |---|---|---:|---:|---:|---:|
-| internal_units | repository | 1 | 1 | 0 | – |
+| internal_units | repository | 2 | 2 | 0 | – |
 | internal_edges | repository | 0 | 0 | 0 | – |
 | external_dependency_refs | repository | 1 | 1 | 0 | – |
 | cycles | repository | 0 | 0 | 0 | – |
@@ -200,6 +201,11 @@ Snapshot-wide diagnostic counts: `target:parse_error`=2
 - go: no call graph or interface dispatch resolution
 - go: build tags and GOOS/GOARCH file variants are all indexed together
 - go: import cycles are compile errors in Go; detected cycles indicate non-building code
+- typescript: no type checking: references are matched by name, not resolved
+- typescript: inner callbacks and nested function literals are measured as part of their enclosing callable (as Go func literals are)
+- typescript: graph units are directories; directory cycles are legal in TypeScript and indicate coupling, not build errors
+- typescript: node_modules, package exports maps and re-export chains are not followed
+- typescript: each file is parsed with the TSX grammar, falling back to the TypeScript grammar when that yields fewer syntax errors
 - csharp: no adapter — files are counted as unsupported coverage, never scored
 - java: no adapter — files are counted as unsupported coverage, never scored
 - javascript: no adapter — files are counted as unsupported coverage, never scored
@@ -209,4 +215,3 @@ Snapshot-wide diagnostic counts: `target:parse_error`=2
 - shell: no adapter — files are counted as unsupported coverage, never scored
 - sql: no adapter — files are counted as unsupported coverage, never scored
 - swift: no adapter — files are counted as unsupported coverage, never scored
-- typescript: no adapter — files are counted as unsupported coverage, never scored

@@ -1,9 +1,9 @@
 # CodeEval report: edge
 
 - **Base:** `558cf05221d55f55ce1588532914292c021130ee` (558cf05221d55f55ce1588532914292c021130ee) tree `81e6e56ea3ff` 2026-01-01T00:00:00Z
-- **Target:** `a9819571523cc248df11260300f73d7d683cc709` (a9819571523cc248df11260300f73d7d683cc709) tree `c4ed0b23a4a4` 2026-01-01T00:00:00Z
-- **Mode:** commits · schema `codeeval.report/v1` · scoring/v1 · config v1 `d5b3653d4ad9faa0` · tool 0.1.0-poc
-- **Change:** 2 files, +12/-6 lines, 2 changed symbols
+- **Target:** `b46fadae94f1098774c9a56ea4ab3598c8199274` (b46fadae94f1098774c9a56ea4ab3598c8199274) tree `dd8365918856` 2026-01-01T00:00:00Z
+- **Mode:** commits · schema `codeeval.report/v1` · scoring/v1 · config v1 `d5b3653d4ad9faa0` · tool 0.2.0-poc
+- **Change:** 2 files, +14/-5 lines, 2 changed symbols
 
 Scale: -2 significant degradation, -1 degradation, 0 neutral/mixed, +1 improvement, +2 significant improvement; null = not scored (unsupported, error or not assessed). No combined score.
 
@@ -23,10 +23,11 @@ Scale: -2 significant degradation, -1 degradation, 0 neutral/mixed, +1 improveme
 | Language | Supported | Files in target | Changed files | Changed lines | Note |
 |---|---|---:|---:|---:|---|
 | go | yes | 1 | 1 | 15 |  |
-| typescript | no | 1 | 1 | 3 | unsupported: planned adapter: tree-sitter-typescript; graph from import/export + tsconfig paths |
+| typescript | yes | 1 | 0 | 0 |  |
+| kotlin | no | 1 | 1 | 4 | unsupported: no adapter |
 
 Changed files by class: 
-source 2 (+12/-6); 
+source 2 (+14/-5); 
 
 ## duplication — Callable duplication delta (`duplication`)
 
@@ -34,11 +35,11 @@ source 2 (+12/-6);
 
 structural redundancy 0→0 (Δ+0), exact 0→0; 0 near-structural candidate(s)
 
-Coverage: 2 changed code file(s) in scope, 1 analysed, 0 with parse errors, unsupported {typescript:1}, excluded by class {}, non-code 0
+Coverage: 2 changed code file(s) in scope, 1 analysed, 0 with parse errors, unsupported {kotlin:1}, excluded by class {}, non-code 0
 
 - callables with ≥40 tokens in production source are compared repository-wide (base 0, target 0)
 - introduced 0 redundant instance(s), removed 0; 0 pre-existing group(s) touched but unchanged in size
-- partial coverage: score reflects 1 analysed file(s); 1 unsupported (typescript:1) and 0 with parse errors are not reflected
+- partial coverage: score reflects 1 analysed file(s); 1 unsupported (kotlin:1) and 0 with parse errors are not reflected
 
 | Metric | Scope | Before | After | Δ | Value |
 |---|---|---:|---:|---:|---:|
@@ -56,12 +57,12 @@ Coverage: 2 changed code file(s) in scope, 1 analysed, 0 with parse errors, unsu
 
 modified callables net cyclomatic Δ+0; 1 added (cc 4), 1 deleted (cc 2); hotspots 0→0
 
-Coverage: 2 changed code file(s) in scope, 1 analysed, 0 with parse errors, unsupported {typescript:1}, excluded by class {}, non-code 0
+Coverage: 2 changed code file(s) in scope, 1 analysed, 0 with parse errors, unsupported {kotlin:1}, excluded by class {}, non-code 0
 
 - modified callables: 0 increased, 0 decreased; net cyclomatic Δ+0
 - added callables: 1 (cyclomatic 4); deleted callables: 1 (cyclomatic 2)
 - changed-scope cyclomatic 2→4 (Δ+2), hotspots 0→0
-- partial coverage: score reflects 1 analysed file(s); 1 unsupported (typescript:1) and 0 with parse errors are not reflected
+- partial coverage: score reflects 1 analysed file(s); 1 unsupported (kotlin:1) and 0 with parse errors are not reflected
 
 | Metric | Scope | Before | After | Δ | Value |
 |---|---|---:|---:|---:|---:|
@@ -87,15 +88,16 @@ Coverage: 2 changed code file(s) in scope, 1 analysed, 0 with parse errors, unsu
 
 internal edges 0→0 (+0/-0); cycles 0→0; rule violations 0→0
 
-Coverage: 2 changed code file(s) in scope, 1 analysed, 0 with parse errors, unsupported {typescript:1}, excluded by class {}, non-code 0
+Coverage: 2 changed code file(s) in scope, 1 analysed, 0 with parse errors, unsupported {kotlin:1}, excluded by class {}, non-code 0
 
 - go: Go package imports (non-test files), internal packages resolved via nearest go.mod
+- typescript: TypeScript directory imports (non-test files): relative specifiers, tsconfig paths and workspace packages; node_modules are external
 - no architecture rules configured: boundary violations not assessed
-- partial coverage: score reflects 1 analysed file(s); 1 unsupported (typescript:1) and 0 with parse errors are not reflected
+- partial coverage: score reflects 1 analysed file(s); 1 unsupported (kotlin:1) and 0 with parse errors are not reflected
 
 | Metric | Scope | Before | After | Δ | Value |
 |---|---|---:|---:|---:|---:|
-| internal_units | repository | 1 | 1 | 0 | – |
+| internal_units | repository | 2 | 2 | 0 | – |
 | internal_edges | repository | 0 | 0 | 0 | – |
 | external_dependency_refs | repository | 1 | 1 | 0 | – |
 | cycles | repository | 0 | 0 | 0 | – |
@@ -109,9 +111,9 @@ Coverage: 2 changed code file(s) in scope, 1 analysed, 0 with parse errors, unsu
 
 0 callable(s) newly unreferenced but kept; 0 unreferenced callable(s) removed
 
-Coverage: 2 changed code file(s) in scope, 1 analysed, 0 with parse errors, unsupported {typescript:1}, excluded by class {}, non-code 0
+Coverage: 2 changed code file(s) in scope, 1 analysed, 0 with parse errors, unsupported {kotlin:1}, excluded by class {}, non-code 0
 
-- partial coverage: score reflects 1 analysed file(s); 1 unsupported (typescript:1) and 0 with parse errors are not reflected
+- partial coverage: score reflects 1 analysed file(s); 1 unsupported (kotlin:1) and 0 with parse errors are not reflected
 
 | Metric | Scope | Before | After | Δ | Value |
 |---|---|---:|---:|---:|---:|
@@ -124,17 +126,17 @@ Coverage: 2 changed code file(s) in scope, 1 analysed, 0 with parse errors, unsu
 
 2 files changed (2 source); symbols +1/-1/~0 (renamed 0, formatting-only 0); exported API +1/-1/~0; 1 unit group(s)
 
-Coverage: 2 changed code file(s) in scope, 1 analysed, 0 with parse errors, unsupported {typescript:1}, excluded by class {}, non-code 0
+Coverage: 2 changed code file(s) in scope, 1 analysed, 0 with parse errors, unsupported {kotlin:1}, excluded by class {}, non-code 0
 
 - affected callers are counted by identifier name (qualified by package name across packages), without type resolution
 - a focused change scores 0: scope has no improvement direction
-- partial coverage: score reflects 1 analysed file(s); 1 unsupported (typescript:1) and 0 with parse errors are not reflected
+- partial coverage: score reflects 1 analysed file(s); 1 unsupported (kotlin:1) and 0 with parse errors are not reflected
 
 | Metric | Scope | Before | After | Δ | Value |
 |---|---|---:|---:|---:|---:|
 | files_changed | source | – | – | – | 2 |
-| lines_added | source | – | – | – | 12 |
-| lines_deleted | source | – | – | – | 6 |
+| lines_added | source | – | – | – | 14 |
+| lines_deleted | source | – | – | – | 5 |
 | symbols_added | source | – | – | – | 1 |
 | symbols_deleted | source | – | – | – | 1 |
 | symbols_modified | source | – | – | – | 0 |
@@ -151,7 +153,7 @@ Coverage: 2 changed code file(s) in scope, 1 analysed, 0 with parse errors, unsu
 Findings (2):
 
 - **scope.api_added** [info; measured] exported symbol added: Classify
-  - target `a9819571523c` util/util.go:11-21 `Classify` (after)
+  - target `b46fadae94f1` util/util.go:11-21 `Classify` (after)
 - **scope.api_removed** [info; measured] exported symbol removed: Legacy
   - base `558cf05221d5` util/util.go:11-16 `Legacy` (before)
 
@@ -178,7 +180,7 @@ Coverage: 0 changed code file(s) in scope, 0 analysed, 0 with parse errors, unsu
 
 ## Diagnostics
 
-- **info** `unsupported_language`  web/app.ts changed file in a language without an adapter is not analysed
+- **info** `unsupported_language`  web/App.kt changed file in a language without an adapter is not analysed
 
 ## Limitations
 
@@ -191,6 +193,11 @@ Coverage: 0 changed code file(s) in scope, 0 analysed, 0 with parse errors, unsu
 - go: no call graph or interface dispatch resolution
 - go: build tags and GOOS/GOARCH file variants are all indexed together
 - go: import cycles are compile errors in Go; detected cycles indicate non-building code
+- typescript: no type checking: references are matched by name, not resolved
+- typescript: inner callbacks and nested function literals are measured as part of their enclosing callable (as Go func literals are)
+- typescript: graph units are directories; directory cycles are legal in TypeScript and indicate coupling, not build errors
+- typescript: node_modules, package exports maps and re-export chains are not followed
+- typescript: each file is parsed with the TSX grammar, falling back to the TypeScript grammar when that yields fewer syntax errors
 - csharp: no adapter — files are counted as unsupported coverage, never scored
 - java: no adapter — files are counted as unsupported coverage, never scored
 - javascript: no adapter — files are counted as unsupported coverage, never scored
@@ -200,4 +207,3 @@ Coverage: 0 changed code file(s) in scope, 0 analysed, 0 with parse errors, unsu
 - shell: no adapter — files are counted as unsupported coverage, never scored
 - sql: no adapter — files are counted as unsupported coverage, never scored
 - swift: no adapter — files are counted as unsupported coverage, never scored
-- typescript: no adapter — files are counted as unsupported coverage, never scored

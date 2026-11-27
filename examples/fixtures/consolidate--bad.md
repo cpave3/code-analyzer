@@ -2,7 +2,7 @@
 
 - **Base:** `354c9dc79dd525f1e39f17ed42d92455311577f5` (354c9dc79dd525f1e39f17ed42d92455311577f5) tree `f92bd4bf7ce9` 2026-01-01T00:00:00Z
 - **Target:** `35b796f9def8f7797857c3bda3263d7d4e4e3160` (35b796f9def8f7797857c3bda3263d7d4e4e3160) tree `90bfcdbd0f86` 2026-01-01T00:00:00Z
-- **Mode:** commits · schema `codeeval.report/v1` · scoring/v1 · config v1 `d5b3653d4ad9faa0` · tool 0.1.0-poc
+- **Mode:** commits · schema `codeeval.report/v1` · scoring/v1 · config v1 `d5b3653d4ad9faa0` · tool 0.2.0-poc
 - **Change:** 3 files, +30/-4 lines, 3 changed symbols
 
 Scale: -2 significant degradation, -1 degradation, 0 neutral/mixed, +1 improvement, +2 significant improvement; null = not scored (unsupported, error or not assessed). No combined score.
@@ -23,6 +23,7 @@ Scale: -2 significant degradation, -1 degradation, 0 neutral/mixed, +1 improveme
 | Language | Supported | Files in target | Changed files | Changed lines | Note |
 |---|---|---:|---:|---:|---|
 | go | yes | 5 | 3 | 34 |  |
+| typescript | yes | 0 | 0 | 0 |  |
 
 Changed files by class: 
 source 3 (+30/-4); 
@@ -211,6 +212,11 @@ No diagnostics for changed files.
 - go: no call graph or interface dispatch resolution
 - go: build tags and GOOS/GOARCH file variants are all indexed together
 - go: import cycles are compile errors in Go; detected cycles indicate non-building code
+- typescript: no type checking: references are matched by name, not resolved
+- typescript: inner callbacks and nested function literals are measured as part of their enclosing callable (as Go func literals are)
+- typescript: graph units are directories; directory cycles are legal in TypeScript and indicate coupling, not build errors
+- typescript: node_modules, package exports maps and re-export chains are not followed
+- typescript: each file is parsed with the TSX grammar, falling back to the TypeScript grammar when that yields fewer syntax errors
 - csharp: no adapter — files are counted as unsupported coverage, never scored
 - java: no adapter — files are counted as unsupported coverage, never scored
 - javascript: no adapter — files are counted as unsupported coverage, never scored
@@ -220,4 +226,3 @@ No diagnostics for changed files.
 - shell: no adapter — files are counted as unsupported coverage, never scored
 - sql: no adapter — files are counted as unsupported coverage, never scored
 - swift: no adapter — files are counted as unsupported coverage, never scored
-- typescript: no adapter — files are counted as unsupported coverage, never scored

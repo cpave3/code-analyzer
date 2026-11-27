@@ -2,7 +2,7 @@
   "schema": "codeeval.report/v1",
   "tool": {
     "name": "codeeval",
-    "version": "0.1.0-poc"
+    "version": "0.2.0-poc"
   },
   "scoringVersion": "scoring/v1",
   "configVersion": 1,
@@ -49,8 +49,22 @@
     },
     {
       "id": "typescript",
-      "supported": false,
-      "note": "unsupported: planned adapter: tree-sitter-typescript; graph from import/export + tsconfig paths",
+      "supported": true,
+      "adapterVersion": "ts-adapter/1+tree-sitter-typescript/0.23.2",
+      "capabilities": {
+        "complexity": "cyclomatic = 1 + if/for/for-in-of/while/do/case/catch/ternary/\u0026\u0026/||/??; nesting counts if/loops/switch/try-catch and nested function literals (inner callbacks count toward the enclosing callable); else-if not nested",
+        "dependencies": "directory-level graph from import/export-from/import()/require resolved via relative paths, tsconfig paths and workspace package names; type-only imports included; test files excluded",
+        "fingerprints": "exact token text and structural kinds (identifiers/literals/JSX text abstracted), comments ignored",
+        "references": "name-based identifier references; member access recorded as object.property; no type resolution",
+        "symbols": "functions, classes, methods, interfaces, type aliases, enums, and top-level const/let/var bound to arrow functions or function expressions (incl. memo/forwardRef wrappers)"
+      },
+      "limits": [
+        "no type checking: references are matched by name, not resolved",
+        "inner callbacks and nested function literals are measured as part of their enclosing callable (as Go func literals are)",
+        "graph units are directories; directory cycles are legal in TypeScript and indicate coupling, not build errors",
+        "node_modules, package exports maps and re-export chains are not followed",
+        "each file is parsed with the TSX grammar, falling back to the TypeScript grammar when that yields fewer syntax errors"
+      ],
       "filesInTarget": 1,
       "filesInTargetByClass": {
         "source": 1
@@ -394,14 +408,15 @@
       "summary": "internal edges 0→0 (+0/-0); cycles 0→0; rule violations 0→0",
       "rationale": [
         "go: Go package imports (non-test files), internal packages resolved via nearest go.mod",
+        "typescript: TypeScript directory imports (non-test files): relative specifiers, tsconfig paths and workspace packages; node_modules are external",
         "no architecture rules configured: boundary violations not assessed"
       ],
       "measurements": [
         {
           "metric": "internal_units",
           "scope": "repository",
-          "before": 1,
-          "after": 1,
+          "before": 2,
+          "after": 2,
           "delta": 0,
           "unit": "units"
         },
@@ -769,6 +784,11 @@
     "go: no call graph or interface dispatch resolution",
     "go: build tags and GOOS/GOARCH file variants are all indexed together",
     "go: import cycles are compile errors in Go; detected cycles indicate non-building code",
+    "typescript: no type checking: references are matched by name, not resolved",
+    "typescript: inner callbacks and nested function literals are measured as part of their enclosing callable (as Go func literals are)",
+    "typescript: graph units are directories; directory cycles are legal in TypeScript and indicate coupling, not build errors",
+    "typescript: node_modules, package exports maps and re-export chains are not followed",
+    "typescript: each file is parsed with the TSX grammar, falling back to the TypeScript grammar when that yields fewer syntax errors",
     "csharp: no adapter — files are counted as unsupported coverage, never scored",
     "java: no adapter — files are counted as unsupported coverage, never scored",
     "javascript: no adapter — files are counted as unsupported coverage, never scored",
@@ -777,7 +797,6 @@
     "rust: no adapter — files are counted as unsupported coverage, never scored",
     "shell: no adapter — files are counted as unsupported coverage, never scored",
     "sql: no adapter — files are counted as unsupported coverage, never scored",
-    "swift: no adapter — files are counted as unsupported coverage, never scored",
-    "typescript: no adapter — files are counted as unsupported coverage, never scored"
+    "swift: no adapter — files are counted as unsupported coverage, never scored"
   ]
 }

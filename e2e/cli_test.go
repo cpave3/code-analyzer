@@ -482,8 +482,8 @@ func TestEdgeCases(t *testing.T) {
 			}
 		}
 		for _, l := range r.Languages {
-			if l.ID == "typescript" && (l.Supported || l.FilesChanged != 1) {
-				t.Errorf("typescript coverage wrong: %+v", l)
+			if l.ID == "kotlin" && (l.Supported || l.FilesChanged != 1) {
+				t.Errorf("kotlin coverage wrong: %+v", l)
 			}
 		}
 	})
@@ -499,8 +499,8 @@ func TestEdgeCases(t *testing.T) {
 	t.Run("mixed", func(t *testing.T) {
 		r := evaluate(t, "edge", "base", "mixed")
 		c := result(t, r, "complexity")
-		if c.Status != "partial" || c.Score == nil || c.Coverage.UnsupportedByLanguage["typescript"] != 1 {
-			t.Errorf("mixed change: want partial with a score and TS counted: %s %v %+v", c.Status, c.Score, c.Coverage)
+		if c.Status != "partial" || c.Score == nil || c.Coverage.UnsupportedByLanguage["kotlin"] != 1 {
+			t.Errorf("mixed change: want partial with a score and Kotlin counted: %s %v %+v", c.Status, c.Score, c.Coverage)
 		}
 	})
 }
@@ -670,7 +670,7 @@ func TestCLIContract(t *testing.T) {
 		t.Error("option-like revision must be rejected")
 	}
 	langs := cli(t, "languages").stdout
-	for _, want := range []string{"go ", "typescript", "csharp", "dependencies", "never scored"} {
+	for _, want := range []string{"go ", "typescript ", "ts-adapter", "csharp", "dependencies", "never scored"} {
 		if !strings.Contains(langs, want) {
 			t.Errorf("languages output missing %q", want)
 		}
@@ -686,5 +686,36 @@ func TestCLIContract(t *testing.T) {
 		if !strings.Contains(md, want) {
 			t.Errorf("markdown summary missing %q", want)
 		}
+	}
+}
+
+func TestTypeScriptScenarios(t *testing.T) {
+	good := evaluate(t, "ts", "base", "reuse-good")
+	bad := evaluate(t, "ts", "base", "reuse-bad")
+	if score(t, good, "duplication") != 0 || score(t, bad, "duplication") != -1 {
+		t.Errorf("TS reuse pair: good %d bad %d, want 0 / -1", score(t, good, "duplication"), score(t, bad, "duplication"))
+	}
+	fs := findings(result(t, bad, "duplication"), "duplication.introduced_structural")
+	if len(fs) != 1 || !hasEvidence(fs[0], "target", "src/text/slug.ts", "slugify", 1) || !hasEvidence(fs[0], "target", "src/tags/tags.ts", "slugTag", 1) {
+		t.Errorf("TS clone evidence: %+v", fs)
+	}
+	for _, l := range bad.Languages {
+		if l.ID == "typescript" && (!l.Supported || l.FilesChanged != 1) {
+			t.Errorf("typescript should be supported: %+v", l)
+		}
+	}
+	nest := evaluate(t, "ts", "base", "nest-bad")
+	extract := evaluate(t, "ts", "base", "extract-good")
+	if score(t, nest, "complexity") >= 0 || score(t, extract, "complexity") < 0 {
+		t.Errorf("TS complexity pair: nest %d extract %d", score(t, nest, "complexity"), score(t, extract, "complexity"))
+	}
+	cyc := evaluate(t, "ts", "base", "cycle")
+	if score(t, cyc, "dependencies") != -2 || len(findings(result(t, cyc, "dependencies"), "dependencies.cycle_introduced")) != 1 {
+		t.Errorf("TS directory cycle should score -2: %+v", result(t, cyc, "dependencies"))
+	}
+	// v2 snapshot sees the TypeScript clone too.
+	g, b := snapshotV2(t, "ts", "reuse-good"), snapshotV2(t, "ts", "reuse-bad")
+	if !(b.Codebase.Debt.Duplication > g.Codebase.Debt.Duplication) {
+		t.Errorf("v2 TS duplication debt: bad %.2f good %.2f", b.Codebase.Debt.Duplication, g.Codebase.Debt.Duplication)
 	}
 }

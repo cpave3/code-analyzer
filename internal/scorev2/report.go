@@ -28,6 +28,7 @@ type SnapshotReport struct {
 	Revision   report.Revision `json:"revision"`
 	Coverage   Coverage        `json:"coverage"`
 	Codebase   Unit            `json:"codebase"`
+	Languages  []Unit          `json:"languages"`
 	Modules    []Unit          `json:"modules"`
 	Callables  []CallableDebt  `json:"topCallables"`
 	Clones     []CloneGroup    `json:"topCloneGroups"`
@@ -59,6 +60,37 @@ type ModuleDelta struct {
 	ScoreAfter  *float64 `json:"scoreAfter"`
 }
 
+// LanguageLedger is one language's before/after totals.
+type LanguageLedger struct {
+	Language string `json:"language"`
+	Before   Unit   `json:"before"`
+	After    Unit   `json:"after"`
+	Ledger   Ledger `json:"ledger"`
+}
+
+func languageLedgers(before, after *Analysis) []LanguageLedger {
+	bm, am := map[string]Unit{}, map[string]Unit{}
+	for _, u := range before.Languages {
+		bm[u.ID] = u
+	}
+	for _, u := range after.Languages {
+		am[u.ID] = u
+	}
+	keys := map[string]bool{}
+	for k := range bm {
+		keys[k] = true
+	}
+	for k := range am {
+		keys[k] = true
+	}
+	out := []LanguageLedger{}
+	for _, k := range sortedKeys(keys) {
+		b, a := bm[k], am[k]
+		out = append(out, LanguageLedger{Language: k, Before: roundUnit(b), After: roundUnit(a), Ledger: ledger(b, a)})
+	}
+	return out
+}
+
 // Gate is an advisory pass/fail check.
 type Gate struct {
 	Name   string `json:"name"`
@@ -84,14 +116,15 @@ type ChangeSize struct {
 
 // Step is one first-parent step's ledger.
 type Step struct {
-	Index   int        `json:"index"`
-	Parent  string     `json:"parent"`
-	Commit  string     `json:"commit"`
-	Subject string     `json:"subject"`
-	Size    ChangeSize `json:"size"`
-	Ledger  Ledger     `json:"ledger"`
-	Rate    *Debt      `json:"debtPerChangedKLOC"`
-	Failed  []string   `json:"gatesFailed"`
+	Index     int              `json:"index"`
+	Parent    string           `json:"parent"`
+	Commit    string           `json:"commit"`
+	Subject   string           `json:"subject"`
+	Size      ChangeSize       `json:"size"`
+	Ledger    Ledger           `json:"ledger"`
+	Languages []LanguageLedger `json:"languages"`
+	Rate      *Debt            `json:"debtPerChangedKLOC"`
+	Failed    []string         `json:"gatesFailed"`
 }
 
 // StepCheck verifies telescoping.
@@ -112,6 +145,7 @@ type DeltaReport struct {
 	Before        Unit             `json:"before"`
 	After         Unit             `json:"after"`
 	Ledger        Ledger           `json:"ledger"`
+	Languages     []LanguageLedger `json:"languages"`
 	Rate          *Debt            `json:"debtPerChangedKLOC"`
 	Changed       ChangedCallables `json:"changedCallables"`
 	Gates         []Gate           `json:"gates"`
@@ -159,6 +193,9 @@ func NewSnapshotReport(repo, cfgHash string, rev report.Revision, a *Analysis, t
 	}
 	for _, m := range a.Modules {
 		r.Modules = append(r.Modules, roundUnit(m))
+	}
+	for _, l := range a.Languages {
+		r.Languages = append(r.Languages, roundUnit(l))
 	}
 	r.Callables = limit(a.Callables, top)
 	r.Clones = limit(a.Clones, top)
@@ -341,6 +378,7 @@ func NewDeltaReport(repo, cfgHash string, baseRev, targetRev report.Revision, ba
 	r := &DeltaReport{Header: header(DeltaSchema, repo, cfgHash, after), Base: baseRev, Target: targetRev, CoverageAfter: after.Coverage,
 		Size: size(cs), Before: roundUnit(before.Codebase), After: roundUnit(after.Codebase)}
 	r.Ledger = ledger(before.Codebase, after.Codebase)
+	r.Languages = languageLedgers(before, after)
 	r.Rate = rate(after.Codebase.Debt.Sub(before.Codebase.Debt), r.Size)
 	r.Changed = changed(base, target, cs)
 	r.Gates = gates(r.Ledger, r.Changed)
@@ -353,7 +391,7 @@ func NewDeltaReport(repo, cfgHash string, baseRev, targetRev report.Revision, ba
 
 // NewStep builds one step's ledger.
 func NewStep(i int, parent, commit, subject string, base, target *index.Snapshot, before, after *Analysis, cs *change.Set) Step {
-	s := Step{Index: i, Parent: parent, Commit: commit, Subject: subject, Size: size(cs), Ledger: ledger(before.Codebase, after.Codebase)}
+	s := Step{Index: i, Parent: parent, Commit: commit, Subject: subject, Size: size(cs), Ledger: ledger(before.Codebase, after.Codebase), Languages: languageLedgers(before, after)}
 	s.Rate = rate(after.Codebase.Debt.Sub(before.Codebase.Debt), s.Size)
 	s.Failed = []string{}
 	for _, g := range gates(s.Ledger, changed(base, target, cs)) {

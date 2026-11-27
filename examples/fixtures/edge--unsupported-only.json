@@ -2,7 +2,7 @@
   "schema": "codeeval.report/v1",
   "tool": {
     "name": "codeeval",
-    "version": "0.1.0-poc"
+    "version": "0.2.0-poc"
   },
   "scoringVersion": "scoring/v1",
   "configVersion": 1,
@@ -16,9 +16,9 @@
     "commitTime": "2026-01-01T00:00:00Z"
   },
   "target": {
-    "ref": "281bb2dbd746f91c785c61744b28abc58cc36412",
-    "commit": "281bb2dbd746f91c785c61744b28abc58cc36412",
-    "tree": "c109c778bea34a247906bb17508880eb0c992f8f",
+    "ref": "6978feab6e273bcd464026d3c4cb42eee8c27b37",
+    "commit": "6978feab6e273bcd464026d3c4cb42eee8c27b37",
+    "tree": "907103038077d99694f3a34f400d4517f729e9cf",
     "commitTime": "2026-01-01T00:00:00Z"
   },
   "scoreScale": "-2 significant degradation, -1 degradation, 0 neutral/mixed, +1 improvement, +2 significant improvement; null = not scored (unsupported, error or not assessed). No combined score.",
@@ -49,29 +49,54 @@
     },
     {
       "id": "typescript",
+      "supported": true,
+      "adapterVersion": "ts-adapter/1+tree-sitter-typescript/0.23.2",
+      "capabilities": {
+        "complexity": "cyclomatic = 1 + if/for/for-in-of/while/do/case/catch/ternary/\u0026\u0026/||/??; nesting counts if/loops/switch/try-catch and nested function literals (inner callbacks count toward the enclosing callable); else-if not nested",
+        "dependencies": "directory-level graph from import/export-from/import()/require resolved via relative paths, tsconfig paths and workspace package names; type-only imports included; test files excluded",
+        "fingerprints": "exact token text and structural kinds (identifiers/literals/JSX text abstracted), comments ignored",
+        "references": "name-based identifier references; member access recorded as object.property; no type resolution",
+        "symbols": "functions, classes, methods, interfaces, type aliases, enums, and top-level const/let/var bound to arrow functions or function expressions (incl. memo/forwardRef wrappers)"
+      },
+      "limits": [
+        "no type checking: references are matched by name, not resolved",
+        "inner callbacks and nested function literals are measured as part of their enclosing callable (as Go func literals are)",
+        "graph units are directories; directory cycles are legal in TypeScript and indicate coupling, not build errors",
+        "node_modules, package exports maps and re-export chains are not followed",
+        "each file is parsed with the TSX grammar, falling back to the TypeScript grammar when that yields fewer syntax errors"
+      ],
+      "filesInTarget": 1,
+      "filesInTargetByClass": {
+        "source": 1
+      },
+      "filesChanged": 0,
+      "linesChanged": 0
+    },
+    {
+      "id": "kotlin",
       "supported": false,
-      "note": "unsupported: planned adapter: tree-sitter-typescript; graph from import/export + tsconfig paths",
+      "note": "unsupported: no adapter",
       "filesInTarget": 1,
       "filesInTargetByClass": {
         "source": 1
       },
       "filesChanged": 1,
-      "linesChanged": 3
+      "linesChanged": 4
     }
   ],
   "change": {
     "filesChanged": 1,
-    "linesAdded": 2,
-    "linesDeleted": 1,
+    "linesAdded": 4,
+    "linesDeleted": 0,
     "files": [
       {
-        "status": "modified",
-        "path": "web/app.ts",
-        "language": "typescript",
+        "status": "added",
+        "path": "web/App.kt",
+        "language": "kotlin",
         "supported": false,
         "class": "source",
-        "linesAdded": 2,
-        "linesDeleted": 1
+        "linesAdded": 4,
+        "linesDeleted": 0
       }
     ],
     "symbols": []
@@ -84,7 +109,7 @@
           "analyzer": "duplication",
           "status": "unsupported",
           "score": null,
-          "summary": "unsupported: 1 changed file(s) in languages without the required capabilities (typescript:1)"
+          "summary": "unsupported: 1 changed file(s) in languages without the required capabilities (kotlin:1)"
         }
       ]
     },
@@ -95,7 +120,7 @@
           "analyzer": "complexity",
           "status": "unsupported",
           "score": null,
-          "summary": "unsupported: 1 changed file(s) in languages without the required capabilities (typescript:1)"
+          "summary": "unsupported: 1 changed file(s) in languages without the required capabilities (kotlin:1)"
         }
       ]
     },
@@ -106,7 +131,7 @@
           "analyzer": "dependencies",
           "status": "unsupported",
           "score": null,
-          "summary": "unsupported: 1 changed file(s) in languages without the required capabilities (typescript:1)"
+          "summary": "unsupported: 1 changed file(s) in languages without the required capabilities (kotlin:1)"
         }
       ]
     },
@@ -117,13 +142,13 @@
           "analyzer": "obsolete",
           "status": "unsupported",
           "score": null,
-          "summary": "unsupported: 1 changed file(s) in languages without the required capabilities (typescript:1)"
+          "summary": "unsupported: 1 changed file(s) in languages without the required capabilities (kotlin:1)"
         },
         {
           "analyzer": "scope",
           "status": "unsupported",
           "score": null,
-          "summary": "unsupported: 1 changed file(s) in languages without the required capabilities (typescript:1)"
+          "summary": "unsupported: 1 changed file(s) in languages without the required capabilities (kotlin:1)"
         }
       ]
     },
@@ -148,7 +173,7 @@
       "status": "unsupported",
       "score": null,
       "scoreRule": "no changed code in scope could be analysed → not scored (unsupported is not neutral)",
-      "summary": "unsupported: 1 changed file(s) in languages without the required capabilities (typescript:1)",
+      "summary": "unsupported: 1 changed file(s) in languages without the required capabilities (kotlin:1)",
       "rationale": [
         "callables with ≥40 tokens in production source are compared repository-wide (base 0, target 0)",
         "introduced 0 redundant instance(s), removed 0; 0 pre-existing group(s) touched but unchanged in size"
@@ -220,7 +245,7 @@
         "changedCodeFiles": 1,
         "analyzed": 0,
         "unsupportedByLanguage": {
-          "typescript": 1
+          "kotlin": 1
         },
         "withParseErrors": 0,
         "nonCodeFiles": 0
@@ -234,7 +259,7 @@
       "status": "unsupported",
       "score": null,
       "scoreRule": "no changed code in scope could be analysed → not scored (unsupported is not neutral)",
-      "summary": "unsupported: 1 changed file(s) in languages without the required capabilities (typescript:1)",
+      "summary": "unsupported: 1 changed file(s) in languages without the required capabilities (kotlin:1)",
       "rationale": [
         "modified callables: 0 increased, 0 decreased; net cyclomatic Δ+0",
         "added callables: 0 (cyclomatic 0); deleted callables: 0 (cyclomatic 0)",
@@ -361,7 +386,7 @@
         "changedCodeFiles": 1,
         "analyzed": 0,
         "unsupportedByLanguage": {
-          "typescript": 1
+          "kotlin": 1
         },
         "withParseErrors": 0,
         "nonCodeFiles": 0
@@ -375,17 +400,18 @@
       "status": "unsupported",
       "score": null,
       "scoreRule": "no changed code in scope could be analysed → not scored (unsupported is not neutral)",
-      "summary": "unsupported: 1 changed file(s) in languages without the required capabilities (typescript:1)",
+      "summary": "unsupported: 1 changed file(s) in languages without the required capabilities (kotlin:1)",
       "rationale": [
         "go: Go package imports (non-test files), internal packages resolved via nearest go.mod",
+        "typescript: TypeScript directory imports (non-test files): relative specifiers, tsconfig paths and workspace packages; node_modules are external",
         "no architecture rules configured: boundary violations not assessed"
       ],
       "measurements": [
         {
           "metric": "internal_units",
           "scope": "repository",
-          "before": 1,
-          "after": 1,
+          "before": 2,
+          "after": 2,
           "delta": 0,
           "unit": "units"
         },
@@ -445,7 +471,7 @@
         "changedCodeFiles": 1,
         "analyzed": 0,
         "unsupportedByLanguage": {
-          "typescript": 1
+          "kotlin": 1
         },
         "withParseErrors": 0,
         "nonCodeFiles": 0
@@ -459,7 +485,7 @@
       "status": "unsupported",
       "score": null,
       "scoreRule": "no changed code in scope could be analysed → not scored (unsupported is not neutral)",
-      "summary": "unsupported: 1 changed file(s) in languages without the required capabilities (typescript:1)",
+      "summary": "unsupported: 1 changed file(s) in languages without the required capabilities (kotlin:1)",
       "measurements": [
         {
           "metric": "callables_left_unreferenced",
@@ -485,7 +511,7 @@
         "changedCodeFiles": 1,
         "analyzed": 0,
         "unsupportedByLanguage": {
-          "typescript": 1
+          "kotlin": 1
         },
         "withParseErrors": 0,
         "nonCodeFiles": 0
@@ -499,7 +525,7 @@
       "status": "unsupported",
       "score": null,
       "scoreRule": "no changed code in scope could be analysed → not scored (unsupported is not neutral)",
-      "summary": "unsupported: 1 changed file(s) in languages without the required capabilities (typescript:1)",
+      "summary": "unsupported: 1 changed file(s) in languages without the required capabilities (kotlin:1)",
       "rationale": [
         "affected callers are counted by identifier name (qualified by package name across packages), without type resolution",
         "a focused change scores 0: scope has no improvement direction"
@@ -520,7 +546,7 @@
           "before": null,
           "after": null,
           "delta": null,
-          "value": 2,
+          "value": 4,
           "unit": "lines"
         },
         {
@@ -529,7 +555,7 @@
           "before": null,
           "after": null,
           "delta": null,
-          "value": 1,
+          "value": 0,
           "unit": "lines"
         },
         {
@@ -646,7 +672,7 @@
         "changedCodeFiles": 1,
         "analyzed": 0,
         "unsupportedByLanguage": {
-          "typescript": 1
+          "kotlin": 1
         },
         "withParseErrors": 0,
         "nonCodeFiles": 0
@@ -708,8 +734,8 @@
         "severity": "info",
         "code": "unsupported_language",
         "message": "changed file in a language without an adapter is not analysed",
-        "file": "web/app.ts",
-        "language": "typescript"
+        "file": "web/App.kt",
+        "language": "kotlin"
       }
     ],
     "snapshotCountByCode": {}
@@ -724,6 +750,11 @@
     "go: no call graph or interface dispatch resolution",
     "go: build tags and GOOS/GOARCH file variants are all indexed together",
     "go: import cycles are compile errors in Go; detected cycles indicate non-building code",
+    "typescript: no type checking: references are matched by name, not resolved",
+    "typescript: inner callbacks and nested function literals are measured as part of their enclosing callable (as Go func literals are)",
+    "typescript: graph units are directories; directory cycles are legal in TypeScript and indicate coupling, not build errors",
+    "typescript: node_modules, package exports maps and re-export chains are not followed",
+    "typescript: each file is parsed with the TSX grammar, falling back to the TypeScript grammar when that yields fewer syntax errors",
     "csharp: no adapter — files are counted as unsupported coverage, never scored",
     "java: no adapter — files are counted as unsupported coverage, never scored",
     "javascript: no adapter — files are counted as unsupported coverage, never scored",
@@ -732,7 +763,6 @@
     "rust: no adapter — files are counted as unsupported coverage, never scored",
     "shell: no adapter — files are counted as unsupported coverage, never scored",
     "sql: no adapter — files are counted as unsupported coverage, never scored",
-    "swift: no adapter — files are counted as unsupported coverage, never scored",
-    "typescript: no adapter — files are counted as unsupported coverage, never scored"
+    "swift: no adapter — files are counted as unsupported coverage, never scored"
   ]
 }

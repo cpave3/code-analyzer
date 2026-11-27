@@ -227,6 +227,7 @@ type Analysis struct {
 	Thresholds Thresholds
 	Coverage   Coverage
 	Codebase   Unit
+	Languages  []Unit // per-language totals (sum of that language's modules)
 	Modules    []Unit
 	Callables  []CallableDebt // all callables with debt > 0, worst first
 	Clones     []CloneGroup   // all structural groups, worst first
@@ -433,13 +434,25 @@ func Analyze(snap *index.Snapshot, cfg *config.Config, w Weights) *Analysis {
 	}
 	sort.Strings(mkeys)
 	a.Codebase.ID = "codebase"
+	byL := map[string]*Unit{}
 	for _, k := range mkeys {
 		u := mods[k]
 		finishUnit(u, w)
 		a.Codebase.Components.add(u.Components)
 		a.Modules = append(a.Modules, *u)
+		lu := byL[u.Language]
+		if lu == nil {
+			lu = &Unit{ID: u.Language, Language: u.Language}
+			byL[u.Language] = lu
+		}
+		lu.Components.add(u.Components)
+		lu.Components.InternalEdges += u.Components.InternalEdges
 	}
 	finishUnit(&a.Codebase, w)
+	for _, l := range sortedKeys(byL) {
+		finishUnit(byL[l], w)
+		a.Languages = append(a.Languages, *byL[l])
+	}
 	sort.SliceStable(a.Modules, func(i, j int) bool {
 		if a.Modules[i].Debt.Total != a.Modules[j].Debt.Total {
 			return a.Modules[i].Debt.Total > a.Modules[j].Debt.Total
@@ -503,6 +516,15 @@ func sccs(g *lang.Graph) [][]string {
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i][0] < out[j][0] })
+	return out
+}
+
+func sortedKeys[T any](m map[string]T) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
 	return out
 }
 

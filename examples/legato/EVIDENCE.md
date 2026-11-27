@@ -210,3 +210,11 @@ A separately versioned debt model (`scoring/v2-experimental`, `codeeval
 score`) was applied to the same revisions afterwards. It gives absolute
 snapshot debt and scores, per-module debt, and deltas that telescope. See
 [v2/V2-EVIDENCE.md](v2/V2-EVIDENCE.md). The v1 results above are unchanged.
+
+## TypeScript (codeeval 0.2.0)
+
+The TypeScript adapter added in 0.2.0 measures Legato's TypeScript (90% of
+production source bytes are now covered, up from 62%). See
+[ts/TS-EVIDENCE.md](ts/TS-EVIDENCE.md). The Go-only results above, made with
+the frozen 0.1.0 build, are unchanged and not comparable to the
+TypeScript-inclusive numbers.

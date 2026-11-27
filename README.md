@@ -164,12 +164,22 @@ import-level rules; correctness is not measured.
 | Language | Status |
 |---|---|
 | Go | Supported: Tree-sitter adapter with symbols, complexity, fingerprints, package import graph (via the nearest `go.mod`) and name-based references |
-| TypeScript, C# | Recognised and counted as unsupported coverage. Next adapters (see below) |
+| TypeScript (`.ts`, `.tsx`, `.mts`, `.cts`) | Supported (since 0.2.0): Tree-sitter adapter (TSX grammar with TypeScript fallback) with functions, classes/methods, interfaces/types/enums and top-level arrow-function components/hooks; complexity; fingerprints; a directory-level import graph resolved via relative specifiers, `tsconfig` `paths` and workspace package names; name-based references |
+| C# | Recognised and counted as unsupported coverage. Next adapter (see below) |
 | JS, Kotlin, Rust, Python, Swift, Java, SQL, shell | Recognised and counted as unsupported coverage |
 
 The Go adapter does not type-check, resolve interface dispatch or build a call
-graph, and it indexes all build-tag variants together. These limits are also
-written into every report.
+graph, and it indexes all build-tag variants together. The TypeScript adapter
+does not type-check either. It measures inner callbacks as part of the
+enclosing callable (as Go func literals are), so React components with many
+inline handlers and JSX conditionals score high. Its graph units are
+directories, where cycles are legal. It does not follow node_modules, package
+`exports` maps or re-export chains. These limits are also written into every
+report. Cyclomatic counts are not directly comparable across languages.
+
+Adding TypeScript changes what a report covers. Reports from 0.2.0 on
+repositories with TypeScript are not comparable to 0.1.0 Go-only reports;
+`tool.version` records which one produced a report.
 
 ## Extending
 
@@ -256,8 +266,11 @@ report for every pair.
 Edge cases: unchanged baseline (everything 0), rename-only (symbols marked
 "moved", all 0), symbol rename (renamed, not penalised), added and deleted
 symbols (with base locations), parse error (`parse_error` diagnostic,
-`partial`), TypeScript-only (`unsupported`, score null), mixed Go and TS
-(`partial`), and an odd filename (`util/odd name ü.go`).
+`partial`), unsupported-only (a Kotlin file: `unsupported`, score null), mixed
+Go and Kotlin (`partial`), and an odd filename (`util/odd name ü.go`).
+TypeScript pairs (`testdata/fixtures/ts`): reuse versus a renamed copy
+(duplication 0 vs -1), extraction versus in-place nesting (complexity 0 vs
+-1), and an introduced directory cycle (dependencies -2).
 
 ```bash
 go test ./...                    # unit, contract and e2e (real CLI subprocess) tests
@@ -284,7 +297,7 @@ diagnostics.
 
 Deferred:
 
-- TypeScript and C# adapters
+- C# adapter
 - type-resolved references and a call graph (references are name-based)
 - detecting lines moved within a file (only symbol moves are detected)
 - incremental index across runs beyond the blob cache
