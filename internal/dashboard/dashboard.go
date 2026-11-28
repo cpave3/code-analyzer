@@ -10,38 +10,37 @@ package dashboard
 
 import (
 	"embed"
-	"encoding/json"
 	"fmt"
-	"io/fs"
-	"net/http"
 	"sort"
-	"strconv"
 	"sync"
+	"time"
 
 	"github.com/cameron/code-evaluator/internal/clones"
 	"github.com/cameron/code-evaluator/internal/config"
 	"github.com/cameron/code-evaluator/internal/engine"
-	"github.com/cameron/code-evaluator/internal/index"
+	"github.com/cameron/code-evaluator/internal/gitsrc"
 	"github.com/cameron/code-evaluator/internal/lang"
 	"github.com/cameron/code-evaluator/internal/provenance"
 	"github.com/cameron/code-evaluator/internal/report"
 	"github.com/cameron/code-evaluator/internal/rules"
 	"github.com/cameron/code-evaluator/internal/scorev2"
-	"github.com/cameron/code-evaluator/internal/viz"
 )
 
 //go:embed web
 var web embed.FS
 
-// Options select the history and what is measured.
+// Options select the history and the initially measured window.
 type Options struct {
-	Base     string // exclusive start; "" = the last Max first-parent commits
+	Base     string // first commit listed (the history after it, plus itself); "" = back to the root
 	Target   string
-	Max      int // most commits (0 = the whole first-parent history)
+	Max      int // most commits listed (0 = the whole first-parent history)
+	Last     int // the window measured at start: the newest Last commits (default 50)
+	Since    string
+	Until    string // or a date range (RFC 3339 date or time); overrides Last
 	Defects  bool
 	Clones   bool
 	NotesRef string
-	Infer    bool // infer agents from Co-Authored-By lines
+	Infer    bool // infer models from Co-Authored-By lines
 }
 
 // Commit is one first-parent commit with its metadata.
@@ -57,7 +56,7 @@ type Commit struct {
 }
 
 // Metrics are one commit's absolute measurements, plus step changes
-// against the previous commit in the series.
+// against the previous commit in the history.
 type Metrics struct {
 	Done         bool         `json:"done"`
 	Error        string       `json:"error,omitempty"`
@@ -72,20 +71,20 @@ type Metrics struct {
 	Cloned       int          `json:"clonedCallables"`
 	Violations   int          `json:"ruleViolations"`
 	CycleUnits   int          `json:"cycleUnits"`
-	ChangedLines int          `json:"changedLines"` // vs previous commit in the series
+	ChangedLines int          `json:"changedLines"` // vs previous commit
 	// StepDone is set once the changes against the previous commit
 	// (changed lines, defects introduced/resolved) are known.
 	StepDone   bool `json:"stepDone"`
 	Gate       *int `json:"gate,omitempty"`
 	Advisory   *int `json:"advisory,omitempty"`
-	IntroGate  *int `json:"introducedGate,omitempty"` // vs previous commit
+	IntroGate  *int `json:"introducedGate,omitempty"`
 	IntroAdv   *int `json:"introducedAdvisory,omitempty"`
 	Resolved   *int `json:"resolved,omitempty"`
 	NearMisses *int `json:"nearMisses,omitempty"`
 	Fragments  *int `json:"fragments,omitempty"`
 }
 
-// Server holds the evaluator and the computed series.
+// Server holds the evaluator, the listed history and what has been measured.
 type Server struct {
 	opts  Options
 	ev    *engine.Evaluator
@@ -97,34 +96,35 @@ type Server struct {
 	commits []Commit
 	meta    map[string]any
 
-	mu      sync.Mutex
-	metrics []Metrics
-	graphs  map[string][]byte
-	order   []string
+	mu       sync.Mutex
+	work     *sync.Cond
+	metrics  []Metrics
+	findings map[int][]rules.Finding // measured commits' defect findings, for step comparison
+	lo, hi   int                     // measured window (inclusive indexes)
+	graphs   map[string][]byte
+	order    []string
 }
 
-// New resolves the history and its provenance; call Run to compute metrics.
+// New lists the history and its provenance (cheap: a few git calls); call
+// Run to measure the window.
 func New(ev *engine.Evaluator, cfg *config.Config, langs *lang.Registry, reg *rules.Registry, opts Options) (*Server, error) {
-	s := &Server{opts: opts, ev: ev, cfg: cfg, langs: langs, reg: reg, graphs: map[string][]byte{}}
-	shas, err := s.history()
+	s := &Server{opts: opts, ev: ev, cfg: cfg, langs: langs, reg: reg, graphs: map[string][]byte{}, findings: map[int][]rules.Finding{}}
+	s.work = sync.NewCond(&s.mu)
+	log, err := s.history()
 	if err != nil {
 		return nil, err
 	}
-	if len(shas) == 0 {
+	if len(log) == 0 {
 		return nil, fmt.Errorf("no commits in range")
 	}
-	records, err := s.provenance(shas)
+	records, err := s.provenance(log)
 	if err != nil {
 		return nil, err
 	}
-	for i, sha := range shas {
-		info, err := ev.Info(sha)
-		if err != nil {
-			return nil, err
-		}
-		c := Commit{Index: i, SHA: sha, Subject: info.Subject, Author: info.Author, Time: info.Time, Merge: len(info.Parents) > 1}
-		if len(info.Parents) > 0 {
-			c.Parent = info.Parents[0]
+	for i, e := range log {
+		c := Commit{Index: i, SHA: e.SHA, Subject: e.Subject, Author: e.Author, Time: e.Time, Merge: len(e.Parents) > 1}
+		if len(e.Parents) > 0 {
+			c.Parent = e.Parents[0]
 		}
 		if c.Provenance, err = s.stepRecords(c, records); err != nil {
 			return nil, err
@@ -132,47 +132,47 @@ func New(ev *engine.Evaluator, cfg *config.Config, langs *lang.Registry, reg *ru
 		s.commits = append(s.commits, c)
 	}
 	s.metrics = make([]Metrics, len(s.commits))
+	if s.lo, s.hi, err = s.initialWindow(); err != nil {
+		return nil, err
+	}
 	s.meta = s.describe()
 	return s, nil
 }
 
-func (s *Server) history() ([]string, error) {
+func (s *Server) history() ([]gitsrc.LogEntry, error) {
 	tsha, err := s.ev.ResolveCommit(s.opts.Target)
 	if err != nil {
 		return nil, err
 	}
-	if s.opts.Base == "" {
-		return s.ev.LastFirstParents(tsha, s.opts.Max)
+	base := ""
+	if s.opts.Base != "" {
+		if base, err = s.ev.ResolveCommit(s.opts.Base); err != nil {
+			return nil, err
+		}
+		if _, err := s.ev.FirstParentSteps(base, tsha); err != nil {
+			return nil, err
+		}
 	}
-	bsha, err := s.ev.ResolveCommit(s.opts.Base)
+	log, err := s.ev.FirstParentLog(base, tsha, s.opts.Max)
+	if err != nil || base == "" || (s.opts.Max > 0 && len(log) >= s.opts.Max) {
+		return log, err
+	}
+	// Show the base itself first, so the first listed step has a parent.
+	b, err := s.ev.FirstParentLog("", base, 1)
 	if err != nil {
 		return nil, err
 	}
-	steps, err := s.ev.FirstParentSteps(bsha, tsha)
-	if err != nil {
-		return nil, err
-	}
-	shas := []string{bsha}
-	for _, p := range steps {
-		shas = append(shas, p[1])
-	}
-	if s.opts.Max > 0 && len(shas) > s.opts.Max {
-		shas = shas[len(shas)-s.opts.Max:]
-	}
-	return shas, nil
+	return append(b, log...), nil
 }
 
-// provenance parses messages and notes for every commit the series brings in.
-func (s *Server) provenance(shas []string) (map[string]provenance.Record, error) {
-	first, err := s.ev.Info(shas[0])
-	if err != nil {
-		return nil, err
-	}
+// provenance parses messages and notes for every commit the history brings
+// in, in one git call.
+func (s *Server) provenance(log []gitsrc.LogEntry) (map[string]provenance.Record, error) {
 	base := ""
-	if len(first.Parents) > 0 {
-		base = first.Parents[0]
+	if p := log[0].Parents; len(p) > 0 {
+		base = p[0]
 	}
-	list, err := s.ev.CommitsBetween(base, shas[len(shas)-1], s.opts.NotesRef)
+	list, err := s.ev.CommitsBetween(base, log[len(log)-1].SHA, s.opts.NotesRef)
 	if err != nil {
 		return nil, err
 	}
@@ -185,10 +185,11 @@ func (s *Server) provenance(shas []string) (map[string]provenance.Record, error)
 	return out, nil
 }
 
-// stepRecords lists the provenance of the commits a step brings in.
+// stepRecords lists the provenance of the commits a step brings in: the
+// commit itself, plus the merged branch for a merge (one git call per merge).
 func (s *Server) stepRecords(c Commit, records map[string]provenance.Record) ([]provenance.Record, error) {
 	shas := []string{c.SHA}
-	if c.Parent != "" {
+	if c.Merge {
 		var err error
 		if shas, err = s.ev.RevList(c.Parent, c.SHA); err != nil {
 			return nil, err
@@ -203,6 +204,62 @@ func (s *Server) stepRecords(c Commit, records map[string]provenance.Record) ([]
 		out = append(out, rec)
 	}
 	return out, nil
+}
+
+// initialWindow picks the measured window from --since/--until or --last.
+func (s *Server) initialWindow() (int, int, error) {
+	n := len(s.commits)
+	if s.opts.Since != "" || s.opts.Until != "" {
+		since, until, err := parseRange(s.opts.Since, s.opts.Until)
+		if err != nil {
+			return 0, 0, err
+		}
+		lo, hi := -1, -1
+		for i, c := range s.commits {
+			t, err := time.Parse(time.RFC3339, c.Time)
+			if err != nil || (!since.IsZero() && t.Before(since)) || (!until.IsZero() && t.After(until)) {
+				continue
+			}
+			if lo < 0 {
+				lo = i
+			}
+			hi = i
+		}
+		if lo < 0 {
+			return 0, 0, fmt.Errorf("no commits between %q and %q", s.opts.Since, s.opts.Until)
+		}
+		return lo, hi, nil
+	}
+	last := s.opts.Last
+	if last <= 0 || last > n {
+		last = n
+	}
+	return n - last, n - 1, nil
+}
+
+func parseRange(since, until string) (time.Time, time.Time, error) {
+	parse := func(v string, end bool) (time.Time, error) {
+		if v == "" {
+			return time.Time{}, nil
+		}
+		if t, err := time.Parse(time.RFC3339, v); err == nil {
+			return t, nil
+		}
+		t, err := time.ParseInLocation("2006-01-02", v, time.Local)
+		if err != nil {
+			return time.Time{}, fmt.Errorf("date %q: want YYYY-MM-DD or RFC 3339", v)
+		}
+		if end {
+			t = t.Add(24*time.Hour - time.Nanosecond)
+		}
+		return t, nil
+	}
+	a, err := parse(since, false)
+	if err != nil {
+		return a, a, err
+	}
+	b, err := parse(until, true)
+	return a, b, err
 }
 
 // describe lists the fields the page can group by and the run's settings.
@@ -223,8 +280,9 @@ func (s *Server) describe() map[string]any {
 	sort.Strings(extra)
 	notes := []string{
 		"scoring/v2 debt and score are uncalibrated structural proxies; defects (rules/v1) and near-duplication (clones/v1) are findings, not scores",
-		"provenance is self-reported text in commit messages and notes (or inferred from Co-Authored-By lines); comparisons between agents or workflows are observational, not causal",
+		"provenance is self-reported text in commit messages and notes (or inferred from Co-Authored-By lines); comparisons between models or workflows are observational, not causal",
 		"each point is a first-parent commit; a merge step includes every commit it brings in",
+		"only the selected window is measured (each commit once, then cached); the history strip lists every commit",
 	}
 	return map[string]any{
 		"repository": s.ev.RepoName(), "tool": report.ToolVersion, "scoring": scorev2.Version, "rules": rules.Version, "clones": clones.Version,
@@ -235,191 +293,12 @@ func (s *Server) describe() map[string]any {
 	}
 }
 
-// Run computes every commit's metrics, newest first, so the recent end of a
-// long history appears first. A commit's step changes (changed lines,
-// defects introduced and resolved) are filled in once its parent, the next
-// commit measured, is done.
-func (s *Server) Run() {
-	type measured struct {
-		i    int
-		snap *index.Snapshot
-		res  *rules.Result
-	}
-	var newer *measured
-	for i := len(s.commits) - 1; i >= 0; i-- {
-		m, snap, res := s.measure(s.commits[i].SHA)
-		s.mu.Lock()
-		s.metrics[i] = m
-		if i == 0 {
-			s.metrics[i].StepDone = true // no parent in the series
-		}
-		s.mu.Unlock()
-		if newer != nil && m.Error == "" {
-			s.fillStep(newer.i, snap, res, newer.snap, newer.res)
-		}
-		newer = nil
-		if m.Error == "" {
-			newer = &measured{i, snap, res}
-		}
-	}
-}
-
-// measure computes one commit's absolute metrics.
-func (s *Server) measure(sha string) (m Metrics, snap *index.Snapshot, res *rules.Result) {
-	s.evMu.Lock()
-	defer s.evMu.Unlock()
-	m.Done = true
-	_, snap, err := s.ev.ResolveSnapshot(sha)
-	if err != nil {
-		m.Error = err.Error()
-		return m, nil, nil
-	}
-	a := scorev2.Analyze(snap, s.cfg, scorev2.DefaultWeights())
-	c := a.Codebase.Components
-	m.Debt, m.DebtPerKLOC, m.Score = a.Codebase.Debt, a.Codebase.DebtPerKLOC, a.Codebase.Score
-	m.Lines, m.Files, m.Callables, m.Hotspots, m.Decisions = c.SourceLines, c.SourceFiles, c.Callables, c.Hotspots, c.DecisionPoints
-	m.Cloned, m.Violations, m.CycleUnits = c.ClonedCallables, c.RuleViolations, c.CycleUnits
-	if s.opts.Defects {
-		res = rules.Run(s.reg, snap, s.cfg, s.langs, rules.Options{})
-		gate, adv := 0, 0
-		for _, f := range res.Findings {
-			if f.Severity == rules.Gate {
-				gate++
-			} else {
-				adv++
-			}
-		}
-		m.Gate, m.Advisory = &gate, &adv
-	}
-	if s.opts.Clones {
-		cr := clones.Analyze(snap, s.cfg, s.langs, nil)
-		n, f := len(cr.NearMisses), len(cr.Fragments)
-		m.NearMisses, m.Fragments = &n, &f
-	}
-	return m, snap, res
-}
-
-// fillStep records commit i's changes against its parent (older).
-func (s *Server) fillStep(i int, older *index.Snapshot, olderRes *rules.Result, newer *index.Snapshot, newerRes *rules.Result) {
-	s.evMu.Lock()
-	changed := 0
-	if cs, err := s.ev.ChangeSet(older, newer); err == nil {
-		for _, f := range cs.Files {
-			if f.Supported {
-				changed += f.Added + f.Deleted
-			}
-		}
-	}
-	s.evMu.Unlock()
-	var ig, ia, r *int
-	if olderRes != nil && newerRes != nil {
-		in, out, _ := rules.Compare(olderRes.Findings, newerRes.Findings)
-		g, a, n := 0, 0, len(out)
-		for _, f := range in {
-			if f.Severity == rules.Gate {
-				g++
-			} else {
-				a++
-			}
-		}
-		ig, ia, r = &g, &a, &n
-	}
-	s.mu.Lock()
-	m := &s.metrics[i]
-	m.ChangedLines, m.IntroGate, m.IntroAdv, m.Resolved, m.StepDone = changed, ig, ia, r, true
-	s.mu.Unlock()
-}
-
-// graph builds (and caches) one commit's module graph.
-func (s *Server) graph(sha string, maxCallables int) ([]byte, error) {
-	key := sha + "/" + strconv.Itoa(maxCallables)
-	s.mu.Lock()
-	if b, ok := s.graphs[key]; ok {
-		s.mu.Unlock()
-		return b, nil
-	}
-	s.mu.Unlock()
-	s.evMu.Lock()
-	_, snap, err := s.ev.ResolveSnapshot(sha)
-	if err != nil {
-		s.evMu.Unlock()
-		return nil, err
-	}
-	d := viz.Build(s.ev.RepoName(), report.Revision{Ref: sha, Commit: sha, Tree: snap.Tree, CommitTime: s.ev.CommitTime(sha)}, snap, s.cfg, scorev2.Analyze(snap, s.cfg, scorev2.DefaultWeights()))
-	s.evMu.Unlock()
-	d.Trim(maxCallables)
-	b, err := json.Marshal(d)
-	if err != nil {
-		return nil, err
-	}
-	s.mu.Lock()
-	s.graphs[key] = b
-	s.order = append(s.order, key)
-	if len(s.order) > 64 {
-		delete(s.graphs, s.order[0])
-		s.order = s.order[1:]
-	}
-	s.mu.Unlock()
-	return b, nil
-}
-
-// Handler serves the page and the JSON API.
-func (s *Server) Handler() http.Handler {
-	mux := http.NewServeMux()
-	page, _ := fs.Sub(web, "web")
-	mux.Handle("GET /", http.FileServerFS(page))
-	mux.HandleFunc("GET /api/meta", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, s.meta) })
-	mux.HandleFunc("GET /api/metrics", func(w http.ResponseWriter, r *http.Request) {
-		s.mu.Lock()
-		done := 0
-		for _, m := range s.metrics {
-			if m.Done {
-				done++
-			}
-		}
-		body := map[string]any{"done": done, "total": len(s.metrics), "metrics": append([]Metrics(nil), s.metrics...)}
-		s.mu.Unlock()
-		writeJSON(w, body)
-	})
-	mux.HandleFunc("GET /api/graph", func(w http.ResponseWriter, r *http.Request) {
-		sha := r.URL.Query().Get("commit")
-		known := false
-		for _, c := range s.commits {
-			known = known || c.SHA == sha
-		}
-		if !known {
-			http.Error(w, "unknown commit", http.StatusNotFound)
-			return
-		}
-		max, _ := strconv.Atoi(r.URL.Query().Get("callables"))
-		if max <= 0 {
-			max = 120
-		}
-		b, err := s.graph(sha, max)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(b)
-	})
-	return securityHeaders(mux)
-}
-
-func writeJSON(w http.ResponseWriter, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(v)
-}
-
-// securityHeaders keeps the page self-contained and same-origin.
-func securityHeaders(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:")
-		w.Header().Set("X-Content-Type-Options", "nosniff")
-		w.Header().Set("Referrer-Policy", "no-referrer")
-		h.ServeHTTP(w, r)
-	})
-}
-
-// Commits is the number of commits in the series.
+// Commits is the number of commits listed.
 func (s *Server) Commits() int { return len(s.commits) }
+
+// Window returns the measured window (inclusive indexes).
+func (s *Server) Window() (int, int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.lo, s.hi
+}

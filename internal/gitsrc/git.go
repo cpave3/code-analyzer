@@ -495,3 +495,43 @@ func (r *Repo) LastFirstParents(target string, n int) ([]string, error) {
 	}
 	return shas, nil
 }
+
+// LogEntry is one commit of a first-parent log.
+type LogEntry struct {
+	SHA string
+	CommitInfo
+}
+
+// FirstParentLog lists target's first-parent chain, oldest first, with
+// author, time, parents and subject, in one git call. base "" lists back to
+// the root; n > 0 keeps the newest n.
+func (r *Repo) FirstParentLog(base, target string, n int) ([]LogEntry, error) {
+	args := []string{"log", "--first-parent", "--no-show-signature", "--format=%H%x1f%an%x1f%aI%x1f%P%x1f%s%x1e"}
+	if n > 0 {
+		args = append(args, "-n", strconv.Itoa(n))
+	}
+	spec := target
+	if base != "" {
+		spec = base + ".." + target
+	}
+	out, err := r.run(append(args, "--end-of-options", spec)...)
+	if err != nil {
+		return nil, err
+	}
+	var list []LogEntry
+	for _, rec := range strings.Split(string(out), "\x1e") {
+		rec = strings.TrimLeft(rec, "\n")
+		if rec == "" {
+			continue
+		}
+		f := strings.SplitN(rec, "\x1f", 5)
+		if len(f) < 5 {
+			continue
+		}
+		list = append(list, LogEntry{SHA: f[0], CommitInfo: CommitInfo{Author: f[1], Time: f[2], Parents: strings.Fields(f[3]), Subject: f[4]}})
+	}
+	for i, j := 0, len(list)-1; i < j; i, j = i+1, j-1 {
+		list[i], list[j] = list[j], list[i]
+	}
+	return list, nil
+}

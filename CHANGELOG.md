@@ -17,6 +17,17 @@ All versions are local proof-of-concept builds; there is no remote or release.
   variants), vet, fmt, check, run, serve, analyze and fixtures:reports. It
   uses the offline pinned environment and `CGO_ENABLED=1`, because the
   Tree-sitter grammars are C.
+- **Dashboard measured window:**
+  - The whole first-parent history is listed from a few batched git calls,
+    and only a window is measured: `--last 50` by default, or
+    `--since`/`--until`.
+  - On the page, a history strip shows every commit; dragging across it
+    or using the last-N or date controls moves the window
+    (`POST /api/window`, same-origin JSON only).
+  - Charts, the stepper and the group table cover the window, and measured
+    commits stay cached.
+  - Graphs no longer prefetch neighbours except while playing.
+  - `--base` lists the base commit as the first point.
 - **`codeeval serve` defaults:**
   - `codeeval serve` (or `codeeval serve PATH`) shows the whole first-parent
     history of the checkout's HEAD. `--max` (now default 0 = all),

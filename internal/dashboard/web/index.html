@@ -55,6 +55,10 @@ th,td{padding:4px 6px;border-top:1px solid var(--line);text-align:right;font-var
 th:first-child,td:first-child{text-align:left}
 th{color:var(--dim);font-weight:500}
 .full{grid-column:1/-1}
+#strip{width:100%;height:64px;display:block;cursor:crosshair;user-select:none}
+#windowCtl{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:6px;font-size:12px}
+#windowCtl input{background:transparent;color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:3px 6px;font:inherit}
+#windowCtl input[type=number]{width:72px}
 .notes{font-size:12px;color:var(--dim);margin:6px 0 0;padding-left:16px}
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
 </style>
@@ -67,6 +71,15 @@ th{color:var(--dim);font-weight:500}
   <span class="dim" id="progressText"></span>
 </header>
 <main>
+  <section class="card full">
+    <h2>History · drag across it to choose which commits to measure</h2>
+    <svg id="strip"></svg>
+    <div id="windowCtl">
+      <span>Last <input type="number" id="lastN" min="1" value="50"> commits <button id="applyLast">Measure</button></span>
+      <span>or from <input type="date" id="fromDate"> to <input type="date" id="toDate"> <button id="applyDates">Measure</button></span>
+      <span class="dim" id="windowInfo"></span>
+    </div>
+  </section>
   <section class="card">
     <h2>Commit</h2>
     <div id="stepper">
@@ -111,7 +124,7 @@ const fmt = (v, d = 0) => v == null || Number.isNaN(v) ? "–" : Number(v).toLoc
 const signed = (v, d = 0) => v == null ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "±") + fmt(Math.abs(v), d);
 const PALETTE = ["#60a5fa", "#f472b6", "#34d399", "#fbbf24", "#a78bfa", "#f87171", "#2dd4bf", "#fb923c", "#c084fc", "#4ade80", "#e879f9", "#38bdf8"];
 
-let meta = null, metrics = [], sel = 0, playing = null;
+let meta = null, metrics = [], sel = 0, playing = null, win = {from: 0, to: 0}, pollTimer = null;
 let groupFields = ["model", "harness"];
 const groupColor = {};
 
@@ -140,22 +153,89 @@ async function load() {
   $("title").textContent = "Quality over time · " + meta.repository;
   const cs = meta.commits;
   $("range").textContent = `${cs.length} first-parent commits · ${cs[0].sha.slice(0, 8)} → ${cs[cs.length - 1].sha.slice(0, 8)} · ${meta.scoring} · ${meta.rules} · ${meta.clones} · tool ${meta.tool}`;
-  $("slider").max = cs.length - 1;
   $("notes").innerHTML = meta.notes.map(n => `<li>${esc(n)}</li>`).join("");
+  $("fromDate").value = cs[0].time.slice(0, 10); $("toDate").value = cs[cs.length - 1].time.slice(0, 10);
+  metrics = new Array(cs.length);
   renderGroupPick();
   sel = cs.length - 1;
-  $("slider").value = sel;
   await poll();
   select(sel);
 }
 async function poll() {
+  clearTimeout(pollTimer);
   const r = await (await fetch("api/metrics")).json();
-  metrics = r.metrics;
+  const moved = r.window.from !== win.from || r.window.to !== win.to;
+  win = r.window;
+  for (const [k, m] of Object.entries(r.metrics)) metrics[+k] = m;
+  $("slider").min = win.from; $("slider").max = win.to;
+  const busy = r.done < r.total || r.stepsDone < r.total;
   $("progress").firstElementChild.style.width = (100 * r.done / Math.max(1, r.total)) + "%";
-  $("progressText").textContent = r.done < r.total ? `measuring ${r.done}/${r.total} commits, newest first…` : `${r.total} commits measured`;
-  renderCharts(); renderCommit(); renderGroups();
-  if (r.done < r.total) setTimeout(poll, 1500);
+  $("progressText").textContent = r.done < r.total ? `measuring ${r.done}/${r.total} commits in the window, newest first…`
+    : r.stepsDone < r.total ? `${r.total} commits measured, comparing steps…` : `${r.total} commits in the window measured`;
+  $("windowInfo").textContent = `window: commits ${win.from + 1}–${win.to + 1} of ${meta.commits.length} (${meta.commits[win.from].time.slice(0, 10)} → ${meta.commits[win.to].time.slice(0, 10)}) · ${r.measuredOverall} measured so far this session`;
+  if (moved && (sel < win.from || sel > win.to)) select(win.to);
+  renderStrip(); renderCharts(); renderCommit(); renderGroups();
+  pollTimer = setTimeout(poll, busy ? 1500 : 5000);
 }
+async function setWindow(from, to) {
+  const n = meta.commits.length;
+  from = Math.max(0, Math.min(n - 1, from)); to = Math.max(0, Math.min(n - 1, to));
+  if (from > to) [from, to] = [to, from];
+  await fetch("api/window", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({from, to})});
+  await poll();
+  if (sel < win.from || sel > win.to) select(win.to);
+}
+$("applyLast").onclick = () => { const n = meta.commits.length, k = Math.max(1, +$("lastN").value || 50); setWindow(n - k, n - 1); };
+$("applyDates").onclick = () => {
+  const a = $("fromDate").value, b = $("toDate").value, cs = meta.commits;
+  let lo = cs.findIndex(c => c.time.slice(0, 10) >= a), hi = -1;
+  for (let i = cs.length - 1; i >= 0; i--) if (cs[i].time.slice(0, 10) <= b) { hi = i; break; }
+  if (lo < 0 || hi < 0 || lo > hi) { $("windowInfo").textContent = "no commits in that date range"; return; }
+  setWindow(lo, hi);
+};
+
+// ---------- history strip: every commit, coloured by provenance; drag to choose the window ----------
+let brush = null;
+function stripIndex(ev) {
+  const svg = $("strip"), r = svg.getBoundingClientRect(), n = meta.commits.length;
+  return Math.max(0, Math.min(n - 1, Math.floor((ev.clientX - r.left) / r.width * n)));
+}
+function renderStrip() {
+  const svg = $("strip"), W = svg.clientWidth || 800, H = 64, n = meta.commits.length, cs = meta.commits;
+  const bins = Math.min(n, Math.max(1, Math.floor(W / 2))), bw = W / bins;
+  let out = "";
+  for (let b = 0; b < bins; b++) {
+    const i = Math.min(n - 1, Math.floor((b + 1) * n / bins) - 1);
+    out += `<rect x="${b * bw}" y="14" width="${Math.max(1, bw - .4)}" height="26" fill="${colorOfKey(stepKey(cs[i]))}" opacity=".75"/>`;
+  }
+  const x = i => i / n * W;
+  const a = brush ? Math.min(brush.a, brush.b) : win.from, b = brush ? Math.max(brush.a, brush.b) : win.to;
+  out += `<rect x="${x(a)}" y="10" width="${Math.max(2, x(b + 1) - x(a))}" height="34" fill="var(--accent)" fill-opacity=".18" stroke="var(--accent)" stroke-width="1.5"/>`;
+  out += `<line x1="${x(sel) + bw / 2}" x2="${x(sel) + bw / 2}" y1="6" y2="48" stroke="var(--fg)" stroke-width="1.5"/>`;
+  const label = (i, anchor) => `<text x="${Math.min(W - 2, Math.max(2, x(i)))}" y="60" font-size="10" fill="var(--dim)" text-anchor="${anchor}">${cs[i].time.slice(0, 10)}</text>`;
+  out += label(0, "start") + label(Math.floor((n - 1) / 2), "middle") + label(n - 1, "end");
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.innerHTML = out;
+}
+$("strip").onmousedown = e => { const i = stripIndex(e); brush = {a: i, b: i}; renderStrip(); };
+$("strip").onmousemove = e => {
+  const i = stripIndex(e), c = meta.commits[i];
+  if (brush) { brush.b = i; renderStrip(); }
+  showTip(e, `<b>${esc(c.subject)}</b><br><span class="mono">${c.sha.slice(0, 10)}</span> · ${esc(c.time.slice(0, 10))} · ${esc(stepKey(c))}`);
+};
+$("strip").onmouseleave = hideTip;
+addEventListener("mouseup", () => {
+  if (!brush) return;
+  const a = Math.min(brush.a, brush.b), b = Math.max(brush.a, brush.b);
+  brush = null;
+  if (a === b) {
+    if (a >= win.from && a <= win.to) { select(a); return; }   // a click inside the window selects that commit
+    const half = Math.floor((win.to - win.from) / 2);          // outside: move the window there, same size
+    setWindow(a - half, a - half + (win.to - win.from));
+    return;
+  }
+  setWindow(a, b);
+});
 
 // ---------- provenance picker ----------
 function renderGroupPick() {
@@ -200,8 +280,8 @@ function renderCharts() {
 }
 function drawChart(svg, ch) {
   const W = svg.clientWidth || 500, H = 150, L = 44, R = 8, T = 8, B = 18;
-  const n = meta.commits.length, xs = i => L + (n <= 1 ? 0 : i * (W - L - R) / (n - 1));
-  const done = metrics.map((m, i) => [m, i]).filter(([m]) => m && m.done && !m.error);
+  const a0 = win.from, a1 = win.to, span = Math.max(1, a1 - a0), xs = i => L + (a1 === a0 ? (W - L - R) / 2 : (i - a0) * (W - L - R) / span);
+  const done = metrics.map((m, i) => [m, i]).filter(([m, i]) => m && m.done && !m.error && i >= a0 && i <= a1);
   const vals = [];
   for (const [m] of done) {
     if (ch.stack) vals.push(ch.series.reduce((a, s) => a + (s.get(m) || 0), 0));
@@ -237,7 +317,7 @@ function drawChart(svg, ch) {
   out += `<rect x="${L}" y="0" width="${W - L - R}" height="${H}" fill="transparent" class="hit"/>`;
   svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
   svg.innerHTML = out;
-  const idx = ev => { const r = svg.getBoundingClientRect(); const x = (ev.clientX - r.left) * W / r.width; return Math.max(0, Math.min(n - 1, Math.round((x - L) / Math.max(1e-9, (W - L - R) / Math.max(1, n - 1))))); };
+  const idx = ev => { const r = svg.getBoundingClientRect(); const x = (ev.clientX - r.left) * W / r.width; return Math.max(a0, Math.min(a1, a0 + Math.round((x - L) / Math.max(1e-9, (W - L - R) / span)))); };
   svg.onclick = ev => select(idx(ev));
   svg.onmousemove = ev => {
     const i = idx(ev), m = metrics[i], c = meta.commits[i];
@@ -289,7 +369,7 @@ function renderCommit() {
 // ---------- provenance group table ----------
 function renderGroups() {
   const g = {};
-  for (let i = 1; i < meta.commits.length; i++) {
+  for (let i = Math.max(1, win.from); i <= win.to; i++) {
     const m = metrics[i], p = metrics[i - 1];
     if (!m || !p || !m.done || !p.done || !m.stepDone || m.error || p.error) continue;
     const k = stepKey(meta.commits[i]);
@@ -393,7 +473,8 @@ async function showGraph(i) {
     + `<span class="sw" style="border:2px solid var(--up)"></span>${counts.up} more debt<span class="sw" style="border:2px solid var(--down)"></span>${counts.down} less<span class="sw" style="border:2px dashed var(--new)"></span>${counts.new} new · ${removed} gone`;
   if (!fromPrev) fit();
   // prefetch neighbours
-  for (const j of [i + 1, i - 1]) if (meta.commits[j]) fetchGraph(meta.commits[j].sha).catch(() => {});
+  // Graphs are expensive on the server: prefetch only the next one, and only while playing.
+  if (playing && meta.commits[i + 1] && i + 1 <= win.to) fetchGraph(meta.commits[i + 1].sha).catch(() => {});
 }
 function fit() {
   if (!nodes.length) return;
@@ -551,9 +632,9 @@ function renderDetail() {
 
 // ---------- selection, stepping ----------
 function select(i) {
-  sel = Math.max(0, Math.min(meta.commits.length - 1, i));
+  sel = Math.max(win.from, Math.min(win.to, i));
   $("slider").value = sel;
-  renderCharts(); renderCommit();
+  renderStrip(); renderCharts(); renderCommit();
   showGraph(sel);
 }
 $("slider").oninput = e => select(+e.target.value);
@@ -562,9 +643,9 @@ $("next").onclick = () => select(sel + 1);
 $("play").onclick = togglePlay;
 function togglePlay() {
   if (playing) { clearInterval(playing); playing = null; $("play").textContent = "▶ Play"; return; }
-  if (sel >= meta.commits.length - 1) select(0);
+  if (sel >= win.to) select(win.from);
   $("play").textContent = "❚❚ Pause";
-  playing = setInterval(() => { if (sel >= meta.commits.length - 1) return togglePlay(); select(sel + 1); }, 1300);
+  playing = setInterval(() => { if (sel >= win.to) return togglePlay(); select(sel + 1); }, 1300);
 }
 addEventListener("keydown", e => {
   if (e.target.tagName === "INPUT" && e.target.type !== "range") return;
@@ -574,7 +655,7 @@ addEventListener("keydown", e => {
 });
 function showTip(e, html) { const t = $("tip"); t.innerHTML = html; t.style.display = "block"; t.style.left = Math.min(e.clientX + 14, innerWidth - 350) + "px"; t.style.top = (e.clientY + 14) + "px"; }
 function hideTip() { $("tip").style.display = "none"; }
-addEventListener("resize", () => renderCharts());
+addEventListener("resize", () => { renderStrip(); renderCharts(); });
 
 load().then(() => { renderLegend(); renderHow(); requestAnimationFrame(frame); }).catch(e => { document.body.insertAdjacentHTML("afterbegin", `<p class="up" style="padding:16px">Failed to load: ${esc(e)}</p>`); });
 </script>

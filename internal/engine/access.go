@@ -96,3 +96,8 @@ func (e *Evaluator) LastFirstParents(target string, n int) ([]string, error) {
 
 // ResolveCommit resolves a revision to a commit SHA.
 func (e *Evaluator) ResolveCommit(rev string) (string, error) { return e.repo.ResolveCommit(rev) }
+
+// FirstParentLog lists target's first-parent chain with metadata, oldest first.
+func (e *Evaluator) FirstParentLog(base, target string, n int) ([]gitsrc.LogEntry, error) {
+	return e.repo.FirstParentLog(base, target, n)
+}

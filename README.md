@@ -366,13 +366,19 @@ implementations and small boilerplate functions also match.
 ```bash
 codeeval serve                                  # this checkout: the whole first-parent history of HEAD
 codeeval serve ../other-repo                    # another checkout
-codeeval serve --max 100                        # only the latest 100 commits
+codeeval serve --last 100                       # measure the newest 100 commits (default 50)
+codeeval serve --since 2026-10-01 --until 2026-10-31   # measure a date range
 codeeval serve --base v1.0 --target main --addr 127.0.0.1:8765
 ```
 
 It serves a self-contained page (no external scripts) on a loopback
-address; other addresses are refused. Metrics are computed in the
-background, **newest commit first**, so the recent end of a long history is
+address; other addresses are refused. The **history strip** at the top
+lists every commit, which is cheap even for thousands. Only a **window** is
+measured: the newest 50 by default (`--last`, `--since`/`--until`). You can
+move it from the page by dragging across the strip, or with the "last N" and
+date controls. Measured commits are cached, so moving back costs nothing.
+Charts, the stepper and the group table cover the window. Metrics are
+computed in the background, **newest commit first**, so the recent end of a long history is
 ready first. That takes about 4 s per commit on this repository. A commit's
 step changes (changed lines, defects introduced and resolved) appear once
 its parent has been measured.

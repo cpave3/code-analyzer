@@ -26,9 +26,12 @@ func serveCmd(args []string, stdout, stderr io.Writer) int {
 	var k conn
 	k.register(fs)
 	addr := fs.String("addr", "127.0.0.1:8765", "listen address (loopback only)")
-	base := fs.String("base", "", "start after this commit (exclusive); default: the whole first-parent history of --target")
+	base := fs.String("base", "", "list history from this commit (it is the first point); default: the whole first-parent history of --target")
 	target := fs.String("target", "HEAD", "last commit (default: the checkout's HEAD)")
-	max := fs.Int("max", 0, "most recent commits shown (0 = all)")
+	max := fs.Int("max", 0, "most recent commits listed (0 = all); listing is cheap, measuring is not")
+	last := fs.Int("last", 50, "measure the newest N commits at start (the page can move the window)")
+	since := fs.String("since", "", "measure commits from this date at start (YYYY-MM-DD or RFC 3339); with --until, overrides --last")
+	until := fs.String("until", "", "measure commits up to this date at start")
 	defects := fs.Bool("defects", true, "run the defect rules on every commit")
 	near := fs.Bool("near-duplication", true, "run near-miss and fragment clone detection on every commit")
 	infer := fs.Bool("infer-co-authors", true, "infer agents from Co-Authored-By lines when a commit has no provenance")
@@ -52,7 +55,7 @@ func serveCmd(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "usage: codeeval serve [PATH] [flags]: give one PATH")
 		return 2
 	}
-	if *max < 0 {
+	if *max < 0 || *last < 0 {
 		fmt.Fprintln(stderr, "usage: codeeval serve [PATH] [flags]  (PATH defaults to the current directory; --max must not be negative)")
 		return 2
 	}
@@ -74,7 +77,7 @@ func serveCmd(args []string, stdout, stderr io.Writer) int {
 	defer ev.Close()
 	langs := languages.Default()
 	srv, err := dashboard.New(ev, cfg, langs, all.Default(langs), dashboard.Options{Base: *base, Target: *target, Max: *max,
-		Defects: *defects, Clones: *near, NotesRef: *notesRef, Infer: *infer})
+		Last: *last, Since: *since, Until: *until, Defects: *defects, Clones: *near, NotesRef: *notesRef, Infer: *infer})
 	if err != nil {
 		return fail(stderr, err)
 	}
@@ -83,7 +86,8 @@ func serveCmd(args []string, stdout, stderr io.Writer) int {
 		return fail(stderr, err)
 	}
 	go srv.Run()
-	fmt.Fprintf(stdout, "codeeval dashboard for %s: http://%s/  (%d commits, measured newest first; Ctrl-C to stop)\n", ev.RepoName(), ln.Addr(), srv.Commits())
+	lo, hi := srv.Window()
+	fmt.Fprintf(stdout, "codeeval dashboard for %s: http://%s/  (%d commits listed; measuring %d of them, newest first; Ctrl-C to stop)\n", ev.RepoName(), ln.Addr(), srv.Commits(), hi-lo+1)
 	hs := &http.Server{Handler: srv.Handler(), ReadHeaderTimeout: 10 * time.Second}
 	if err := hs.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return fail(stderr, err)

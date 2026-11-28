@@ -60,17 +60,21 @@ func TestServeDashboard(t *testing.T) {
 	if err := json.Unmarshal(b, &meta); err != nil || len(meta.Commits) != 2 || len(meta.GroupFields) < 2 {
 		t.Fatalf("meta: %v %s", err, b)
 	}
+	type metric struct {
+		Done      bool     `json:"done"`
+		StepDone  bool     `json:"stepDone"`
+		Error     string   `json:"error"`
+		Gate      *int     `json:"gate"`
+		IntroGate *int     `json:"introducedGate"`
+		Near      *int     `json:"nearMisses"`
+		Score     *float64 `json:"score"`
+	}
 	var series struct {
-		Done, Total int
-		Metrics     []struct {
-			Done      bool     `json:"done"`
-			StepDone  bool     `json:"stepDone"`
-			Error     string   `json:"error"`
-			Gate      *int     `json:"gate"`
-			IntroGate *int     `json:"introducedGate"`
-			Near      *int     `json:"nearMisses"`
-			Score     *float64 `json:"score"`
-		} `json:"metrics"`
+		Done      int               `json:"done"`
+		StepsDone int               `json:"stepsDone"`
+		Total     int               `json:"total"`
+		Window    map[string]int    `json:"window"`
+		Metrics   map[string]metric `json:"metrics"`
 	}
 	deadline := time.Now().Add(60 * time.Second)
 	for {
@@ -78,11 +82,7 @@ func TestServeDashboard(t *testing.T) {
 		if err := json.Unmarshal(b, &series); err != nil {
 			t.Fatal(err)
 		}
-		all := series.Done == series.Total
-		for _, m := range series.Metrics {
-			all = all && m.StepDone
-		}
-		if all || time.Now().After(deadline) {
+		if (series.Done == series.Total && series.StepsDone == series.Total) || time.Now().After(deadline) {
 			break
 		}
 		time.Sleep(200 * time.Millisecond)
@@ -90,12 +90,45 @@ func TestServeDashboard(t *testing.T) {
 	if series.Done != 2 {
 		t.Fatalf("metrics not computed: %+v", series)
 	}
-	base, bad := series.Metrics[0], series.Metrics[1]
+	if series.Window["from"] != 0 || series.Window["to"] != 1 {
+		t.Errorf("default window (--last 50) should cover both commits: %v", series.Window)
+	}
+	base, bad := series.Metrics["0"], series.Metrics["1"]
 	if base.Error != "" || bad.Error != "" || base.Gate == nil || *base.Gate != 0 || bad.IntroGate == nil || *bad.IntroGate == 0 || bad.Near == nil || bad.Score == nil {
 		t.Errorf("series: base %+v bad %+v", base, bad)
 	}
 	if code, g := get("api/graph?commit=" + meta.Commits[1].SHA); code != 200 || !strings.Contains(string(g), `"modules"`) {
 		t.Errorf("graph: %d", code)
+	}
+	post := func(body, origin, ctype string) int {
+		req, _ := http.NewRequest("POST", url+"api/window", strings.NewReader(body))
+		if ctype != "" {
+			req.Header.Set("Content-Type", ctype)
+		}
+		if origin != "" {
+			req.Header.Set("Origin", origin)
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		return resp.StatusCode
+	}
+	host := strings.TrimSuffix(strings.TrimPrefix(url, "http://"), "/")
+	if code := post(`{"from":1,"to":1}`, "http://evil.example", "application/json"); code != 403 {
+		t.Errorf("cross-origin window change: %d", code)
+	}
+	if code := post(`{"from":1,"to":1}`, "", "text/plain"); code != 415 {
+		t.Errorf("non-JSON window change: %d", code)
+	}
+	if code := post(`{"from":1,"to":1}`, "http://"+host, "application/json"); code != 200 {
+		t.Errorf("same-origin window change: %d", code)
+	}
+	_, b = get("api/metrics")
+	json.Unmarshal(b, &series)
+	if series.Window["from"] != 1 || series.Window["to"] != 1 || series.Total != 1 {
+		t.Errorf("window after POST: %v total %d", series.Window, series.Total)
 	}
 	if code, _ := get("api/graph?commit=0000000"); code != 404 {
 		t.Errorf("unknown commit: %d", code)
