@@ -9,6 +9,15 @@ All versions are local proof-of-concept builds; there is no remote or release.
   findings, with a summary and a per-file table ranked by gate defects, then
   debt, then advisory defects. Debt and defects are not summed into a score.
   `--debt-fail-on` (change mode) and `--defects-fail-on` control exit 3.
+- **Near-miss and fragment duplication** (`internal/clones`, `clones/v1`,
+  unscored), reported by `analyze`:
+  - near misses are found with MinHash/LSH candidates, then verified exactly
+    with LCS similarity on abstracted tokens;
+  - fragments are shared runs of ≥ 50 abstracted tokens, with periodic
+    repetition dropped;
+  - in change mode only introduced pairs are listed.
+
+  v2 duplication debt is unchanged.
 
 - **Agent provenance:** `internal/provenance` reads it from commit-message
   lines (`Agent:` and `Agent-Harness:` are standard, `Agent-<Key>:` is

@@ -22,7 +22,7 @@ evaluated code and makes no claim about correctness or design quality.
 | `codeeval check --base A --target B\|--working-tree` | PR check: items a change introduced or worsened. Exit 3 on failure | v2 |
 | `codeeval graph --rev R --output g.html` | Interactive offline debt graph (POC) | v2 |
 | `codeeval defects --rev R` or `--base A --target B\|--working-tree` | Concrete defects (dead code, lost errors, dependency integrity, architecture policy, test-oracle defects), or those a change introduced. Exit 3 on introduced gate findings | `rules/v1` (no score) |
-| `codeeval analyze --rev R` or `--base A --target B\|--working-tree` | Combined view: v2 debt factors and defect findings in one report, plus a per-file table ranking files by gate defects, then debt, then advisory defects. No combined score | v2 + `rules/v1` |
+| `codeeval analyze --rev R` or `--base A --target B\|--working-tree` | Combined view in one report: v2 debt factors, defect findings, and near-miss and fragment duplication. A per-file table ranks files by gate defects, then debt, then advisory defects, then near-duplicate pairs. No combined score | v2 + `rules/v1` + `clones/v1` |
 | `codeeval rules` | The defect rules and which languages implement each, with per-language coverage notes | – |
 | `codeeval attribution --base A --target B --group-by agent,harness,workflow [--defects]` | Per-step v2 debt deltas (and defects) grouped by commit provenance: which agent, harness and workflow made each change | v2 (+ `rules/v1`) |
 | `codeeval languages` / `analyzers` / `version` | Adapters and their limits, analyzers, version | – |
@@ -311,6 +311,28 @@ JSON report).
   `from` units may depend only on matching units or on units matching
   `from` itself. Allow-lists are enforced by `defects` only; v1 and v2 still
   read only `to`.
+
+## Near-miss and fragment duplication (`clones/v1`, unscored)
+
+v2 duplication debt counts only whole callables with identical structure
+(exact, or with identifiers and literals renamed). `codeeval analyze` also
+reports two kinds of duplication that this misses:
+- **Near-miss clones:** callables whose abstracted token sequences
+  (identifiers → ID, literals → LIT, no comments) are similar but not
+  identical. The threshold is `duplication.nearThreshold` (default 0.85) on
+  2·LCS/(|a|+|b|), and both callables must be ≥ `minTokens`. Candidates come
+  from MinHash/LSH and every pair is verified exactly. This catches renamed
+  copies where a statement was added, removed or changed.
+- **Fragment clones:** a run of ≥ max(50, `minTokens`) identical abstracted
+  tokens shared by two different callables, or by two non-overlapping places
+  in one. This catches a copied block inside otherwise different code. Runs
+  made of a short repeated unit (table rows, a list of calls) are dropped.
+
+In change mode only the pairs the change introduced are listed (matched by
+callable names, not lines). These pairs are not part of v2 debt.
+Folding them into debt would be a new scoring version, after calibration.
+Similar structure is not always a copy: parallel per-language
+implementations and small boilerplate functions also match.
 
 ## Attribution by agent, harness and workflow
 

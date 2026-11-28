@@ -44,13 +44,19 @@ func TestAnalyzeCombinesDebtAndDefects(t *testing.T) {
 			t.Errorf("ranking not by gate defects at %d: %v", i, files)
 		}
 	}
-	for _, want := range []string{"## Summary", "## Files to look at first", "# Debt (scoring/v2)", "# Defects (rules/v1)", "# Limits of the combined view"} {
+	if cl, ok := m["clones"].(map[string]any); !ok || cl["version"] != "clones/v1" || cl["mode"] != "all" {
+		t.Errorf("clones section: %v", m["clones"])
+	}
+	for _, want := range []string{"# Duplication beyond structural clones", "## Summary", "## Files to look at first", "# Debt (scoring/v2)", "# Defects (rules/v1)", "# Limits of the combined view"} {
 		if !strings.Contains(md, want) {
 			t.Errorf("markdown lacks %q", want)
 		}
 	}
 
 	ch, cmd := analyze(t, 3, "--base", "base", "--target", "bad", "--top", "1")
+	if cl := ch["clones"].(map[string]any); cl["mode"] != "introduced" {
+		t.Errorf("change clones mode %v", cl["mode"])
+	}
 	if ch["mode"] != "change" || ch["failed"] != true || ch["factorsIntroducedOrWorsened"] == nil {
 		t.Errorf("change: mode %v failed %v worse %v", ch["mode"], ch["failed"], ch["factorsIntroducedOrWorsened"])
 	}

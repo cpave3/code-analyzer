@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/cameron/code-evaluator/internal/clones"
 	"github.com/cameron/code-evaluator/internal/combined"
 	"github.com/cameron/code-evaluator/internal/index"
 	"github.com/cameron/code-evaluator/internal/languages"
@@ -86,6 +87,7 @@ func analyzeCmd(args []string, stdout, stderr io.Writer) int {
 		d := rules.NewReport(reg, nil, rules.Run(reg, snap, cfg, langs, opt), *defFail)
 		d.Revision, d.Repository, d.ConfigHash, d.Scope = &rv, ev.RepoName(), cfg.Hash(), scopeList(c.paths)
 		out = combined.Snapshot(ex, d)
+		out.AddClones(clones.Analyze(snap, cfg, langs, scope.Match))
 		if *top > 0 && len(ex.Factors) > *top {
 			ex.Omitted += len(ex.Factors) - *top
 			ex.Factors = ex.Factors[:*top]
@@ -122,11 +124,14 @@ func analyzeCmd(args []string, stdout, stderr io.Writer) int {
 		d := rules.NewReport(reg, rules.Run(reg, bsnap, cfg, langs, opt), rules.Run(reg, tsnap, cfg, langs, opt), *defFail)
 		d.Base, d.Target, d.Repository, d.ConfigHash, d.Scope = &brev, &trev, ev.RepoName(), cfg.Hash(), scopeList(c.paths)
 		out = combined.Change(ck, d)
+		bc, tc := clones.Analyze(bsnap, cfg, langs, scope.Match), clones.Analyze(tsnap, cfg, langs, scope.Match)
+		tc.NearMisses, tc.Fragments = clones.Introduced(bc.NearMisses, tc.NearMisses), clones.Introduced(bc.Fragments, tc.Fragments)
+		out.AddClones(tc)
 		ck.Limit(*top)
 		d.Limit(*top)
 	}
 	var md bytes.Buffer
-	combined.WriteMarkdown(&md, out, *files, *detailed)
+	combined.WriteMarkdown(&md, out, *files, *detailed, *top)
 	if code := c.emit(out, md.Bytes(), stdout, stderr); code != 0 {
 		return code
 	}
