@@ -2,6 +2,27 @@
 
 All versions are local proof-of-concept builds; there is no remote or release.
 
+## 0.8.3-poc
+
+- **Dashboard Dependencies view** (alongside Structure and Network):
+  - Imports aggregate to project or package groups (`.csproj`,
+    `package.json`, `go.mod`, else the top folder), with arrow thickness by
+    import count.
+  - Layout is layered on the condensation of the strongly connected
+    components, so users sit above what they use. Cycle members share a row
+    with red edges.
+  - Barycentre ordering reduces crossings, and wide layers wrap onto extra
+    rows.
+  - Clicking a group gives its uses and used-by lists with counts and
+    sample import sites; double-click or *Expand* opens a group into
+    subfolders.
+  - On autopilot the top level is 74 groups in 5 layers with no cycles
+    (`Agx.Core` at the bottom). On Legato, expanding `internal` and `web`
+    shows `cmd` → `server`/`cli`/`tui` → `service` → `engine` → `leaf`,
+    beside the `web/src` cycle.
+- **Graph data** (`codeeval graph --json`, `/api/graph`): imports carry
+  `count` and up to 3 sample `sites`; `roots` lists manifest directories.
+
 ## 0.8.2-poc
 
 - **Dashboard structure view**, now the default graph: a squarified

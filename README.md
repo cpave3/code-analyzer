@@ -416,6 +416,17 @@ its parent has been measured.
     cycle-closing imports in red.
   - Outlines mark modules whose debt rose (red) or fell (green), and new
     ones (dashed).
+- **Dependencies view:** who uses what.
+  - **Groups:** modules are grouped by project or package (`.csproj`,
+    `package.json`, `go.mod`; otherwise the top folder).
+  - **Arrows:** one per pair of groups that import each other, thicker for
+    more imports.
+  - **Layout:** layered, so each group sits above what it uses. Groups in a
+    cycle share a row, joined by red arrows.
+  - **Detail:** clicking a group lists what it uses and what uses it, with
+    import counts and sample import lines.
+  - **Drill-down:** double-click or *Expand* opens a group into subfolders;
+    *Collapse all* resets.
 - **Network view:** the force layout, kept as an option.
   The panel also shows the commit's subject, author, provenance and deltas
   against the previous commit. The graph fills its card and has:

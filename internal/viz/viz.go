@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"html"
 	"io"
+	"path"
 	"sort"
 	"strings"
 
@@ -62,10 +63,18 @@ type Clone struct {
 
 // Import is a module-to-module edge.
 type Import struct {
-	From      string `json:"from"`
-	To        string `json:"to"`
-	Violation string `json:"violation,omitempty"` // rule name
-	InCycle   bool   `json:"cycle,omitempty"`
+	From      string   `json:"from"`
+	To        string   `json:"to"`
+	Violation string   `json:"violation,omitempty"` // rule name
+	InCycle   bool     `json:"cycle,omitempty"`
+	Count     int      `json:"count"`           // import sites behind the edge
+	Sites     []string `json:"sites,omitempty"` // up to 3 sample sites, file:line
+}
+
+// Root is a directory holding a project or package manifest.
+type Root struct {
+	Dir  string `json:"dir"`
+	Kind string `json:"kind"` // go.mod | package.json | csproj
 }
 
 // Data is the full graph.
@@ -83,6 +92,7 @@ type Data struct {
 	Callables  []Callable       `json:"callables"`
 	Clones     []Clone          `json:"clones"`
 	Imports    []Import         `json:"imports"`
+	Roots      []Root           `json:"roots"` // project/package roots (go.mod, package.json, .csproj)
 	Cycles     [][]string       `json:"cycles"`
 	Notes      []string         `json:"notes"`
 }
@@ -196,12 +206,33 @@ func Build(repo string, rev report.Revision, snap *index.Snapshot, cfg *config.C
 			sort.Strings(tos)
 			for _, t := range tos {
 				fk, tk := modKey(gid, f), modKey(gid, t)
-				d.Imports = append(d.Imports, Import{From: fk, To: tk, Violation: viol[[2]string{fk, tk}], InCycle: inCycle[f] && inCycle[t] && sameCycle(a.Cycles, f, t)})
+				locs := g.Edges[f][t]
+				imp := Import{From: fk, To: tk, Violation: viol[[2]string{fk, tk}], InCycle: inCycle[f] && inCycle[t] && sameCycle(a.Cycles, f, t), Count: len(locs)}
+				for _, l := range locs[:min(3, len(locs))] {
+					imp.Sites = append(imp.Sites, fmt.Sprintf("%s:%d", l.File, l.Line))
+				}
+				d.Imports = append(d.Imports, imp)
 			}
 		}
 	}
 	if d.Imports == nil {
 		d.Imports = []Import{}
+	}
+	d.Roots = []Root{}
+	for _, p := range snap.Paths {
+		base, kind := path.Base(p), ""
+		switch {
+		case base == "go.mod":
+			kind = "go.mod"
+		case base == "package.json":
+			kind = "package.json"
+		case strings.HasSuffix(base, ".csproj"):
+			kind = "csproj"
+		}
+		if kind == "" || strings.Contains(p, "node_modules/") || strings.Contains(p, "testdata/") || strings.HasPrefix(p, "testdata") {
+			continue
+		}
+		d.Roots = append(d.Roots, Root{Dir: path.Dir(p), Kind: kind})
 	}
 	if d.Clones == nil {
 		d.Clones = []Clone{}

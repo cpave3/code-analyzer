@@ -103,7 +103,9 @@ th{color:var(--dim);font-weight:500}
     <details class="how" id="how"><summary>How to read this graph</summary><ul id="howList"></ul></details>
     <div id="graphCtl">
       <span>View <label><input type="radio" name="gmode" value="structure" checked> Structure (folders)</label>
-        <label><input type="radio" name="gmode" value="network"> Network (imports)</label></span>
+        <label><input type="radio" name="gmode" value="deps"> Dependencies (who uses what)</label>
+        <label><input type="radio" name="gmode" value="network"> Network (force layout)</label></span>
+      <button id="depsReset" title="collapse every expanded group">Collapse all</button>
       <span>Size by <select id="sizeBy"><option value="lines">source lines</option><option value="debt">debt</option></select></span>
       <label><input type="checkbox" id="showCycles" checked> mark modules in import cycles (and rule breaks)</label>
     </div>
@@ -420,6 +422,7 @@ function renderHow() {
     `<b>Debt</b> (scoring/v2, an uncalibrated structural proxy): a function with cyclomatic complexity cc ≥ ${t.cyclomatic} adds cc − ${t.cyclomatic - 1} points; nesting depth ≥ ${t.nesting} adds 2 × (depth − ${t.nesting - 1}); copies in a structural clone group (≥ ${t.minCloneTokens} tokens) add 1 point per 20 redundant tokens; an import breaking a configured rule adds 10, a module in an import cycle 20.`,
     "<b>A red corner</b> marks a module in an import cycle (or with an import breaking a configured rule). <b>Hover or select a module</b> to draw its imports: what it imports in <span style='color:var(--accent)'>purple</span>, what imports it in <span style='color:#22d3ee'>cyan</span>, and imports that close a cycle in <span style='color:" + RED + "'>red</span>.",
     "<b>Outlines compare with the previous commit:</b> <span class='up'>red</span> = more debt, <span class='down'>green</span> = less, <span style='color:var(--new)'>dashed amber</span> = new module.",
+    "<b>Dependencies view:</b> who uses what. Modules are grouped by their project or package (.csproj, package.json, go.mod; else their top folder); an arrow from A to B means code in A imports code in B, thicker for more imports. Groups are layered so a group sits above everything it uses: downward arrows are normal, and groups in an import cycle share a row with <span style='color:" + RED + "'>red</span> arrows between them. Click a group for what it uses and what uses it (with sample import lines); double-click or <i>Expand</i> to open it into subfolders.",
     "<b>Network view:</b> a force layout of modules with debt (or ≥ 150 lines) and the 120 functions with the most debt, pulled together by imports and clone links; positions are kept between commits.",
     "<b>Use it:</b> hover for a summary, click for the breakdown below, drag to pan, scroll to zoom, double-click to reset. The list under the graph names the biggest changes in this commit.",
   ];
@@ -476,11 +479,12 @@ async function showGraph(i) {
     const a = byId["m:" + e.from], b = byId["m:" + e.to];
     if (a && b) links.push({a, b, kind: e.violation || e.cycle ? "bad" : "import"});
   }
-  nodes = next; shownSha = c.sha; alpha = fromPrev ? .35 : 1;
+  nodes = next; shownSha = c.sha; alpha = fromPrev ? .35 : 1; graphData = d;
   netNodes = nodes.filter(n => !n.minor && !(n.mod && n.mod.minor));
   netLinks = links.filter(l => !l.a.minor && !l.b.minor);
   for (const l of links) if (l.kind === "bad") l.a.inCycle = l.b.inCycle = true;
   layoutTreemap();
+  buildDeps();
   if (picked) picked = nodes.find(n => n.id === picked.id) || null;
   renderChanges(); renderDetail();
   const counts = {new: 0, up: 0, down: 0};
@@ -495,6 +499,7 @@ async function showGraph(i) {
 }
 function fit() {
   if (mode === "structure") { view.x = 0; view.y = 0; view.k = 1; return; }
+  if (mode === "deps") { fitDeps(); return; }
   if (!netNodes.length) return;
   const xs = netNodes.map(n => n.p.x), ys = netNodes.map(n => n.p.y);
   const w = Math.max(...xs) - Math.min(...xs) + 120, h = Math.max(...ys) - Math.min(...ys) + 120;
@@ -534,7 +539,8 @@ function drawGraph() {
   if (mode === "structure") {
     if (W !== laidOut.w || H !== laidOut.h) layoutTreemap();
     drawTreemap();
-  } else drawNetwork();
+  } else if (mode === "deps") drawDeps();
+  else drawNetwork();
   ctx.globalAlpha = 1;
 }
 function drawNetwork() {
@@ -705,9 +711,216 @@ function drawTreemap() {
   ctx.globalAlpha = 1;
   if (focus && focus.rect) { ctx.strokeStyle = fg; ctx.lineWidth = 2.5 / view.k; ctx.strokeRect(focus.rect.x, focus.rect.y, focus.rect.w, focus.rect.h); }
 }
-document.querySelectorAll("input[name=gmode]").forEach(el => el.onchange = () => { mode = el.value; alpha = 1; fit(); showGraph(sel); });
+document.querySelectorAll("input[name=gmode]").forEach(el => el.onchange = () => {
+  mode = el.value; alpha = 1; fit(); showGraph(sel);
+  if (mode === "deps") renderDepDetail(); else renderDetail();
+});
 $("sizeBy").onchange = () => { sizeBy = $("sizeBy").value; layoutTreemap(); };
 $("showCycles").onchange = () => { showCycles = $("showCycles").checked; };
+
+// ---------- dependencies view: aggregated, layered import graph ----------
+let graphData = null, dep = {nodes: [], edges: [], bounds: null}, expanded = new Set(), depPick = null, depRoots = [];
+// startKey: a module's top group, its nearest project/package root (go.mod,
+// package.json, .csproj) or else its first folder.
+function startKey(p) {
+  for (const r of depRoots) if (p === r || p.startsWith(r + "/")) return r;
+  return p.split("/")[0];
+}
+// groupOf follows expanded groups down one folder at a time.
+function groupOf(p) {
+  let key = startKey(p);
+  while (expanded.has(key)) {
+    if (p === key) return key + "/(own files)";
+    key = key + "/" + p.slice(key.length + 1).split("/")[0];
+  }
+  return key;
+}
+function buildDeps() {
+  if (!graphData) return;
+  depRoots = (graphData.roots || []).map(r => r.dir).filter(d => d !== ".").sort((a, b) => b.length - a.length);
+  const byId = new Map(nodes.map(n => [n.id, n]));
+  const groups = new Map();
+  for (const n of nodes) {
+    if (n.kind !== "module") continue;
+    const k = groupOf(n.label);
+    let g = groups.get(k);
+    if (!g) groups.set(k, g = {key: k, lines: 0, debt: 0, mods: [], out: new Map(), in: new Map()});
+    g.lines += n.lines; g.debt += n.debt; g.mods.push(n);
+  }
+  for (const g of groups.values()) {
+    g.density = g.lines ? g.debt * 1000 / g.lines : 0;
+    g.expandable = !g.key.endsWith("/(own files)") && g.mods.some(m => m.label !== g.key);
+    const parts = g.key.split("/");
+    g.label = parts.length > 2 ? "…/" + parts.slice(-2).join("/") : g.key;
+  }
+  const edges = new Map();
+  for (const e of graphData.imports) {
+    const a = byId.get("m:" + e.from), b = byId.get("m:" + e.to);
+    if (!a || !b) continue;
+    const ga = groupOf(a.label), gb = groupOf(b.label);
+    if (ga === gb) continue;
+    const k = ga + "\u0000" + gb;
+    let x = edges.get(k);
+    if (!x) edges.set(k, x = {from: groups.get(ga), to: groups.get(gb), count: 0, sites: [], rule: false});
+    x.count += e.count || 1;
+    if (e.violation) x.rule = true;
+    for (const s of e.sites || []) if (x.sites.length < 5) x.sites.push(s);
+  }
+  for (const x of edges.values()) { x.from.out.set(x.to.key, x); x.to.in.set(x.from.key, x); }
+  dep = {nodes: [...groups.values()], edges: [...edges.values()]};
+  layoutDeps();
+  if (depPick) depPick = groups.get(depPick.key) || null;
+  if (mode === "deps") renderDepDetail();
+}
+// layoutDeps: strongly connected components share a layer and their edges
+// are cycle edges; the condensation is layered by longest path, so a group
+// sits above everything it uses; barycentre sweeps reduce crossings; long
+// layers wrap onto extra rows.
+function layoutDeps() {
+  const ns = dep.nodes, idx = new Map(ns.map((n, i) => [n.key, i]));
+  let counter = 0; const index = [], low = [], on = [], stack = [], comp = [];
+  const strong = v => {
+    index[v] = low[v] = counter++; stack.push(v); on[v] = true;
+    for (const e of ns[v].out.values()) {
+      const w = idx.get(e.to.key);
+      if (index[w] === undefined) { strong(w); low[v] = Math.min(low[v], low[w]); }
+      else if (on[w]) low[v] = Math.min(low[v], index[w]);
+    }
+    if (low[v] === index[v]) { let w; do { w = stack.pop(); on[w] = false; comp[w] = v; } while (w !== v); }
+  };
+  ns.forEach((_, v) => { if (index[v] === undefined) strong(v); });
+  const size = {};
+  ns.forEach((_, v) => { size[comp[v]] = (size[comp[v]] || 0) + 1; });
+  for (const e of dep.edges) e.cycle = comp[idx.get(e.from.key)] === comp[idx.get(e.to.key)];
+  ns.forEach((n, v) => { n.comp = comp[v]; n.inCycle = size[comp[v]] > 1; });
+  // longest-path layers on the condensation (users above what they use)
+  const layer = {}, indeg = {}, succ = {};
+  for (const e of dep.edges) {
+    if (e.cycle) continue;
+    const a = comp[idx.get(e.from.key)], b = comp[idx.get(e.to.key)];
+    (succ[a] = succ[a] || new Set()).add(b);
+  }
+  for (const a in succ) for (const b of succ[a]) indeg[b] = (indeg[b] || 0) + 1;
+  const comps = [...new Set(ns.map((_, v) => comp[v]))];
+  const queue = comps.filter(c => !indeg[c]);
+  for (const c of queue) layer[c] = 0;
+  while (queue.length) {
+    const c = queue.shift();
+    for (const d of succ[c] || []) {
+      layer[d] = Math.max(layer[d] || 0, layer[c] + 1);
+      if (--indeg[d] === 0) queue.push(d);
+    }
+  }
+  const layers = [];
+  ns.forEach((n, v) => { n.layer = layer[comp[v]] || 0; (layers[n.layer] = layers[n.layer] || []).push(n); });
+  for (const L of layers) if (L) L.sort((a, b) => a.comp - b.comp || a.key.localeCompare(b.key));
+  const pos = n => n.order;
+  const assign = () => layers.forEach(L => L && L.forEach((n, i) => { n.order = i; }));
+  assign();
+  for (let pass = 0; pass < 6; pass++) {
+    const down = pass % 2 === 0;
+    const seq = down ? layers.slice(1) : layers.slice(0, -1).reverse();
+    for (const L of seq) {
+      if (!L) continue;
+      for (const n of L) {
+        const nb = down ? [...n.in.values()].map(e => e.from) : [...n.out.values()].map(e => e.to);
+        const near = nb.filter(m => m.layer === n.layer + (down ? -1 : 1));
+        n.bary = near.length ? near.reduce((a, m) => a + pos(m), 0) / near.length : n.order;
+      }
+      L.sort((a, b) => a.bary - b.bary || a.comp - b.comp);
+      L.forEach((n, i) => { n.order = i; });
+    }
+  }
+  // place: rows of at most 14 groups per layer
+  const perRow = 14, gap = 18, rowH = 64;
+  let y = 0, minX = Infinity, maxX = -Infinity;
+  for (const L of layers) {
+    if (!L) continue;
+    for (let start = 0; start < L.length; start += perRow) {
+      const row = L.slice(start, start + perRow);
+      for (const n of row) { n.w = Math.max(70, Math.min(200, n.label.length * 6.2 + 22)); n.h = 30; }
+      const width = row.reduce((a, n) => a + n.w, 0) + gap * (row.length - 1);
+      let x = -width / 2;
+      for (const n of row) { n.x = x + n.w / 2; n.y = y; x += n.w + gap; minX = Math.min(minX, n.x - n.w / 2); maxX = Math.max(maxX, n.x + n.w / 2); }
+      y += rowH;
+    }
+    y += 26; // extra space between layers
+  }
+  dep.bounds = {x0: minX, x1: maxX, y0: -20, y1: y};
+}
+function fitDeps() {
+  const b = dep.bounds;
+  if (!b || !isFinite(b.x0)) return;
+  const w = b.x1 - b.x0 + 80, h = b.y1 - b.y0 + 60;
+  view.x = (b.x0 + b.x1) / 2; view.y = (b.y0 + b.y1) / 2 - 20;
+  view.k = Math.min(canvas.clientWidth / w, canvas.clientHeight / h, 1.6);
+}
+function expandGroup(key) { expanded.add(key); depPick = null; buildDeps(); fitDeps(); }
+function collapseGroup(key) {
+  // collapse the expanded ancestor of key (or key itself)
+  let k = key.replace(/\/\(own files\)$/, "");
+  while (k && !expanded.has(k)) k = k.includes("/") ? k.slice(0, k.lastIndexOf("/")) : "";
+  if (!k) return;
+  for (const e of [...expanded]) if (e === k || e.startsWith(k + "/")) expanded.delete(e);
+  depPick = null; buildDeps(); fitDeps();
+}
+function drawDeps() {
+  const fg = cssVar("--fg"), line = cssVar("--line"), focus = depPick || hover;
+  const rel = e => focus && (e.from === focus || e.to === focus);
+  for (const e of dep.edges) {
+    const a = e.from, b = e.to;
+    const on = !focus || rel(e);
+    ctx.globalAlpha = on ? (e.cycle || e.rule ? .85 : .55) : .06;
+    ctx.strokeStyle = e.cycle || e.rule ? RED : rel(e) ? (e.from === focus ? cssVar("--accent") : "#22d3ee") : line;
+    ctx.lineWidth = (1 + Math.log2(e.count)) / Math.sqrt(view.k);
+    let x1 = a.x, y1 = a.y + a.h / 2, x2 = b.x, y2 = b.y - b.h / 2;
+    ctx.beginPath(); ctx.moveTo(x1, y1);
+    if (y2 > y1) ctx.bezierCurveTo(x1, (y1 + y2) / 2, x2, (y1 + y2) / 2, x2, y2);
+    else { // same layer (cycle) or upward: arc out to the side
+      y1 = a.y - a.h / 2; y2 = b.y - b.h / 2;
+      const lift = 30 + Math.abs(x2 - x1) * .15;
+      ctx.moveTo(x1, y1); ctx.bezierCurveTo(x1, y1 - lift, x2, y2 - lift, x2, y2);
+    }
+    ctx.stroke();
+    const s = 6 / view.k; ctx.fillStyle = ctx.strokeStyle;
+    ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(x2 - s * .6, y2 - s); ctx.lineTo(x2 + s * .6, y2 - s); ctx.closePath(); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  for (const n of dep.nodes) {
+    const dim = focus && n !== focus && !focus.out.has(n.key) && !focus.in.has(n.key);
+    ctx.globalAlpha = dim ? .25 : 1;
+    ctx.fillStyle = density(n.density);
+    const x = n.x - n.w / 2, y = n.y - n.h / 2;
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, n.w, n.h, 6) : ctx.rect(x, y, n.w, n.h); ctx.fill();
+    ctx.strokeStyle = n === focus ? fg : n.inCycle ? RED : cssVar("--bg"); ctx.lineWidth = (n === focus ? 2.5 : n.inCycle ? 1.6 : 1) / view.k; ctx.stroke();
+    ctx.fillStyle = "#111"; ctx.textAlign = "center"; ctx.font = `600 ${11}px system-ui,sans-serif`;
+    ctx.fillText((n.expandable ? "▸ " : "") + n.label, n.x, n.y + 1);
+    ctx.font = `${9}px system-ui,sans-serif`; ctx.globalAlpha *= .8;
+    ctx.fillText(`${fmt(n.lines)} lines · ${n.mods.length} mod`, n.x, n.y + 12);
+  }
+  ctx.globalAlpha = 1;
+}
+function renderDepDetail() {
+  const el = $("nodeDetail"), g = depPick;
+  if (!g) { el.className = "dim"; el.innerHTML = "Click a group for what it uses and what uses it; double-click (or Expand) to open it into subfolders."; return; }
+  el.className = "";
+  const list = (m, dir) => [...m.values()].sort((a, b) => b.count - a.count).slice(0, 12).map(e => {
+    const other = dir === "out" ? e.to : e.from;
+    return `<li><a class="link" data-key="${esc(other.key)}">${esc(other.key)}</a> · <b>${e.count}</b> import${e.count === 1 ? "" : "s"}${e.cycle ? ` <span class="up">in a cycle</span>` : ""}${e.rule ? ` <span class="up">breaks a rule</span>` : ""}
+      <br><span class="dim mono">${e.sites.map(esc).join(" · ")}</span></li>`;
+  }).join("") || "<li class='dim'>none</li>";
+  const parentExpanded = [...expanded].some(k => g.key.startsWith(k + "/"));
+  el.innerHTML = `<h3>${esc(g.key)}</h3>
+    <div>${fmt(g.lines)} lines · debt ${fmt(g.debt, 1)} (${fmt(g.density, 1)} per 1,000 lines) · ${g.mods.length} module(s)${g.inCycle ? ` · <span class="up">in an import cycle at this level</span>` : ""}</div>
+    <div class="chips">${g.expandable ? `<button data-act="expand">Expand into subfolders</button>` : ""}${parentExpanded ? `<button data-act="collapse">Collapse to parent</button>` : ""}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div><b>Uses</b> (${g.out.size})<ul style="padding-left:16px;margin:4px 0">${list(g.out, "out")}</ul></div>
+      <div><b>Used by</b> (${g.in.size})<ul style="padding-left:16px;margin:4px 0">${list(g.in, "in")}</ul></div>
+    </div>`;
+  el.querySelectorAll("[data-key]").forEach(a => a.onclick = () => { depPick = dep.nodes.find(n => n.key === a.dataset.key) || null; renderDepDetail(); });
+  el.querySelectorAll("[data-act]").forEach(b => b.onclick = () => b.dataset.act === "expand" ? expandGroup(g.key) : collapseGroup(g.key));
+}
+$("depsReset").onclick = () => { expanded.clear(); depPick = null; buildDeps(); fitDeps(); };
 
 function frame() { tick(); drawGraph(); requestAnimationFrame(frame); }
 const toWorld = (sx, sy) => ({x: (sx - canvas.clientWidth / 2) / view.k + view.x, y: (sy - canvas.clientHeight / 2) / view.k + view.y});
@@ -715,6 +928,7 @@ let drag = null;
 canvas.onmousedown = e => { drag = {x: e.clientX, y: e.clientY, vx: view.x, vy: view.y, moved: false}; canvas.style.cursor = "grabbing"; };
 canvas.onclick = e => {
   if (lastDragMoved) return;
+  if (mode === "deps") { depPick = hover; renderDepDetail(); return; }
   pick(hover);
 };
 let lastDragMoved = false;
@@ -723,6 +937,13 @@ canvas.onmousemove = e => {
   if (drag) { if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 3) drag.moved = true; view.x = drag.vx - (e.clientX - drag.x) / view.k; view.y = drag.vy - (e.clientY - drag.y) / view.k; return; }
   const r = canvas.getBoundingClientRect(), p = toWorld(e.clientX - r.left, e.clientY - r.top);
   hover = null; let best = 1e9;
+  if (mode === "deps") {
+    hover = null;
+    for (const g of dep.nodes) if (Math.abs(p.x - g.x) <= g.w / 2 && Math.abs(p.y - g.y) <= g.h / 2) hover = g;
+    if (!hover) return hideTip();
+    const o = [...hover.out.values()].reduce((a, e) => a + e.count, 0), i = [...hover.in.values()].reduce((a, e) => a + e.count, 0);
+    return showTip(e, `<b>${esc(hover.key)}</b><br>${fmt(hover.lines)} lines · debt ${fmt(hover.debt, 1)} (${fmt(hover.density, 1)}/kLOC) · ${hover.mods.length} module(s)<br>uses ${hover.out.size} group(s) through ${o} import(s); used by ${hover.in.size} through ${i}${hover.expandable ? "<br><i>double-click to expand</i>" : ""}`);
+  }
   if (mode === "structure") {
     for (const n of nodes) { const r = n.rect; if (r && p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h) hover = n; }
   } else {
@@ -736,7 +957,10 @@ canvas.onmousemove = e => {
 };
 canvas.onmouseleave = hideTip;
 canvas.onwheel = e => { e.preventDefault(); view.k *= Math.exp(-e.deltaY * .0015); view.k = Math.max(.1, Math.min(8, view.k)); };
-canvas.ondblclick = fit;
+canvas.ondblclick = () => {
+  if (mode === "deps" && hover && hover.expandable) { expandGroup(hover.key); return; }
+  fit();
+};
 
 // ---------- node detail and change list ----------
 function pick(n) { picked = n || null; renderDetail(); }
@@ -763,6 +987,7 @@ function renderChanges() {
   $("changes").querySelectorAll("[data-id]").forEach(el => el.onclick = () => pickId(el.dataset.id, true));
 }
 function renderDetail() {
+  if (mode === "deps") return renderDepDetail();
   const n = picked, el = $("nodeDetail");
   if (!n) { el.className = "dim"; el.innerHTML = "Click a circle for its details."; return; }
   el.className = "";
