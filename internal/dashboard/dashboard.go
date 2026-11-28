@@ -212,7 +212,7 @@ func (s *Server) describe() map[string]any {
 			}
 		}
 	}
-	fields := []string{provenance.FieldAgent, provenance.FieldHarness}
+	fields := []string{provenance.FieldModel, provenance.FieldHarness}
 	var extra []string
 	for k := range keys {
 		extra = append(extra, k)

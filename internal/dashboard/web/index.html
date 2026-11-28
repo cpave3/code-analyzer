@@ -98,12 +98,12 @@ const signed = (v, d = 0) => v == null ? "–" : (v > 0 ? "+" : v < 0 ? "−" : 
 const PALETTE = ["#60a5fa", "#f472b6", "#34d399", "#fbbf24", "#a78bfa", "#f87171", "#2dd4bf", "#fb923c", "#c084fc", "#4ade80", "#e879f9", "#38bdf8"];
 
 let meta = null, metrics = [], sel = 0, playing = null;
-let groupFields = ["agent", "harness"];
+let groupFields = ["model", "harness"];
 const groupColor = {};
 
 // ---------- provenance grouping (mirrors internal/attribution.GroupKey) ----------
 function value(r, f) {
-  if (f === "agent") return (r.agent || []).join("+");
+  if (f === "model" || f === "agent") return (r.model || []).join("+");
   if (f === "harness") return (r.harness || []).join("+");
   return (r.meta || {})[f] || "";
 }
@@ -148,7 +148,7 @@ function renderGroupPick() {
   $("groupPick").innerHTML = meta.groupFields.map(f => `<label class="chip"><input type="checkbox" value="${esc(f)}" ${groupFields.includes(f) ? "checked" : ""}> ${esc(f)}</label>`).join("");
   $("groupPick").querySelectorAll("input").forEach(i => i.onchange = () => {
     groupFields = [...$("groupPick").querySelectorAll("input:checked")].map(x => x.value);
-    if (!groupFields.length) { groupFields = ["agent"]; renderGroupPick(); }
+    if (!groupFields.length) { groupFields = ["model"]; renderGroupPick(); }
     for (const k in groupColor) delete groupColor[k];
     renderAll();
   });
@@ -245,7 +245,7 @@ function renderCommit() {
   const c = meta.commits[sel], m = metrics[sel] || {};
   $("pos").textContent = `${sel + 1}/${meta.commits.length}`;
   const chips = [];
-  const fields = new Set(["agent", "harness", ...meta.groupFields]);
+  const fields = new Set(["model", "harness", ...meta.groupFields]);
   const recs = c.provenance.filter(r => !(r.merge && r.source === "none"));
   for (const f of fields) {
     const vs = [...new Set(recs.map(r => value(r, f)).filter(Boolean))];

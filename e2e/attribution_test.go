@@ -52,17 +52,18 @@ func TestAttributionByProvenance(t *testing.T) {
 	git(t, dir, "init", "-q", "-b", "main")
 	commit(t, dir, "go.mod", "module example.com/p\n\ngo 1.22\n", "init")
 	base := commit(t, dir, "p.go", simple, "base")
-	commit(t, dir, "p.go", complexParse, "Add parser\n\nAgent: model-a\nAgent-Harness: harness-x\nAgent-Workflow: v1\n")
-	commit(t, dir, "p.go", simple, "Simplify parser\n\nAgent: model-a\nAgent-Harness: harness-x\nAgent-Workflow: v2\n")
+	commit(t, dir, "p.go", complexParse, "Add parser\n\nAgent-Model: model-a\nAgent-Harness: harness-x\nAgent-Workflow: v1\n")
+	commit(t, dir, "p.go", simple, "Simplify parser\n\nAgent-Model: model-a\nAgent-Harness: harness-x\nAgent-Workflow: v2\n")
 	git(t, dir, "checkout", "-q", "-b", "feature")
-	commit(t, dir, "q.go", "package p\n\nfunc Q() int { return 1 }\n", "Feature part 1\n\nAgent: model-b\nAgent-Workflow: v2\n")
+	commit(t, dir, "q.go", "package p\n\nfunc Q() int { return 1 }\n", "Feature part 1\n\nAgent-Model: model-b\nAgent-Workflow: v2\n")
 	noted := commit(t, dir, "r.go", "package p\n\nfunc R() int { return 2 }\n", "Feature part 2")
+	// a bare "Agent:" (pre-0.7 format) is still read as the model
 	git(t, dir, "notes", "--ref=agent-provenance", "add", "-m", "Agent: model-b\nAgent-Workflow: v2", noted)
 	git(t, dir, "checkout", "-q", "main")
 	git(t, dir, "merge", "-q", "--no-ff", "-m", "Merge feature", "feature")
 	commit(t, dir, "p.go", simple+"\n// typo fixed\n", "Fix typo\n\nCo-authored-by: Jane Doe <jane@example.com>\n")
 
-	r := cli(t, "attribution", "--repo", dir, "--base", base, "--target", "main", "--group-by", "agent,workflow", "--defects", "--format", "json", "--no-cache")
+	r := cli(t, "attribution", "--repo", dir, "--base", base, "--target", "main", "--group-by", "model,workflow", "--defects", "--format", "json", "--no-cache")
 	if r.code != 0 {
 		t.Fatalf("exit %d: %s", r.code, r.stderr)
 	}
@@ -77,14 +78,14 @@ func TestAttributionByProvenance(t *testing.T) {
 	for _, g := range rep.Groups {
 		groups[g.Key] = g
 	}
-	v1, v2 := groups["agent=model-a, workflow=v1"], groups["agent=model-a, workflow=v2"]
+	v1, v2 := groups["model=model-a, workflow=v1"], groups["model=model-a, workflow=v2"]
 	if v1.Steps != 1 || v1.DebtDelta.Total <= 0 || v2.Steps != 1 || v2.DebtDelta.Total >= 0 || v1.DebtDelta.Total != -v2.DebtDelta.Total {
 		t.Errorf("workflow groups: v1 %+v v2 %+v", v1, v2)
 	}
-	if b := groups["agent=model-b, workflow=v2"]; b.Steps != 1 || b.Commits != 3 {
+	if b := groups["model=model-b, workflow=v2"]; b.Steps != 1 || b.Commits != 3 {
 		t.Errorf("merge step (merge commit + message trailer + note) not attributed to model-b: %+v\n%+v", b, rep.Groups)
 	}
-	if h := groups["agent=(none), workflow=(none)"]; h.Steps != 1 {
+	if h := groups["model=(none), workflow=(none)"]; h.Steps != 1 {
 		t.Errorf("human commit group: %+v", h)
 	}
 	if rep.Sources["message"] != 3 || rep.Sources["note"] != 1 || rep.Sources["none"] != 2 {

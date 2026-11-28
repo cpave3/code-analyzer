@@ -3,7 +3,7 @@
 # as a git note instead of message trailers, so commit messages stay as
 # written.
 #
-#   AGENT_ID=claude-opus-5-5         -> Agent: claude-opus-5-5
+#   AGENT_MODEL=claude-opus-5-5      -> Agent-Model: claude-opus-5-5   (AGENT_ID also accepted)
 #   AGENT_HARNESS=claude-code        -> Agent-Harness: claude-code
 #   AGENT_META_WORKFLOW=stack@2      -> Agent-Workflow: stack@2   (any key)
 #
@@ -14,9 +14,10 @@
 # Share them (they are not pushed by default):
 #   git push origin refs/notes/agent-provenance
 set -eu
-[ -n "${AGENT_ID:-}${AGENT_HARNESS:-}" ] || env | grep -q '^AGENT_META_' || exit 0
+model=${AGENT_MODEL:-${AGENT_ID:-}}
+[ -n "$model${AGENT_HARNESS:-}" ] || env | grep -q '^AGENT_META_' || exit 0
 note=""
-[ -n "${AGENT_ID:-}" ] && note="${note}Agent: ${AGENT_ID}
+[ -n "$model" ] && note="${note}Agent-Model: ${model}
 "
 [ -n "${AGENT_HARNESS:-}" ] && note="${note}Agent-Harness: ${AGENT_HARNESS}
 "

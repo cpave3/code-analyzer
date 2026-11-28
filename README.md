@@ -25,7 +25,7 @@ evaluated code and makes no claim about correctness or design quality.
 | `codeeval analyze --rev R` or `--base A --target B\|--working-tree` | Combined view in one report: v2 debt factors, defect findings, and near-miss and fragment duplication. A per-file table ranks files by gate defects, then debt, then advisory defects, then near-duplicate pairs. No combined score | v2 + `rules/v1` + `clones/v1` |
 | `codeeval serve [--base A] [--target B] [--max N]` | Local web dashboard on 127.0.0.1: per-commit debt, score, hotspots, defects and near-duplication charts; a commit stepper that shows the module graph change; provenance grouping (agent, harness, workflow) | v2 + `rules/v1` + `clones/v1` |
 | `codeeval rules` | The defect rules and which languages implement each, with per-language coverage notes | – |
-| `codeeval attribution --base A --target B --group-by agent,harness,workflow [--defects]` | Per-step v2 debt deltas (and defects) grouped by commit provenance: which agent, harness and workflow made each change | v2 (+ `rules/v1`) |
+| `codeeval attribution --base A --target B --group-by model,harness,workflow [--defects]` | Per-step v2 debt deltas (and defects) grouped by commit provenance: which model, harness and workflow made each change | v2 (+ `rules/v1`) |
 | `codeeval languages` / `analyzers` / `version` | Adapters and their limits, analyzers, version | – |
 
 Languages: **Go** and **TypeScript** (Tree-sitter adapters). Other languages
@@ -367,16 +367,17 @@ and appear as they arrive.
   The panel also shows the commit's subject, author, provenance and deltas
   against the previous commit.
 - **Group table:** step changes summed by provenance group (`--group-by` as
-  checkboxes: agent, harness and any `Agent-<Key>` metadata). As with
+  checkboxes: model, harness and any `Agent-<Key>` metadata; model and harness by default). As with
   `attribution`, this is observational, not causal.
 
 `--defects=false` and `--near-duplication=false` skip the slower per-commit
 checks.
 
-## Attribution by agent, harness and workflow
+## Attribution by model, harness and workflow
 
-Commits can declare what made them with git trailers. `Agent:` and
-`Agent-Harness:` are the standard fields; any `Agent-<Key>:` is free-form
+Commits can declare what made them with git trailers. `Agent-Model:` and
+`Agent-Harness:` are the standard fields (a bare `Agent:` from 0.4–0.6 is
+read as the model); any `Agent-<Key>:` is free-form
 metadata, such as `Agent-Workflow: proposal-stack@2`. Commits that are
 already made can be annotated with notes in `refs/notes/agent-provenance`.
 `codeeval attribution` groups first-parent step deltas by those fields. The
@@ -592,7 +593,7 @@ Deferred:
   from the session base to the working tree. It blocks the stop on new gate defects or
   a debt rise.
 
-The same file sets `AGENT_ID` and `AGENT_HARNESS`, and `.git/hooks/post-commit`
+The same file sets `AGENT_MODEL` and `AGENT_HARNESS`, and `.git/hooks/post-commit`
 (a link to `integrations/git/post-commit`, local and not tracked) records
 them as provenance notes. Run `codeeval attribution` to read them.
 

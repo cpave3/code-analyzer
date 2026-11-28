@@ -12,14 +12,14 @@ format is needed, and they survive push, rebase and pull requests:
 ```
 Fix pagination off-by-one
 
-Agent: claude-opus-5-5
+Agent-Model: claude-opus-5-5
 Agent-Harness: claude-code/2.1.0
 Agent-Workflow: proposal-stack@2
 ```
 
 | Trailer | Meaning |
 |---|---|
-| `Agent:` | **Standard.** The model or agent. It may repeat when several agents contributed |
+| `Agent-Model:` | **Standard.** The model, ideally its ID (`claude-opus-5-5`). It may repeat when several models contributed. A bare `Agent:` line (the 0.4–0.6 format) is still read as the model |
 | `Agent-Harness:` | **Standard.** The tool that ran it, ideally `name/version` |
 | `Agent-<Key>:` | **Any other metadata**: workflow, workflow version, session, effort, prompt pack, … Keys are case-insensitive and read as lower-case (`Agent-Workflow` → `workflow`) |
 
@@ -30,7 +30,7 @@ Rules the reader applies (`internal/provenance`):
 - **Notes:** commits that are already made can be annotated without
   rewriting them, with a note in `refs/notes/agent-provenance` holding the
   same lines:
-  `git notes --ref=agent-provenance add -m "Agent: x" <sha>`. Notes are not
+  `git notes --ref=agent-provenance add -m "Agent-Model: x" <sha>`. Notes are not
   pushed by default. Share them with
   `git push origin refs/notes/agent-provenance`. Message values win over a
   note's, key by key.
@@ -62,7 +62,7 @@ trailers the same way.
 - **Visibility:** forges do not display them.
 
 Install it like the other hook. This repository dogfoods it: `.git/hooks/post-commit`
-links to the template, and `.claude/settings.json` sets `AGENT_ID` and
+links to the template, and `.claude/settings.json` sets `AGENT_MODEL` and
 `AGENT_HARNESS` for Claude Code sessions.
 
 Other carriers were considered and rejected:
@@ -78,7 +78,7 @@ harness or wrapper sets them once and every commit carries them:
 
 | Variable | Trailer |
 |---|---|
-| `AGENT_ID` | `Agent` |
+| `AGENT_MODEL` (or `AGENT_ID`) | `Agent-Model` |
 | `AGENT_HARNESS` | `Agent-Harness` |
 | `AGENT_META_<KEY>` | `Agent-<Key>` (`AGENT_META_WORKFLOW` → `Agent-Workflow`, `AGENT_META_SESSION_ID` → `Agent-Session-Id`) |
 
@@ -93,7 +93,7 @@ cp integrations/git/commit-msg <repo>/.git/hooks/commit-msg && chmod +x <repo>/.
 
 For Claude Code, the variables can be set in the project's
 `.claude/settings.json` `env` block. The model can change during a session
-(`/model`), but the variables stay as set, so keep `AGENT_ID` in step with
+(`/model`), but the variables stay as set, so keep `AGENT_MODEL` in step with
 the model in use. A harness that writes the trailers itself does not need
 the hook. CodeEval only reads; it never installs hooks or writes to
 evaluated repositories.
@@ -101,7 +101,7 @@ evaluated repositories.
 ## Reading it
 
 ```bash
-codeeval attribution --repo PATH --base A --target B --group-by agent,harness,workflow [--defects]
+codeeval attribution --repo PATH --base A --target B --group-by model,harness,workflow [--defects]
 ```
 
 The report has one row per group: first-parent steps, commits, changed

@@ -2,9 +2,9 @@
 # Agent provenance commit-msg hook (CodeEval template).
 #
 # Appends provenance trailers from the environment so `codeeval attribution`
-# can group quality deltas by agent, harness and workflow:
+# can group quality deltas by model, harness and workflow:
 #
-#   AGENT_ID=claude-opus-5-5          -> Agent: claude-opus-5-5          (standard)
+#   AGENT_MODEL=claude-opus-5-5       -> Agent-Model: claude-opus-5-5    (standard; AGENT_ID also accepted)
 #   AGENT_HARNESS=claude-code/2.1     -> Agent-Harness: claude-code/2.1  (standard)
 #   AGENT_META_WORKFLOW=stack@2       -> Agent-Workflow: stack@2         (any key)
 #   AGENT_META_SESSION_ID=abc         -> Agent-Session-Id: abc
@@ -18,7 +18,8 @@ msg="$1"
 add() {
 	git interpret-trailers --in-place --if-exists addIfDifferent --trailer "$1: $2" "$msg"
 }
-[ -n "${AGENT_ID:-}" ] && add "Agent" "$AGENT_ID"
+model=${AGENT_MODEL:-${AGENT_ID:-}}
+[ -n "$model" ] && add "Agent-Model" "$model"
 [ -n "${AGENT_HARNESS:-}" ] && add "Agent-Harness" "$AGENT_HARNESS"
 env | grep '^AGENT_META_[A-Za-z0-9_]*=' | sort | while IFS='=' read -r name value; do
 	[ -n "$value" ] || continue

@@ -2,6 +2,18 @@
 
 All versions are local proof-of-concept builds; there is no remote or release.
 
+## 0.7.0-poc
+
+- **Provenance standard fields are now model and harness:**
+  - Trailers and notes use `Agent-Model:` and `Agent-Harness:`, and any other
+    `Agent-<Key>:` stays free-form. A bare `Agent:` line (0.4–0.6) is still
+    read as the model.
+  - Records and JSON use `model` in place of `agent`. This changes
+    `codeeval.attribution/v1` and the dashboard API.
+  - `attribution` and the dashboard group by model and harness by default.
+    `agent` is still accepted as an alias of `model` in `--group-by`.
+  - The hooks read `AGENT_MODEL`, with `AGENT_ID` still accepted.
+
 ## 0.6.0-poc
 
 - **`codeeval serve`** (`internal/dashboard`): a local, read-only web

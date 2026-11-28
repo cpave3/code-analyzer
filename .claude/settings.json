@@ -1,6 +1,6 @@
 {
   "env": {
-    "AGENT_ID": "claude-opus-5-5",
+    "AGENT_MODEL": "claude-opus-5-5",
     "AGENT_HARNESS": "claude-code"
   },
   "hooks": {

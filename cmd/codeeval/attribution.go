@@ -27,7 +27,7 @@ func attributionCmd(args []string, stdout, stderr io.Writer) int {
 	c.register(fs)
 	base := fs.String("base", "", "base revision (exclusive)")
 	target := fs.String("target", "", "target revision")
-	groupBy := fs.String("group-by", "agent,harness", "provenance fields to group by: agent, harness, or any Agent-<Key> metadata key (e.g. workflow)")
+	groupBy := fs.String("group-by", "model,harness", "provenance fields to group by: model, harness, or any Agent-<Key> metadata key (e.g. workflow)")
 	withDefects := fs.Bool("defects", false, "also count defect findings each step introduced and resolved (runs rules on every step)")
 	infer := fs.Bool("infer-co-authors", true, "infer the agent from Co-Authored-By lines naming a known coding agent when a commit has no provenance")
 	notesRef := fs.String("notes-ref", provenance.NotesRef, "notes ref to read provenance notes from")

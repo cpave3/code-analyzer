@@ -1,10 +1,10 @@
-// Package provenance reads which agent, harness and workflow produced a
+// Package provenance reads which model, harness and workflow produced a
 // commit, so quality deltas can be attributed to them.
 //
 // Carrier (in priority order):
 //
 //  1. Message lines (normally the trailer block):
-//     Agent: claude-opus-5-5              standard: the model or agent
+//     Agent-Model: claude-opus-5-5        standard: the model
 //     Agent-Harness: claude-code/2.1      standard: the tool that ran it
 //     Agent-<Key>: <value>                any other metadata, e.g.
 //     Agent-Workflow: proposal-stack@2
@@ -14,7 +14,9 @@
 //     lines, for commits that are already made. Message values win per key.
 //  3. Inference from Co-Authored-By lines that name a known coding agent
 //     (Claude, Codex, Copilot, Gemini, ...), labelled "co-author (inferred)":
-//     agent only, no harness or metadata.
+//     model only, no harness or metadata.
+//
+// A bare "Agent: x" line (the 0.4–0.6 format) is read as the model.
 //
 // All of it is self-reported, untrusted text: provenance says what a commit
 // claims, not what produced it.
@@ -40,14 +42,14 @@ const (
 
 // Standard field names.
 const (
-	FieldAgent   = "agent"
+	FieldModel   = "model"
 	FieldHarness = "harness"
 )
 
 // Record is the provenance of one commit.
 type Record struct {
 	Commit  string            `json:"commit"`
-	Agent   []string          `json:"agent,omitempty"`
+	Model   []string          `json:"model,omitempty"`
 	Harness []string          `json:"harness,omitempty"`
 	Meta    map[string]string `json:"meta,omitempty"` // Agent-<Key> → value; keys lower-case
 	Source  string            `json:"source"`
@@ -59,11 +61,11 @@ var coAuthorRe = regexp.MustCompile(`(?i)^\s*co-authored-by\s*:\s*([^<]+?)\s*<`)
 var knownAgent = regexp.MustCompile(`(?i)\b(claude|codex|copilot|gemini|cursor|devin|aider|gpt|openhands|jules|amp)\b`)
 
 type fields struct {
-	agent, harness []string
+	model, harness []string
 	meta           map[string]string
 }
 
-func (f *fields) empty() bool { return len(f.agent) == 0 && len(f.harness) == 0 && len(f.meta) == 0 }
+func (f *fields) empty() bool { return len(f.model) == 0 && len(f.harness) == 0 && len(f.meta) == 0 }
 
 func addUnique(list []string, v string) []string {
 	for _, x := range list {
@@ -86,8 +88,8 @@ func parseLines(text string, skipFirst bool) fields {
 		}
 		key, val := strings.ToLower(m[1]), m[2]
 		switch key {
-		case "":
-			f.agent = addUnique(f.agent, val)
+		case "", "model":
+			f.model = addUnique(f.model, val)
 		case "harness":
 			f.harness = addUnique(f.harness, val)
 		default:
@@ -120,7 +122,7 @@ func Parse(commit, message, note string, infer bool) Record {
 		}
 		return b
 	}
-	r.Agent, r.Harness = pick(msg.agent, nt.agent), pick(msg.harness, nt.harness)
+	r.Model, r.Harness = pick(msg.model, nt.model), pick(msg.harness, nt.harness)
 	if len(msg.meta)+len(nt.meta) > 0 {
 		r.Meta = map[string]string{}
 		for k, v := range nt.meta {
@@ -133,24 +135,25 @@ func Parse(commit, message, note string, infer bool) Record {
 	if r.Source == SourceNone && infer {
 		for _, line := range strings.Split(message, "\n") {
 			if m := coAuthorRe.FindStringSubmatch(line); m != nil && knownAgent.MatchString(m[1]) {
-				r.Agent = addUnique(r.Agent, inferredID(m[1]))
+				r.Model = addUnique(r.Model, inferredID(m[1]))
 			}
 		}
-		if len(r.Agent) > 0 {
+		if len(r.Model) > 0 {
 			r.Source = SourceInferred
 		}
 	}
-	sort.Strings(r.Agent)
+	sort.Strings(r.Model)
 	sort.Strings(r.Harness)
 	return r
 }
 
-// Value returns a field for grouping: "agent", "harness" or a metadata key.
+// Value returns a field for grouping: "model", "harness" or a metadata key
+// ("agent" is accepted as an alias of "model").
 // Multiple values are joined with "+"; "" when absent.
 func (r Record) Value(field string) string {
 	switch field {
-	case FieldAgent:
-		return strings.Join(r.Agent, "+")
+	case FieldModel, "agent":
+		return strings.Join(r.Model, "+")
 	case FieldHarness:
 		return strings.Join(r.Harness, "+")
 	}
@@ -163,7 +166,7 @@ const None = "(none)"
 // Mixed is the group key of a step whose commits disagree.
 const Mixed = "(mixed)"
 
-// Key renders the grouping key of a record, e.g. "agent=x, workflow=v1".
+// Key renders the grouping key of a record, e.g. "model=x, workflow=v1".
 func (r Record) Key(groupBy []string) string {
 	parts := make([]string, len(groupBy))
 	for i, g := range groupBy {
