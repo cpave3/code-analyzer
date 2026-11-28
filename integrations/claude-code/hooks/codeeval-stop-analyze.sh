@@ -14,8 +14,19 @@
 # Code feeds back to Claude. A background result describes the working tree
 # as it was at the previous stop, and says so.
 #
-# Base, first that exists: $CODEEVAL_BASE, <git-dir>/codeeval-session-base
-# (written by codeeval-session-base.sh), merge-base with origin/main, HEAD.
+# Base, first that exists: $CODEEVAL_BASE; the session's checked-base (HEAD
+# at its last stop that did not block, so a later turn is not blocked on
+# committed work an earlier check already covered); the session's
+# session-base (written by codeeval-session-base.sh); merge-base with
+# origin/main; HEAD.
+#
+# Debt may rise by up to CODEEVAL_DEBT_BUDGET points (default 10) before the
+# hook blocks: scoring/v2 is uncalibrated, and a safety check always adds
+# branches. Once the branch's pull request is approved (gh pr view), a
+# failure is reported to the user and does not block, so a late finding does
+# not send approved work back for review (CODEEVAL_HOOK_WHEN_APPROVED=block
+# keeps blocking). SessionStart prints the same quick check for the agent to
+# run before it pushes.
 #
 # Escape hatches, so the hook never traps an agent in a fixing loop or forces
 # it to "fix" a false positive:
@@ -24,16 +35,19 @@
 #     fingerprint (the failing items' identities), and fingerprints already
 #     shown this session pass;
 #   - at most CODEEVAL_HOOK_MAX_BLOCKS blocks per session (default 3);
+#   - it does not block once the pull request is approved (see above);
 #   - CODEEVAL_HOOK=off disables it;
 #   - a false positive can be suppressed in code with a reasoned comment
 #     `codeeval-ignore <rule-id>: <reason>` (listed in reports, not hidden).
-# Session state lives in <git-dir>/codeeval-hook-state{,.blocks} and
-# <git-dir>/codeeval-broad/ (reset by codeeval-session-base.sh).
+# State is per Claude session, in <git-dir>/codeeval/<session_id>/:
+# session-base, checked-base, hook-state{,.blocks} and broad/ (reset by
+# codeeval-session-base.sh when that session starts).
 #
 # Environment (optional): CODEEVAL_BIN, CODEEVAL_BASE, CODEEVAL_CONFIG,
 # CODEEVAL_DEBT_FAIL_ON (new-debt|net-debt|gates|none, default net-debt),
-# CODEEVAL_DEFECTS_FAIL_ON (gate|any|none, default gate), CODEEVAL_PATHS,
-# CODEEVAL_HOOK, CODEEVAL_HOOK_MAX_BLOCKS,
+# CODEEVAL_DEBT_BUDGET (default 10), CODEEVAL_DEFECTS_FAIL_ON (gate|any|none,
+# default gate), CODEEVAL_PATHS, CODEEVAL_HOOK, CODEEVAL_HOOK_MAX_BLOCKS,
+# CODEEVAL_HOOK_WHEN_APPROVED (advisory|block, default advisory), CODEEVAL_GH,
 # CODEEVAL_STOP_CHECKS (tiered: quick + background broad, the default;
 # quick: no background check; all: everything in the foreground, slow on
 # large repositories).
@@ -47,19 +61,35 @@ repo=${CLAUDE_PROJECT_DIR:-$(pwd)}
 cd "$repo" 2>/dev/null || exit 0
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
 gitdir=$(git rev-parse --absolute-git-dir)
+sid=$(printf '%s' "$input" | sed -n 's/.*"session_id"[[:space:]]*:[[:space:]]*"\([A-Za-z0-9_-]*\)".*/\1/p' | head -1)
+dir="$gitdir/codeeval/${sid:-default}"
+mkdir -p "$dir" || exit 0
+valid() { [ -n "$1" ] && git rev-parse -q --verify "$1^{commit}" >/dev/null 2>&1; }
 base=${CODEEVAL_BASE:-}
-if [ -z "$base" ] && [ -s "$gitdir/codeeval-session-base" ]; then base=$(cat "$gitdir/codeeval-session-base"); fi
-git rev-parse -q --verify "${base:-x}^{commit}" >/dev/null 2>&1 || base=$(git merge-base HEAD origin/main 2>/dev/null || git rev-parse HEAD)
+for f in "$dir/checked-base" "$dir/session-base"; do
+  if ! valid "$base" && [ -s "$f" ]; then base=$(cat "$f"); fi
+done
+valid "$base" || base=$(git merge-base HEAD origin/main 2>/dev/null || git rev-parse HEAD)
+head=$(git rev-parse -q --verify HEAD 2>/dev/null)
 mode=${CODEEVAL_STOP_CHECKS:-tiered}
 args=(analyze --repo "$repo" --base "$base" --working-tree --debt-fail-on "${CODEEVAL_DEBT_FAIL_ON:-net-debt}"
-  --defects-fail-on "${CODEEVAL_DEFECTS_FAIL_ON:-gate}" --files 15 --top 10 --format md)
+  --debt-budget "${CODEEVAL_DEBT_BUDGET:-10}" --defects-fail-on "${CODEEVAL_DEFECTS_FAIL_ON:-gate}" --files 15 --top 10 --format md)
 [ -n "${CODEEVAL_CONFIG:-}" ] && args+=(--config "$CODEEVAL_CONFIG")
 [ -n "${CODEEVAL_PATHS:-}" ] && args+=(--path "$CODEEVAL_PATHS")
-state="$gitdir/codeeval-hook-state"
-broad="$gitdir/codeeval-broad"
+state="$dir/hook-state"
+broad="$dir/broad"
 
 fingerprint() { printf '%s\n' "$1" | sed -n 's/^Failure fingerprint: `\([0-9a-f]*\)`.*/\1/p' | head -1; }
 shown() { [ -n "$1" ] && [ -f "$state" ] && grep -qx "$1" "$state"; }
+# checked: the foreground check covered everything up to HEAD without
+# blocking, so the next stop starts from here.
+checked() { [ -n "$head" ] && { [ "$code" -eq 0 ] || [ "$code" -eq 3 ]; } && echo "$head" > "$dir/checked-base"; }
+approved() {
+  local gh=${CODEEVAL_GH:-gh} t=() d
+  [ "${CODEEVAL_HOOK_WHEN_APPROVED:-advisory}" = "advisory" ] && command -v "$gh" >/dev/null 2>&1 || return 1
+  command -v timeout >/dev/null 2>&1 && t=(timeout 10)
+  d=$(${t[@]+"${t[@]}"} "$gh" pr view --json reviewDecision -q .reviewDecision 2>/dev/null) && [ "$d" = "APPROVED" ]
+}
 
 # 1. The foreground check.
 if [ "$mode" = "all" ]; then
@@ -109,10 +139,15 @@ if [ "$mode" = "tiered" ]; then
   fi
 fi
 
-[ -z "$msg" ] && exit 0   # pass, already shown, or a tool error: never block on our own failure
+[ -z "$msg" ] && { checked; exit 0; }   # pass, already shown, or a tool error: never block on our own failure
 blocks=$( [ -f "$state.blocks" ] && wc -l < "$state.blocks" || echo 0 )
-[ "$blocks" -ge "${CODEEVAL_HOOK_MAX_BLOCKS:-3}" ] && exit 0            # session budget spent
+[ "$blocks" -ge "${CODEEVAL_HOOK_MAX_BLOCKS:-3}" ] && { checked; exit 0; }   # session budget spent
 printf '%s\n' "${fps[@]}" >> "$state"
+if approved; then
+  checked
+  printf '{"systemMessage": "CodeEval found new findings since %s, but this branch'"'"'s pull request is already approved, so the Stop hook did not block. To see them: codeeval analyze --base %s --working-tree"}\n' "${base:0:12}" "${base:0:12}"
+  exit 0
+fi
 echo block >> "$state.blocks"
 {
   echo "codeeval analyze (base ${base:0:12} → working tree) failed: fix what this change introduced, or explain in your reply why it is justified."
