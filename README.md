@@ -22,6 +22,7 @@ evaluated code and makes no claim about correctness or design quality.
 | `codeeval check --base A --target B\|--working-tree` | PR check: items a change introduced or worsened. Exit 3 on failure | v2 |
 | `codeeval graph --rev R --output g.html` | Interactive offline debt graph (POC) | v2 |
 | `codeeval defects --rev R` or `--base A --target B\|--working-tree` | Concrete defects (dead code, lost errors, dependency integrity, architecture policy, test-oracle defects), or those a change introduced. Exit 3 on introduced gate findings | `rules/v1` (no score) |
+| `codeeval analyze --rev R` or `--base A --target B\|--working-tree` | Combined view: v2 debt factors and defect findings in one report, plus a per-file table ranking files by gate defects, then debt, then advisory defects. No combined score | v2 + `rules/v1` |
 | `codeeval rules` | The defect rules and which languages implement each, with per-language coverage notes | – |
 | `codeeval attribution --base A --target B --group-by agent,harness,workflow [--defects]` | Per-step v2 debt deltas (and defects) grouped by commit provenance: which agent, harness and workflow made each change | v2 (+ `rules/v1`) |
 | `codeeval languages` / `analyzers` / `version` | Adapters and their limits, analyzers, version | – |

@@ -4,6 +4,12 @@ All versions are local proof-of-concept builds; there is no remote or release.
 
 ## 0.4.0-poc
 
+- **`codeeval analyze`** (schema `codeeval.analysis/v1`): one report holding
+  the v2 debt factors (explain, or check in change mode) and the defect
+  findings, with a summary and a per-file table ranked by gate defects, then
+  debt, then advisory defects. Debt and defects are not summed into a score.
+  `--debt-fail-on` (change mode) and `--defects-fail-on` control exit 3.
+
 - **Agent provenance:** `internal/provenance` reads it from commit-message
   lines (`Agent:` and `Agent-Harness:` are standard, `Agent-<Key>:` is
   arbitrary metadata), anywhere in the body except the subject, so it
