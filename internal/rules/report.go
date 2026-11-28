@@ -228,10 +228,21 @@ func WriteMarkdown(w io.Writer, r *Report) {
 		}
 		fmt.Fprintln(w)
 	}
+	var deferred []string
+	seen := map[string]bool{}
 	for _, c := range r.Coverage {
-		if c.Status != "checked" {
+		switch {
+		case c.Status == Deferred:
+			if !seen[c.Rule] {
+				seen[c.Rule] = true
+				deferred = append(deferred, "`"+c.Rule+"`")
+			}
+		case c.Status != "checked":
 			fmt.Fprintf(w, "- `%s` for %s: %s\n", c.Rule, c.Language, strings.ReplaceAll(c.Status, "_", " "))
 		}
+	}
+	if len(deferred) > 0 {
+		fmt.Fprintf(w, "- not run in this check (deferred): %s\n", strings.Join(deferred, ", "))
 	}
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "## Limits")

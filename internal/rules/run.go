@@ -26,7 +26,27 @@ type Options struct {
 	// Cache keeps per-file results across runs (e.g. the commits of a
 	// series); nil caches within this run only.
 	Cache *memo.Cache
+	// Checks selects single-file checks, cross-file checks or both
+	// (ChecksAll, the zero value). The others are reported as deferred.
+	Checks Checks
+	// Files, when set, limits single-file checks to these paths, e.g. the
+	// files a change touched. A single-file check's findings for a file
+	// depend only on its content, so for a change this loses nothing.
+	// Cross-file checks always read every file.
+	Files func(path string) bool
 }
+
+// Checks selects which kinds of check a run performs.
+type Checks int
+
+const (
+	ChecksAll       Checks = iota
+	ChecksLocal            // single-file checks only (fast; no whole-repository pass)
+	ChecksCrossFile        // cross-file checks only
+)
+
+// Deferred is the coverage status of a check that Options.Checks left out.
+const Deferred = "deferred"
 
 // Coverage records what one language implementation of a rule checked.
 type Coverage struct {
@@ -95,7 +115,7 @@ func checkable(f *index.File, adapter string) bool {
 
 // loadLanguage lists one language's checkable files. Content and syntax
 // trees load lazily, on first use.
-func (res *Result) loadLanguage(snap *index.Snapshot, ad lang.Adapter, cache *memo.Cache) *langFiles {
+func (res *Result) loadLanguage(snap *index.Snapshot, ad lang.Adapter, cache *memo.Cache, only func(string) bool) *langFiles {
 	lf := &langFiles{count: LanguageFiles{Language: ad.ID()}}
 	sp, ok := ad.(lang.SyntaxParser)
 	if !ok {
@@ -104,7 +124,7 @@ func (res *Result) loadLanguage(snap *index.Snapshot, ad lang.Adapter, cache *me
 	}
 	for _, p := range snap.Paths {
 		f := snap.Files[p]
-		if !checkable(f, ad.ID()) {
+		if !checkable(f, ad.ID()) || (only != nil && !only(f.Path)) {
 			continue
 		}
 		if len(f.Parsed.ParseErrors) > 0 {
@@ -156,8 +176,14 @@ func Run(reg *Registry, snap *index.Snapshot, cfg *config.Config, langs *lang.Re
 	type plan struct{ local, global []Impl }
 	plans := map[string]*plan{}
 	byLang := map[string]*langFiles{}
+	// Cross-file checks need every file; single-file checks alone only the
+	// selected ones.
+	var only func(string) bool
+	if opt.Checks == ChecksLocal {
+		only = opt.Files
+	}
 	for _, ad := range langs.Adapters() {
-		lf := res.loadLanguage(snap, ad, opt.Cache)
+		lf := res.loadLanguage(snap, ad, opt.Cache, only)
 		byLang[ad.ID()] = lf
 		res.Files = append(res.Files, lf.count)
 		plans[ad.ID()] = &plan{}
@@ -174,6 +200,8 @@ func Run(reg *Registry, snap *index.Snapshot, cfg *config.Config, langs *lang.Re
 				cov.Status = "disabled"
 			case !run:
 				continue
+			case (opt.Checks == ChecksLocal && !impl.FileLocal) || (opt.Checks == ChecksCrossFile && impl.FileLocal):
+				cov.Status, cov.Note = Deferred, impl.Note
 			default:
 				p := plans[ad.ID()]
 				if impl.FileLocal {
@@ -189,7 +217,7 @@ func Run(reg *Registry, snap *index.Snapshot, cfg *config.Config, langs *lang.Re
 	for _, ad := range langs.Adapters() {
 		lf, p := byLang[ad.ID()], plans[ad.ID()]
 		for _, f := range lf.files {
-			if f.Class != model.ClassGenerated {
+			if f.Class != model.ClassGenerated && (opt.Files == nil || opt.Files(f.Path)) {
 				for _, impl := range p.local {
 					res.checkFile(reg, f, impl, cfg)
 				}

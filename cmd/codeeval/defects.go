@@ -9,6 +9,7 @@ import (
 
 	"github.com/cameron/code-evaluator/internal/config"
 	"github.com/cameron/code-evaluator/internal/languages"
+	"github.com/cameron/code-evaluator/internal/memo"
 	"github.com/cameron/code-evaluator/internal/rules"
 	"github.com/cameron/code-evaluator/internal/rules/all"
 	"github.com/cameron/code-evaluator/internal/scorev2"
@@ -50,7 +51,7 @@ func defectsCmd(args []string, stdout, stderr io.Writer) int {
 	if !rulesKnown(reg, cfg, only, stderr) {
 		return 2
 	}
-	opt := rules.Options{Only: only, InScope: scorev2.Scope{Paths: c.paths}.Match}
+	opt := rules.Options{Only: only, InScope: scorev2.Scope{Paths: c.paths}.Match, Cache: memo.New()}
 	var r *rules.Report
 	if !change {
 		s, err := snapshotOf(ev, *rev)

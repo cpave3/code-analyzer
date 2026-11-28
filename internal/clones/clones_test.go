@@ -1,6 +1,7 @@
 package clones
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -181,5 +182,50 @@ func TestPeriodicRepetitionIsNotAFragment(t *testing.T) {
 	cs := callables(t, lgo.New(), map[string]string{"a/a.go": b.String()}, 30)
 	if frags := Fragments(cs, DefaultOptions(30, 0.85), nil); len(frags) != 0 {
 		t.Fatalf("a repeated row inside one callable is not a copy: %+v", frags)
+	}
+}
+
+// Near-miss partners tie on similarity whenever several copies differ from
+// a callable by the same amount. Keeping the top MaxPairsPer must not depend
+// on map order, or two runs (and a base and target) disagree.
+func TestNearMissesDeterministicOnTies(t *testing.T) {
+	body := func(op string) string {
+		return `{
+	sum := 0
+	for _, it := range items {
+		if it.Price > 100 {
+			sum += it.Price ` + op + ` 2
+		} else {
+			sum += it.Price
+		}
+		if it.Qty > 3 {
+			sum += it.Qty
+		}
+	}
+	return sum
+}
+`
+	}
+	files := map[string]string{}
+	for i, op := range []string{"*", "+", "-", "/", "%", "&", "|", "^"} {
+		files[fmt.Sprintf("f%d.go", i)] = "package a\n\nfunc F(items []Item) int " + body(op)
+	}
+	cs := callables(t, lgo.New(), files, 20)
+	opt := DefaultOptions(20, 0.85)
+	keys := func() string {
+		var ks []string
+		for _, p := range NearMisses(cs, opt) {
+			ks = append(ks, fmt.Sprintf("%s:%d-%d", p.Key, p.A.StartLine, p.B.StartLine))
+		}
+		return strings.Join(ks, "\n")
+	}
+	first := keys()
+	if first == "" {
+		t.Fatal("expected near-miss pairs")
+	}
+	for i := 0; i < 30; i++ {
+		if got := keys(); got != first {
+			t.Fatalf("run %d differs:\n%s\nvs\n%s", i, got, first)
+		}
 	}
 }

@@ -68,6 +68,21 @@ working tree with the commit the session started from, which
 `hooks/codeeval-session-base.sh` records at `SessionStart` in
 `.git/codeeval-session-base`, so work the session already committed is
 checked too.
+- **Two tiers, so a stop stays fast** (`CODEEVAL_STOP_CHECKS`, default
+  `tiered`):
+  - *Quick, at every stop:* v2 debt and the single-file defect rules, on the
+    changed files only (`analyze --checks quick`). On Legato (4,561 files)
+    a stop takes about 1 s instead of about 72 s for the full analysis.
+  - *Broad, in the background:* the cross-file defect rules (unused
+    exports and private functions, unresolved imports, dependency and
+    import-policy rules) and near-duplication (`--checks broad`, about 22 s
+    on Legato). Each stop starts one, unless one is still running, and the
+    next stop reports its result. That result describes the working tree at
+    the earlier stop, and the message says so.
+  - `quick` drops the background tier; `all` runs everything in the
+    foreground, as before 0.8.5.
+  - A new session stops a background run left from the previous one and
+    clears its result. A result left when a session ends is never reported.
 - **When it blocks:** on introduced gate defects (`CODEEVAL_DEFECTS_FAIL_ON`,
   default `gate`) or a debt rise (`CODEEVAL_DEBT_FAIL_ON`, default
   `net-debt`).
@@ -78,7 +93,7 @@ checked too.
     a failure fingerprint of the failing items, and fingerprints already
     shown pass.
   - It blocks at most `CODEEVAL_HOOK_MAX_BLOCKS` times per session
-    (default 3).
+    (default 3). A stop that reports both tiers counts as one block.
   - `CODEEVAL_HOOK=off` disables it.
   - False positives can be suppressed with a reasoned
     `codeeval-ignore <rule>: <reason>` comment, which reports list.

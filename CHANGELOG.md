@@ -2,6 +2,31 @@
 
 All versions are local proof-of-concept builds; there is no remote or release.
 
+## 0.8.5-poc
+
+- **Tiered Stop hook.** The analyze Stop hook no longer runs the full
+  analysis at every stop (about 72 s on Legato's 4,561 files):
+  - *Quick, every stop:* v2 debt and the single-file defect rules on the
+    changed files, about 1 s on Legato.
+  - *Broad, in the background:* cross-file defect rules and
+    near-duplication, about 22 s on Legato. It is reported at the next
+    stop, labelled with the time of the tree it checked.
+  - `CODEEVAL_STOP_CHECKS=quick|all` selects one tier or the old behaviour.
+    A new session stops a leftover background run.
+- **`analyze --checks quick|broad|all`** (change mode). Rules report the
+  skipped tier as `deferred` in coverage. Quick plus broad equals all: this
+  is tested on the fixtures and checked on Legato.
+- **Faster change checks.** `analyze` and `defects` share one content cache
+  between the base and target runs, so an unchanged file is checked once:
+  `defects` on a Legato commit drops from 59 s to 30 s, with identical
+  output.
+- **Fix: near-duplication was nondeterministic.** Each callable keeps its
+  best few near-miss partners, and ties were broken by map order, so
+  repeated runs of the same change reported 97, 79 and 50 "introduced"
+  pairs on Legato (the real number was 0). Ties now break on size, key and
+  position. This also affects `serve --near-duplication` and `analyze`
+  history.
+
 ## 0.8.4-poc
 
 - **Dashboard folder reports:** clicking a folder in the Structure view

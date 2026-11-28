@@ -12,6 +12,7 @@ import (
 	"github.com/cameron/code-evaluator/internal/engine"
 	"github.com/cameron/code-evaluator/internal/lang"
 	"github.com/cameron/code-evaluator/internal/languages"
+	"github.com/cameron/code-evaluator/internal/memo"
 	"github.com/cameron/code-evaluator/internal/rules"
 	"github.com/cameron/code-evaluator/internal/rules/all"
 	"github.com/cameron/code-evaluator/internal/scorev2"
@@ -33,6 +34,7 @@ func analyzeCmd(args []string, stdout, stderr io.Writer) int {
 	files := fs.Int("files", 25, "rows in the per-file table (0 = all)")
 	top := fs.Int("top", 50, "debt factors and defect findings listed per section (0 = all)")
 	detailed := fs.Int("detailed", 5, "debt factors with full remediation text (snapshot mode)")
+	checks := fs.String("checks", "all", "change mode: all; quick (v2 debt and single-file defect rules on the changed files; for agent hooks); broad (cross-file defect rules and near-duplication; never fails on debt)")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -48,12 +50,23 @@ func analyzeCmd(args []string, stdout, stderr io.Writer) int {
 	if !defectsFailOn(defFail, change, "--defects-fail-on", stderr) {
 		return 2
 	}
+	if *checks != "all" && *checks != "quick" && *checks != "broad" {
+		fmt.Fprintln(stderr, "--checks must be all, quick or broad")
+		return 2
+	}
+	if *checks != "all" && !change {
+		fmt.Fprintln(stderr, "--checks quick|broad applies to change mode only")
+		return 2
+	}
+	if *checks == "broad" {
+		*debtFail = "none" // debt is the quick check's job
+	}
 	ev, cfg, code := c.open(stderr)
 	if ev == nil {
 		return code
 	}
 	defer ev.Close()
-	a := analysis{ev: ev, cfg: cfg, langs: languages.Default(), scope: scorev2.Scope{Paths: c.paths}, defFail: *defFail, top: *top}
+	a := analysis{ev: ev, cfg: cfg, langs: languages.Default(), scope: scorev2.Scope{Paths: c.paths}, defFail: *defFail, top: *top, checks: *checks}
 	a.reg = all.Default(a.langs)
 	if !rulesKnown(a.reg, cfg, nil, stderr) {
 		return 2
@@ -98,9 +111,43 @@ type analysis struct {
 	scope   scorev2.Scope
 	defFail string
 	top     int
+	checks  string // all | quick | broad (change mode)
 }
 
 func (a analysis) opt() rules.Options { return rules.Options{InScope: a.scope.Match} }
+
+// changeOpt returns the rule options for a change: one content cache for
+// both sides (a file unchanged by the change is checked once), and for
+// --checks quick only the changed files' single-file checks.
+func (a analysis) changeOpt(b, t side) rules.Options {
+	o := a.opt()
+	o.Cache = memo.New()
+	switch a.checks {
+	case "quick":
+		changed := changedPaths(b, t)
+		o.Checks, o.Files = rules.ChecksLocal, func(p string) bool { return changed[p] }
+	case "broad":
+		o.Checks = rules.ChecksCrossFile
+	}
+	return o
+}
+
+// changedPaths lists the paths whose content differs between two sides
+// (added, removed or modified).
+func changedPaths(b, t side) map[string]bool {
+	out := map[string]bool{}
+	for p, f := range t.snap.Files {
+		if g := b.snap.Files[p]; g == nil || g.Blob != f.Blob {
+			out[p] = true
+		}
+	}
+	for p := range b.snap.Files {
+		if t.snap.Files[p] == nil {
+			out[p] = true
+		}
+	}
+	return out
+}
 
 func (a analysis) snapshot(rev string) (*combined.Report, error) {
 	s, err := snapshotOf(a.ev, rev)
@@ -129,12 +176,16 @@ func (a analysis) change(base, target string, worktree bool, debtFail string) (*
 	if err != nil {
 		return nil, err
 	}
-	d := rules.NewReport(a.reg, rules.Run(a.reg, b.snap, a.cfg, a.langs, a.opt()), rules.Run(a.reg, t.snap, a.cfg, a.langs, a.opt()), a.defFail)
+	opt := a.changeOpt(b, t)
+	d := rules.NewReport(a.reg, rules.Run(a.reg, b.snap, a.cfg, a.langs, opt), rules.Run(a.reg, t.snap, a.cfg, a.langs, opt), a.defFail)
 	d.Base, d.Target = &b.rev, &t.rev
 	out := combined.Change(ck, d)
-	bc, tc := clones.Analyze(b.snap, a.cfg, a.langs, a.scope.Match), clones.Analyze(t.snap, a.cfg, a.langs, a.scope.Match)
-	tc.NearMisses, tc.Fragments = clones.Introduced(bc.NearMisses, tc.NearMisses), clones.Introduced(bc.Fragments, tc.Fragments)
-	out.AddClones(tc)
+	out.Checks = a.checks
+	if a.checks != "quick" {
+		bc, tc := clones.Analyze(b.snap, a.cfg, a.langs, a.scope.Match), clones.Analyze(t.snap, a.cfg, a.langs, a.scope.Match)
+		tc.NearMisses, tc.Fragments = clones.Introduced(bc.NearMisses, tc.NearMisses), clones.Introduced(bc.Fragments, tc.Fragments)
+		out.AddClones(tc)
+	}
 	ck.Limit(a.top)
 	d.Limit(a.top)
 	return out, nil

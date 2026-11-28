@@ -259,17 +259,46 @@ func NearMisses(cs []Callable, opt Options) []Pair {
 			}
 		}
 	}
+	// Keep each callable's best partners. The order is total (ties broken
+	// by size, key and position) and callables are visited in index order,
+	// so the same input always keeps the same pairs: two revisions compare
+	// cleanly and a hook sees the same report twice.
 	keep := map[string]Pair{}
-	for _, ps := range partners {
-		sort.Slice(ps, func(x, y int) bool { return ps[x].Similarity > ps[y].Similarity })
+	ids := make([]int, 0, len(partners))
+	for i := range partners {
+		ids = append(ids, i)
+	}
+	sort.Ints(ids)
+	for _, i := range ids {
+		ps := partners[i]
+		sort.Slice(ps, func(x, y int) bool { return pairBefore(ps[x], ps[y]) })
 		for n, p := range ps {
 			if opt.MaxPairsPer > 0 && n >= opt.MaxPairsPer {
 				break
 			}
-			keep[p.Key] = p
+			if old, ok := keep[p.Key]; !ok || pairBefore(p, old) {
+				keep[p.Key] = p
+			}
 		}
 	}
 	return sortPairs(keep)
+}
+
+// pairBefore orders pairs best first: similarity, shared tokens, then
+// identity and position, so that no two distinct pairs tie.
+func pairBefore(a, b Pair) bool {
+	switch {
+	case a.Similarity != b.Similarity:
+		return a.Similarity > b.Similarity
+	case a.Shared != b.Shared:
+		return a.Shared > b.Shared
+	case a.Key != b.Key:
+		return a.Key < b.Key
+	case a.A.StartLine != b.A.StartLine:
+		return a.A.StartLine < b.A.StartLine
+	default:
+		return a.B.StartLine < b.B.StartLine
+	}
 }
 
 func sortPairs(m map[string]Pair) []Pair {
@@ -281,7 +310,7 @@ func sortPairs(m map[string]Pair) []Pair {
 		if out[i].Shared != out[j].Shared {
 			return out[i].Shared > out[j].Shared
 		}
-		return out[i].Key < out[j].Key
+		return pairBefore(out[i], out[j])
 	})
 	return out
 }
@@ -360,7 +389,7 @@ func Fragments(cs []Callable, opt Options, near []Pair) []Pair {
 			if rb.File < ra.File || (rb.File == ra.File && rb.StartLine < ra.StartLine) {
 				ra, rb = rb, ra // stable order, as for near misses
 			}
-			if old, ok := best[k]; !ok || length > old.Shared {
+			if old, ok := best[k]; !ok || length > old.Shared || (length == old.Shared && (ra.StartLine < old.A.StartLine || (ra.StartLine == old.A.StartLine && rb.StartLine < old.B.StartLine))) {
 				best[k] = Pair{Kind: "fragment", Language: ca.Language, A: ra, B: rb, Shared: length, Key: k}
 			}
 		}

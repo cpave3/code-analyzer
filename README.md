@@ -22,7 +22,7 @@ evaluated code and makes no claim about correctness or design quality.
 | `codeeval check --base A --target B\|--working-tree` | PR check: items a change introduced or worsened. Exit 3 on failure | v2 |
 | `codeeval graph --rev R --output g.html` | Interactive offline debt graph (POC) | v2 |
 | `codeeval defects --rev R` or `--base A --target B\|--working-tree` | Concrete defects (dead code, lost errors, dependency integrity, architecture policy, test-oracle defects), or those a change introduced. Exit 3 on introduced gate findings | `rules/v1` (no score) |
-| `codeeval analyze --rev R` or `--base A --target B\|--working-tree` | Combined view in one report: v2 debt factors, defect findings, and near-miss and fragment duplication. A per-file table ranks files by gate defects, then debt, then advisory defects, then near-duplicate pairs. No combined score | v2 + `rules/v1` + `clones/v1` |
+| `codeeval analyze --rev R` or `--base A --target B\|--working-tree [--checks quick\|broad]` | Combined view in one report: v2 debt factors, defect findings, and near-miss and fragment duplication. A per-file table ranks files by gate defects, then debt, then advisory defects, then near-duplicate pairs. No combined score. In change mode `--checks quick` runs only v2 debt and the single-file defect rules on the changed files (seconds, for hooks); `--checks broad` runs the cross-file rules and near-duplication, never failing on debt. Together they report exactly what the default `all` does | v2 + `rules/v1` + `clones/v1` |
 | `codeeval serve [PATH] [--base A] [--target B] [--max N]` | Local web dashboard of the checkout's history (HEAD back to the root by default) on 127.0.0.1: per-commit debt, score, hotspots, defects and near-duplication charts; a commit stepper that shows the module graph change; provenance grouping (agent, harness, workflow) | v2 + `rules/v1` + `clones/v1` |
 | `codeeval hook install --tool claude-code` | Install the analyze Stop hook and session-base hook into the project you run it from (`uninstall` removes them) | – |
 | `codeeval rules` | The defect rules and which languages implement each, with per-language coverage notes | – |
@@ -686,8 +686,9 @@ Deferred:
 `.claude/settings.json` wires two Claude Code hooks:
 - **SessionStart:** records the session's base commit.
 - **Stop:** runs the existing `bin/codeeval analyze` (it does not rebuild)
-  from the session base to the working tree. It blocks the stop on new gate defects or
-  a debt rise.
+  from the session base to the working tree: the quick tier at every stop,
+  the broad tier in the background, reported at the next stop. It blocks
+  the stop on new gate defects or a debt rise.
 
 The same file sets `AGENT_MODEL` and `AGENT_HARNESS`, and `.git/hooks/post-commit`
 (a link to `integrations/git/post-commit`, local and not tracked) records

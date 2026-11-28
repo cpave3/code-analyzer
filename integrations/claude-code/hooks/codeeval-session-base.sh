@@ -13,5 +13,11 @@ if printf '%s' "$input" | grep -Eq '"source"[[:space:]]*:[[:space:]]*"(resume|co
   exit 0
 fi
 git rev-parse HEAD > "$file" 2>/dev/null || true
-rm -f "$gitdir/codeeval-hook-state"
+rm -f "$gitdir/codeeval-hook-state" "$gitdir/codeeval-hook-state.blocks"
+# A background check from an earlier session describes another change.
+if [ -d "$gitdir/codeeval-broad" ]; then
+  pid=$(cat "$gitdir/codeeval-broad/pid" 2>/dev/null)
+  [ -n "$pid" ] && kill "$pid" 2>/dev/null
+  rm -rf "$gitdir/codeeval-broad"
+fi
 exit 0

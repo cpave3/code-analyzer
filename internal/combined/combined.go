@@ -49,10 +49,14 @@ type Report struct {
 	Clones *CloneSection `json:"clones"`
 	// FactorsWorse / FactorsBetter count debt factors before any --top limit
 	// (change mode).
-	FactorsWorse  int      `json:"factorsIntroducedOrWorsened,omitempty"`
-	FactorsBetter int      `json:"factorsReducedOrRemoved,omitempty"`
-	Failed        bool     `json:"failed"`
-	Reasons       []string `json:"failReasons"`
+	FactorsWorse  int `json:"factorsIntroducedOrWorsened,omitempty"`
+	FactorsBetter int `json:"factorsReducedOrRemoved,omitempty"`
+	// Checks is what ran (change mode): all, quick (v2 debt and single-file
+	// defect rules on the changed files) or broad (cross-file defect rules
+	// and near-duplication; debt shown, never failing).
+	Checks  string   `json:"checks,omitempty"`
+	Failed  bool     `json:"failed"`
+	Reasons []string `json:"failReasons"`
 	// FailureFingerprint identifies what failed (introduced gate defects and
 	// introduced/worsened debt factors), so a hook can avoid blocking twice
 	// on the same items. Empty when the analysis passes.
@@ -295,6 +299,14 @@ func WriteMarkdown(w io.Writer, r *Report, files, detailed, clonesTop int) {
 		status = "FAIL: " + strings.Join(r.Reasons, "; ")
 	}
 	fmt.Fprintf(w, "**%s**\n\n", status)
+	switch r.Checks {
+	case "quick":
+		fmt.Fprintln(w, "Quick check: v2 debt, and single-file defect rules on the changed files. Cross-file defect rules and near-duplication did not run (`--checks broad`).")
+		fmt.Fprintln(w)
+	case "broad":
+		fmt.Fprintln(w, "Broad check: cross-file defect rules and near-duplication. Debt is shown but does not fail here (`--checks quick` covers it).")
+		fmt.Fprintln(w)
+	}
 	if r.FailureFingerprint != "" {
 		fmt.Fprintf(w, "Failure fingerprint: `%s`\n\n", r.FailureFingerprint)
 	}
