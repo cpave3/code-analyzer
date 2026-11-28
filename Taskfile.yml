@@ -1,0 +1,101 @@
+version: "3"
+
+# CodeEval needs cgo: the Tree-sitter grammars (Go, TypeScript) are C
+# libraries, so builds need a C compiler and are not fully static.
+# Every task builds offline with the pinned toolchain and leaves go.mod as it
+# is (see README "Build environment").
+env:
+  CGO_ENABLED: "1"
+  GOTOOLCHAIN: local
+  GOPROXY: "off"
+  GOFLAGS: -mod=readonly
+
+tasks:
+  build:
+    desc: Build bin/codeeval (also the binary the dogfood Stop hook runs)
+    cmds:
+      - go build -o bin/codeeval ./cmd/codeeval
+
+  install:
+    desc: Install codeeval to $GOBIN (defaults to $GOPATH/bin)
+    cmds:
+      - go install ./cmd/codeeval
+
+  link:
+    desc: Build codeeval and symlink it into $GOBIN (defaults to $GOPATH/bin)
+    cmds:
+      - task: build
+      - |
+        bin_dir="$(go env GOBIN)"
+        bin_dir="${bin_dir:-$(go env GOPATH)/bin}"
+        mkdir -p "$bin_dir"
+        ln -sfn "{{.ROOT_DIR}}/bin/codeeval" "$bin_dir/codeeval"
+        echo "linked $bin_dir/codeeval -> {{.ROOT_DIR}}/bin/codeeval"
+
+  test:
+    desc: Run all tests (unit, contract and e2e through the real binary)
+    cmds:
+      - go test ./... -count=1
+
+  test:verbose:
+    desc: Run all tests with verbose output
+    cmds:
+      - go test ./... -v -count=1
+
+  test:short:
+    desc: Run tests without running go test inside every fixture variant
+    cmds:
+      - go test ./... -short -count=1
+
+  test:race:
+    desc: Run all tests with the race detector
+    cmds:
+      - go test -race ./... -count=1
+
+  test:cover:
+    desc: Run tests with coverage
+    cmds:
+      - go test ./... -count=1 -coverprofile=coverage.out
+      - go tool cover -func=coverage.out | tail -1
+
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+
+  fmt:
+    desc: List Go files that gofmt would change (testdata is excluded; it holds deliberate syntax errors)
+    cmds:
+      - |
+        out="$(gofmt -l cmd internal e2e)"
+        if [ -n "$out" ]; then echo "$out"; exit 1; fi
+
+  check:
+    desc: Build, format check, vet and test
+    cmds:
+      - task: build
+      - task: fmt
+      - task: vet
+      - task: test
+
+  run:
+    desc: Run codeeval from source (task run -- analyze --rev HEAD)
+    cmds:
+      - go run ./cmd/codeeval {{.CLI_ARGS}}
+
+  serve:
+    desc: Build and serve the quality-over-time dashboard for this checkout (task serve -- [PATH] [flags])
+    cmds:
+      - task: build
+      - ./bin/codeeval serve {{.CLI_ARGS}}
+
+  analyze:
+    desc: Build and run the combined analysis of this repository's HEAD
+    cmds:
+      - task: build
+      - ./bin/codeeval analyze --repo . --rev HEAD {{.CLI_ARGS}}
+
+  fixtures:reports:
+    desc: Rebuild the fixture repositories and regenerate examples/fixtures reports
+    cmds:
+      - ./scripts/fixture-reports.sh
