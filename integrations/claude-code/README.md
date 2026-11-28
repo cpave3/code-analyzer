@@ -71,9 +71,12 @@ checked too:
   passes. A stop that does not block moves the base to `HEAD`, so a later
   turn is checked from there and is never blocked on committed work an
   earlier check covered. A stop that blocks keeps the base, so the next stop
-  still sees what it reported. `CODEEVAL_BASE` overrides both.
+  still sees what it reported. The background tier keeps its own
+  checkpoint, moved only to the `HEAD` a broad run started at once its
+  result passes or has been shown, so commits made while a broad run is in
+  flight are covered by the next one. `CODEEVAL_BASE` overrides both.
 - **Per session:** state lives in `.git/codeeval/<session_id>/`
-  (`session-base`, `checked-base`, `hook-state{,.blocks}`, `broad/`), so
+  (`session-base`, `checked-base`, `broad-base`, `hook-state{,.blocks}`, `broad/`), so
   another Claude session starting in the same checkout leaves this one's
   base, block budget and background check alone. A resume or compact keeps
   the base. Session folders are never pruned; each holds a few small files.

@@ -40,7 +40,7 @@
 #   - a false positive can be suppressed in code with a reasoned comment
 #     `codeeval-ignore <rule-id>: <reason>` (listed in reports, not hidden).
 # State is per Claude session, in <git-dir>/codeeval/<session_id>/:
-# session-base, checked-base, hook-state{,.blocks} and broad/ (reset by
+# session-base, checked-base, broad-base, hook-state{,.blocks} and broad/ (reset by
 # codeeval-session-base.sh when that session starts).
 #
 # Environment (optional): CODEEVAL_BIN, CODEEVAL_BASE, CODEEVAL_CONFIG,
@@ -65,14 +65,22 @@ sid=$(printf '%s' "$input" | sed -n 's/.*"session_id"[[:space:]]*:[[:space:]]*"\
 dir="$gitdir/codeeval/${sid:-default}"
 mkdir -p "$dir" || exit 0
 valid() { [ -n "$1" ] && git rev-parse -q --verify "$1^{commit}" >/dev/null 2>&1; }
-base=${CODEEVAL_BASE:-}
-for f in "$dir/checked-base" "$dir/session-base"; do
-  if ! valid "$base" && [ -s "$f" ]; then base=$(cat "$f"); fi
-done
-valid "$base" || base=$(git merge-base HEAD origin/main 2>/dev/null || git rev-parse HEAD)
+# Each tier keeps its own checkpoint (checked-base, broad-base) on top of the
+# session's base, so a broad run still in flight never loses the commits the
+# quick tier has already moved past.
+since() {
+  local b=${CODEEVAL_BASE:-} f
+  for f in "$@" "$dir/session-base"; do
+    if ! valid "$b" && [ -s "$f" ]; then b=$(cat "$f"); fi
+  done
+  valid "$b" || b=$(git merge-base HEAD origin/main 2>/dev/null || git rev-parse HEAD)
+  echo "$b"
+}
+base=$(since "$dir/checked-base")
+bbase=$(since "$dir/broad-base")
 head=$(git rev-parse -q --verify HEAD 2>/dev/null)
 mode=${CODEEVAL_STOP_CHECKS:-tiered}
-args=(analyze --repo "$repo" --base "$base" --working-tree --debt-fail-on "${CODEEVAL_DEBT_FAIL_ON:-net-debt}"
+args=(analyze --repo "$repo" --working-tree --debt-fail-on "${CODEEVAL_DEBT_FAIL_ON:-net-debt}"
   --debt-budget "${CODEEVAL_DEBT_BUDGET:-10}" --defects-fail-on "${CODEEVAL_DEFECTS_FAIL_ON:-gate}" --files 15 --top 10 --format md)
 [ -n "${CODEEVAL_CONFIG:-}" ] && args+=(--config "$CODEEVAL_CONFIG")
 [ -n "${CODEEVAL_PATHS:-}" ] && args+=(--path "$CODEEVAL_PATHS")
@@ -93,9 +101,9 @@ approved() {
 
 # 1. The foreground check.
 if [ "$mode" = "all" ]; then
-  out=$("$bin" "${args[@]}" 2>/dev/null); code=$?
+  out=$("$bin" "${args[@]}" --base "$base" 2>/dev/null); code=$?
 else
-  out=$("$bin" "${args[@]}" --checks quick 2>/dev/null); code=$?
+  out=$("$bin" "${args[@]}" --base "$base" --checks quick 2>/dev/null); code=$?
 fi
 msg="" fps=()
 if [ "$code" -eq 3 ]; then
@@ -109,14 +117,17 @@ fi
 # 2. The previous stop's background check, if it has finished.
 if [ "$mode" = "tiered" ] && [ -f "$broad/exit" ]; then
   bcode=$(cat "$broad/exit") bout=$(cat "$broad/out.md" 2>/dev/null) bwhen=$(cat "$broad/started" 2>/dev/null)
+  bhead=$(cat "$broad/head" 2>/dev/null) bfrom=$bbase
   rm -f "$broad/exit" "$broad/out.md"
-  if [ "$bcode" = "3" ]; then
-    fp=$(fingerprint "$bout")
-    if ! shown "$fp"; then
-      fps+=("${fp:-broad-unknown}")
-      [ -n "$msg" ] && msg="$msg"$'\n\n'
-      msg="${msg}Background check (cross-file rules and near-duplication) of the working tree as of ${bwhen:-the previous stop}; if you have changed these files since, re-check with: codeeval analyze --base ${base:0:12} --working-tree --checks broad"$'\n\n'"$bout"
-    fi
+  fp=$(fingerprint "$bout")
+  if [ "$bcode" = "3" ] && ! shown "$fp"; then
+    fps+=("${fp:-broad-unknown}")
+    [ -n "$msg" ] && msg="$msg"$'\n\n'
+    msg="${msg}Background check (cross-file rules and near-duplication) of the working tree as of ${bwhen:-the previous stop}; if you have changed these files since, re-check with: codeeval analyze --base ${bfrom:0:12} --working-tree --checks broad"$'\n\n'"$bout"
+  elif { [ "$bcode" = "0" ] || [ "$bcode" = "3" ]; } && valid "$bhead"; then
+    # That run covered everything up to the HEAD it started at.
+    echo "$bhead" > "$dir/broad-base"
+    bbase=$bhead
   fi
 fi
 
@@ -126,9 +137,10 @@ if [ "$mode" = "tiered" ]; then
   pid=$(cat "$broad/pid" 2>/dev/null)
   if [ -z "$pid" ] || ! kill -0 "$pid" 2>/dev/null; then
     date '+%H:%M:%S' > "$broad/started"
+    printf '%s\n' "$head" > "$broad/head"
     # The pid file holds codeeval's own pid, so a new session can stop it.
     (
-      "$bin" "${args[@]}" --checks broad > "$broad/out.tmp" 2>/dev/null &
+      "$bin" "${args[@]}" --base "$bbase" --checks broad > "$broad/out.tmp" 2>/dev/null &
       echo $! > "$broad/pid"
       wait $!
       c=$?

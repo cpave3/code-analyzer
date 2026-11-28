@@ -4,8 +4,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 // hookRepo is a clone of a fixture repository with the Claude Code hook
@@ -197,5 +199,55 @@ func TestSessionStartGivesThePrePushCheck(t *testing.T) {
 		if !strings.Contains(r.stdout, want) {
 			t.Errorf("SessionStart output lacks %q:\n%s", want, r.stdout)
 		}
+	}
+}
+
+// The broad tier keeps its own checkpoint: commits made while a broad run is
+// still in flight are covered by the next broad run, even though quick stops
+// passed and moved the quick base past them.
+func TestStopHookBroadCoversCommitsMadeWhileItRan(t *testing.T) {
+	h := newHookRepo(t, "rename", "base", "CODEEVAL_STOP_CHECKS=tiered", "CODEEVAL_DEFECTS_FAIL_ON=gate")
+	broad := filepath.Join(h.dir, ".git", "codeeval", "A", "broad")
+	waitBroad := func() {
+		t.Helper()
+		deadline := time.Now().Add(60 * time.Second)
+		for {
+			if _, err := os.Stat(filepath.Join(broad, "exit")); err == nil {
+				return
+			}
+			if time.Now().After(deadline) {
+				t.Fatal("background check did not finish")
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+	h.start("A", "startup")
+	if r := h.stop("A"); r.code != 0 {
+		t.Fatalf("stop 1: %d\n%s", r.code, r.stderr)
+	}
+	waitBroad()
+	// A broad run is still in flight at the next stop.
+	sleeper := exec.Command("sleep", "60")
+	if err := sleeper.Start(); err != nil {
+		t.Fatal(err)
+	}
+	defer sleeper.Process.Kill()
+	os.WriteFile(filepath.Join(broad, "pid"), []byte(strconv.Itoa(sleeper.Process.Pid)), 0o644)
+	// Meanwhile the agent commits a cross-file defect the quick tier defers.
+	os.WriteFile(filepath.Join(h.dir, "delivery", "extra.go"), []byte("package delivery\n\nfunc unusedHelper() int { return 1 }\n"), 0o644)
+	h.git("add", ".")
+	h.git("commit", "-q", "-m", "helper")
+	if r := h.stop("A"); r.code != 0 {
+		t.Fatalf("stop 2 (quick passes, no broad run starts): %d\n%s", r.code, r.stderr)
+	}
+	sleeper.Process.Kill()
+	sleeper.Wait()
+	if r := h.stop("A"); r.code != 0 {
+		t.Fatalf("stop 3 (starts the next broad run): %d\n%s", r.code, r.stderr)
+	}
+	waitBroad()
+	r := h.stop("A")
+	if r.code != 2 || !strings.Contains(r.stderr, "unusedHelper") {
+		t.Errorf("stop 4 should report the committed unused helper from the broad run: %d\n%s", r.code, r.stderr)
 	}
 }

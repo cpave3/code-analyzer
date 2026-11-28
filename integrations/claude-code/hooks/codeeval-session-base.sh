@@ -35,7 +35,7 @@ if printf '%s' "$input" | grep -Eq '"source"[[:space:]]*:[[:space:]]*"(resume|co
   exit 0
 fi
 git rev-parse HEAD > "$file" 2>/dev/null || true
-rm -f "$dir/checked-base" "$dir/hook-state" "$dir/hook-state.blocks"
+rm -f "$dir/checked-base" "$dir/broad-base" "$dir/hook-state" "$dir/hook-state.blocks"
 # A background check from an earlier start of this session describes another change.
 if [ -d "$dir/broad" ]; then
   pid=$(cat "$dir/broad/pid" 2>/dev/null)
