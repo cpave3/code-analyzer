@@ -83,6 +83,43 @@ tasks:
     cmds:
       - go run ./cmd/codeeval {{.CLI_ARGS}}
 
+  web:install:
+    desc: Install the dashboard page's dependencies (Node 22+ and pnpm; only needed to change the page)
+    dir: internal/dashboard/web
+    cmds:
+      - pnpm install --frozen-lockfile
+
+  web:build:
+    desc: Rebuild the dashboard page into internal/dashboard/web/dist (committed; go build embeds it)
+    dir: internal/dashboard/web
+    cmds:
+      - pnpm build
+
+  web:check:
+    desc: Type check, lint and unit test the dashboard page
+    dir: internal/dashboard/web
+    cmds:
+      - pnpm typecheck
+      - pnpm lint
+      - pnpm test
+
+  web:verify:
+    desc: Fail if the committed dashboard build (dist) is not what the sources build
+    cmds:
+      - task: web:build
+      - git diff --exit-code -- internal/dashboard/web/dist
+      - test -z "$(git status --porcelain -- internal/dashboard/web/dist)"
+
+  web:dev:
+    desc: Serve this checkout's API on :8765 and the page with hot reload on http://127.0.0.1:5173 (task web:dev -- --last 30)
+    cmds:
+      - task: build
+      - |
+        ./bin/codeeval serve . --addr 127.0.0.1:8765 {{.CLI_ARGS}} &
+        api=$!
+        trap 'kill $api' EXIT
+        cd internal/dashboard/web && pnpm dev
+
   serve:
     desc: Build and serve the quality-over-time dashboard for this checkout (task serve -- [PATH] [flags])
     cmds:

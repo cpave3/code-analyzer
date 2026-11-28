@@ -2,6 +2,29 @@
 
 All versions are local proof-of-concept builds; there is no remote or release.
 
+## 0.9.0-poc
+
+- **Dashboard rebuilt in Vite + React + TypeScript** (`codeeval serve`), to
+  the approved design (CE-1). The hand-written `web/index.html` is replaced
+  by an app in `internal/dashboard/web`; its build (`dist`) is committed and
+  embedded, so `go build` still needs no Node and the binary stays
+  self-contained. The JSON API is unchanged.
+  - Four views instead of one long page: **Overview** (what to look at
+    first: totals, *Fix first*, debt by component, trend, what changed),
+    **Modules** (the structure treemap you drill into, beside the folder
+    report, plus a virtualised table of every item and a per-file rollup),
+    **Changes** (history strip, window, stepper, per-commit debt change,
+    metrics by commit, provenance groups) and **Graph** (Dependencies and
+    Network).
+  - The commit is chosen once in the header (searchable) and kept in the
+    URL, so views can be linked; the server answers the page's routes.
+  - Off-the-shelf charts and graphs: Apache ECharts and Sigma.js
+    (WebGL, on graphology), instead of hand-drawn SVG and canvas.
+  - Light and dark themes (system or toggle); fonts are bundled.
+  - `task web:install|web:dev|web:check|web:build|web:verify`, and a CI
+    workflow (Go vet and tests; page type check, lint, tests, and a check
+    that the committed build matches the sources).
+
 ## 0.8.5-poc
 
 - **Tiered Stop hook.** The analyze Stop hook no longer runs the full

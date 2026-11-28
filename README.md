@@ -382,8 +382,8 @@ codeeval serve --since 2026-10-01 --until 2026-10-31   # measure a date range
 codeeval serve --base v1.0 --target main --addr 127.0.0.1:8765
 ```
 
-It serves a self-contained page (no external scripts) on a loopback
-address; other addresses are refused. The **history strip** at the top
+It serves a page built into the binary (no external scripts, fonts or
+Node at run time) on a loopback address; other addresses are refused. The **history strip** at the top
 lists every commit, which is cheap even for thousands. Only a **window** is
 measured: the newest 50 by default (`--last`, `--since`/`--until`). You can
 move it from the page by dragging across the strip, or with the "last N" and
@@ -404,70 +404,97 @@ phase runs. Metrics are computed in the background, **newest commit first**, so 
 ready first. That takes about 4 s per commit on this repository. A commit's
 step changes (changed lines, defects introduced and resolved) appear once
 its parent has been measured.
-- **Charts:** v2 debt by component, score, debt/kLOC, hotspots and size
-  (plus defect findings and near-duplication pairs with the flags above),
-  per commit. Points are
-  coloured by the provenance group chosen above them.
-- **Stepper:** ◀ ▶, a slider, ▶ Play and the arrow keys step through
-  commits.
-- **Structure view** (the default graph): a treemap of the directory tree.
+The page has four views (tabs), all for the commit chosen in the header's
+**Commit** menu (searchable; picking a commit outside the window moves the
+window there). The commit is kept in the URL (`?commit=SHA`), so a view can
+be linked. ← and → step through commits and space plays, on every view.
+Light and dark themes follow the system, or the header's toggle.
+
+- **Overview:** the commit's totals (debt and its change, debt per kLOC,
+  hotspots, score, how much source was measured), the *Fix first* list of
+  the largest debt items, debt by component, debt over the window, what
+  changed in this commit (modules and functions whose debt rose, fell,
+  appeared or went), languages not measured, and the modules with the most
+  debt, each linking to its folder report.
+- **Modules** (`/modules/PATH`): the structure treemap beside that folder's
+  report.
   - Every module is a tile inside its parent folders. Single-child folder
     chains merge, and a folder holding one module is that module's tile.
-  - Area is source lines (or debt); colour is debt density.
-  - A red corner marks a module in an import cycle or breaking a rule.
-  - Hovering or selecting a module draws its imports and importers, with
-    cycle-closing imports in red.
-  - Outlines mark modules whose debt rose (red) or fell (green), and new
-    ones (dashed).
-- **Folder reports:** clicking a folder's header in the Structure view (or
-  a module tile) opens a report drawer. It holds the same analysis as
-  `codeeval explain --rev SHA --path DIR --top 0`:
-  - the folder's debt, debt per 1,000 lines against the repository's, score,
-    size, hotspots and how concentrated the debt is;
-  - a stacked bar of debt by component and a bar per subfolder (click one
-    to open its report);
-  - every factor, grouped by severity band (critical, high, medium, low;
-    the two worst open) with its metrics, related code and remediation steps
-    collapsed underneath;
-  - the folder's defect findings, grouped by rule with gate rules first.
+    Click a box to open it; the breadcrumb goes back up.
+  - Area is source lines (or debt); colour is debt per kLOC (or the
+    dominant debt component). ↻ marks a module in an import cycle or
+    breaking a rule.
+  - Outlines mark modules whose debt rose (red) or fell (green) since the
+    previous commit, and new ones (blue).
+  - The **folder report** holds the same analysis as
+    `codeeval explain --rev SHA --path DIR --top 0`: debt, debt per kLOC
+    against the repository's, hotspots, debt by component, how concentrated
+    the debt is, debt per subfolder (click one to open it), and every item
+    grouped by severity band (critical, high, medium, low; the two worst
+    open) with its metrics, related code, remediation steps and a *Copy as
+    agent prompt* button.
+  - Under the map, every item of the folder in a sortable, filterable table
+    (virtualised, so tens of thousands of rows stay fast), and the same
+    items rolled up per file.
+  - **Defect findings**, grouped by rule with gate rules first (below).
+- **Changes:** the history and the measured window.
+  - The **history strip** colours every commit by its provenance group;
+    drag across it to choose the window, or use *Last N* or a date range.
+  - The **commit panel**: subject, author, provenance, deltas against the
+    previous commit, the stepper (◀ ▶, slider, Play) and the defect check.
+  - **Debt change per commit**, stacked by component (the steps sum to the
+    net change).
+  - **Metrics by commit:** v2 debt by component, score, debt/kLOC, hotspots
+    and size (plus defect findings and near-duplication pairs with the flags
+    above). Points are coloured by the provenance group chosen beside them.
+- **Graph:**
+  - **Dependencies:** who uses what. Modules are grouped by project or
+    package (`.csproj`, `package.json`, `go.mod`; otherwise the top folder),
+    with one arrow per pair of groups that import each other, thicker for
+    more imports. The layout is layered, so each group sits above what it
+    uses; groups in a cycle share a row, joined by red arrows. Click a group
+    for what it uses and what uses it, with import counts and sample import
+    lines; double-click or *Expand* opens it into subfolders, *Collapse all*
+    resets.
+  - **Network:** a force layout of modules and the functions with the most
+    debt, pulled together by imports and clone links. Click a module for its
+    debt by component, size, density, hotspots and costliest functions, or a
+    function for where its debt comes from (for example cc 17 ≥ 10 gives 8
+    points) and its clone partners. Hovering or selecting a node keeps only
+    its imports and importers.
+  - Functions keep their identity across commits by file and name, so a
+    function that only moved is not shown as removed and added.
 - **On-demand defects:** without `--defects`, the commit panel and each
   folder report offer *Check defects for this commit*. The rules run once
   for the whole commit (cross-file rules need it): about 30 s the first time
   on a large repository, under a second on this one. Every folder report of
   that commit then filters the kept result instantly, and the commit panel
   shows the gate and advisory totals. The last 16 checked commits are kept.
-- **Dependencies view:** who uses what.
-  - **Groups:** modules are grouped by project or package (`.csproj`,
-    `package.json`, `go.mod`; otherwise the top folder).
-  - **Arrows:** one per pair of groups that import each other, thicker for
-    more imports.
-  - **Layout:** layered, so each group sits above what it uses. Groups in a
-    cycle share a row, joined by red arrows.
-  - **Detail:** clicking a group lists what it uses and what uses it, with
-    import counts and sample import lines.
-  - **Drill-down:** double-click or *Expand* opens a group into subfolders;
-    *Collapse all* resets.
-- **Network view:** the force layout, kept as an option.
-  The panel also shows the commit's subject, author, provenance and deltas
-  against the previous commit. The graph fills its card and has:
-  - a "How to read this graph" section built from the configured thresholds;
-  - explicit colour scales: modules by debt per 1,000 lines (under 60,
-    60–105, 105 or more), functions by their own debt (under 5, 5–15, 15 or
-    more);
-  - a clickable list of the biggest changes in the commit;
-  - a detail panel for a clicked node. For a module it shows the debt by
-    component, size, density, hotspots and its costliest functions. For a
-    function it shows where its debt comes from (for example cc 17 ≥ 10
-    gives 8 points), plus its clone partners.
-
-  Functions keep their identity across commits by file and name, so a
-  function that only moved is not shown as removed and added.
+- **About** (the ⓘ button): versions, how debt and the score are computed
+  from the configured thresholds and weights, and the limits of the numbers.
 - **Group table:** step changes summed by provenance group (`--group-by` as
   checkboxes: model, harness and any `Agent-<Key>` metadata; model and harness by default). As with
   `attribution`, this is observational, not causal.
 
 `--defects` and `--near-duplication` chart those checks for every commit in
 the window. Both are off by default because they are slow per commit.
+
+### Changing the dashboard page
+
+The page is a Vite + React + TypeScript app in `internal/dashboard/web`
+(charts: Apache ECharts; graphs: Sigma.js on graphology). Its build,
+`internal/dashboard/web/dist`, is committed and embedded with `go:embed`,
+so `go build` needs no Node and the pinned, offline build above is
+unchanged. To change the page you need Node 22+ and pnpm:
+
+```bash
+task web:install   # once
+task web:dev       # API on :8765 from this checkout, page with hot reload on http://127.0.0.1:5173
+task web:check     # type check, lint, unit tests
+task web:build     # rebuild dist/, then commit it with the sources
+```
+
+CI fails if the committed `dist` is not what the sources build.
 
 ## Attribution by model, harness and workflow
 

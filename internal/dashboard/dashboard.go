@@ -27,7 +27,10 @@ import (
 	"github.com/cameron/code-evaluator/internal/scorev2"
 )
 
-//go:embed web
+// web/dist is the built page (Vite + React, in web/); it is committed, so
+// building the binary needs no Node.
+//
+//go:embed web/dist
 var web embed.FS
 
 // Options select the history and the initially measured window.

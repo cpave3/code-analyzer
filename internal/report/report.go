@@ -15,7 +15,7 @@ const Schema = "codeeval.report/v1"
 const HistorySchema = "codeeval.history/v1"
 
 // ToolVersion is the evaluator version.
-const ToolVersion = "0.8.5-poc"
+const ToolVersion = "0.9.0-poc"
 
 // Tool identifies the producer.
 type Tool struct {
