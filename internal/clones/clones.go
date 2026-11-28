@@ -354,6 +354,9 @@ func Fragments(cs []Callable, opt Options, near []Pair) []Pair {
 			if skip[k] || ra.EndLine-ra.StartLine < 2 {
 				return
 			}
+			if rb.File < ra.File || (rb.File == ra.File && rb.StartLine < ra.StartLine) {
+				ra, rb = rb, ra // stable order, as for near misses
+			}
 			if old, ok := best[k]; !ok || length > old.Shared {
 				best[k] = Pair{Kind: "fragment", Language: ca.Language, A: ra, B: rb, Shared: length, Key: k}
 			}
