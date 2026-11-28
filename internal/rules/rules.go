@@ -257,3 +257,9 @@ func NewContext(rule Rule, language string, files []*File, allPaths []string, re
 
 // Findings returns what the context's checks reported.
 func (c *Context) Findings() []Finding { return c.findings }
+
+// At reports a finding at node n of file f inside symbol, keyed
+// "symbol|key". sev "" uses the rule's severity.
+func (c *Context) At(f *File, n *sitter.Node, symbol, key, message string, sev Severity) {
+	c.Report(Finding{File: f.Path, Line: Line(n), Symbol: symbol, Key: symbol + "|" + key, Message: message, Severity: sev})
+}

@@ -152,17 +152,17 @@ func WriteDeltaMarkdown(w io.Writer, r *DeltaReport, modules int) {
 	b, a, l := r.Before, r.After, r.Ledger
 	fmt.Fprint(w, "## Ledger (after − before; telescopes across commits)\n\n")
 	fmt.Fprint(w, "| | Before | After | Δ | Δ per changed kLOC |\n|---|---:|---:|---:|---:|\n")
-	rateOf := func(get func(Debt) float64) string {
-		if r.Rate == nil {
-			return "n/a"
+	for _, row := range debtRows {
+		rate := "n/a"
+		if r.Rate != nil {
+			rate = sf(row.get(*r.Rate))
 		}
-		return sf(get(*r.Rate))
+		delta := sf(row.get(l.Debt))
+		if row.bold {
+			delta = "**" + delta + "**"
+		}
+		fmt.Fprintf(w, "| %s | %s | %s | %s | %s |\n", row.label, f2(row.get(b.Debt)), f2(row.get(a.Debt)), delta, rate)
 	}
-	fmt.Fprintf(w, "| **Total debt** | %s | %s | **%s** | %s |\n", f2(b.Debt.Total), f2(a.Debt.Total), sf(l.Debt.Total), rateOf(func(d Debt) float64 { return d.Total }))
-	fmt.Fprintf(w, "| complexity debt | %s | %s | %s | %s |\n", f2(b.Debt.Complexity), f2(a.Debt.Complexity), sf(l.Debt.Complexity), rateOf(func(d Debt) float64 { return d.Complexity }))
-	fmt.Fprintf(w, "| nesting debt | %s | %s | %s | %s |\n", f2(b.Debt.Nesting), f2(a.Debt.Nesting), sf(l.Debt.Nesting), rateOf(func(d Debt) float64 { return d.Nesting }))
-	fmt.Fprintf(w, "| duplication debt | %s | %s | %s | %s |\n", f2(b.Debt.Duplication), f2(a.Debt.Duplication), sf(l.Debt.Duplication), rateOf(func(d Debt) float64 { return d.Duplication }))
-	fmt.Fprintf(w, "| architecture debt | %s | %s | %s | %s |\n", f2(b.Debt.Architecture), f2(a.Debt.Architecture), sf(l.Debt.Architecture), rateOf(func(d Debt) float64 { return d.Architecture }))
 	fmt.Fprintf(w, "| score (0–100) | %s | %s | %s | |\n", opt(b.Score), opt(a.Score), optSigned(l.Score))
 	fmt.Fprintf(w, "| debt / kLOC | %s | %s | %s | |\n\n", opt(b.DebtPerKLOC), opt(a.DebtPerKLOC), optSigned(l.DebtPerKLOC))
 
@@ -254,4 +254,17 @@ func sortStrings(s []string) []string {
 		}
 	}
 	return s
+}
+
+// debtRows are the ledger rows of the delta report, in order.
+var debtRows = []struct {
+	label string
+	bold  bool
+	get   func(Debt) float64
+}{
+	{"**Total debt**", true, func(d Debt) float64 { return d.Total }},
+	{"complexity debt", false, func(d Debt) float64 { return d.Complexity }},
+	{"nesting debt", false, func(d Debt) float64 { return d.Nesting }},
+	{"duplication debt", false, func(d Debt) float64 { return d.Duplication }},
+	{"architecture debt", false, func(d Debt) float64 { return d.Architecture }},
 }

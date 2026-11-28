@@ -511,42 +511,43 @@ func tautological(c *rules.Context) {
 			if n.Kind() != "call_expression" {
 				return true
 			}
-			fn := n.ChildByFieldName("function")
-			if fn == nil || fn.Kind() != "selector_expression" {
-				return true
-			}
-			recv, method := f.Text(fn.ChildByFieldName("operand")), f.Text(fn.ChildByFieldName("field"))
-			args := rules.Named(n.ChildByFieldName("arguments"))
-			pkgForm := recv == "assert" || recv == "require"
-			var a, b *sitter.Node
-			why := ""
-			switch {
-			case recv == "reflect" && method == "DeepEqual" && len(args) == 2:
-				a, b = args[0], args[1]
-			case comparators[method] && pkgForm && len(args) >= 3:
-				a, b = args[1], args[2]
-			case comparators[method] && !pkgForm && len(args) >= 2 && fn.ChildByFieldName("operand").Kind() == "identifier" && f.Text(args[0]) != "t":
-				a, b = args[0], args[1]
-			case pkgForm && len(args) >= 2 && ((method == "True" && args[1].Kind() == "true") || (method == "False" && args[1].Kind() == "false") || (method == "Nil" && args[1].Kind() == "nil")):
-				why = "asserts a constant"
-			}
+			a, b, why := assertion(f, n)
 			if a != nil {
-				switch {
-				case goLiterals[a.Kind()] && goLiterals[b.Kind()]:
-					why = "compares two literals"
-				case rules.Same(a, b, f.Src) && !rules.Contains(a, "call_expression"):
-					why = "compares " + rules.Norm(f.Text(a)) + " with itself"
-				}
+				why = rules.Tautology(a, b, f.Src, func(x *sitter.Node) bool { return goLiterals[x.Kind()] }, "call_expression")
 			}
 			if why != "" {
-				sym := funcName(f, n)
-				c.Report(rules.Finding{File: f.Path, Line: rules.Line(n), Symbol: sym, Key: sym + "|assert:" + rules.Norm(f.Text(n)),
-					Message: "`" + rules.Norm(f.Text(n)) + "` " + why + " and cannot fail"})
+				text := rules.Norm(f.Text(n))
+				c.At(f, n, funcName(f, n), "assert:"+text, "`"+text+"` "+why+" and cannot fail", "")
 			}
 			return true
 		})
 	}
 }
+
+// assertion returns the compared operands of a recognised assertion call,
+// or a reason when it asserts a constant.
+func assertion(f *rules.File, n *sitter.Node) (a, b *sitter.Node, why string) {
+	fn := n.ChildByFieldName("function")
+	if fn == nil || fn.Kind() != "selector_expression" {
+		return nil, nil, ""
+	}
+	recv, method := f.Text(fn.ChildByFieldName("operand")), f.Text(fn.ChildByFieldName("field"))
+	args := rules.Named(n.ChildByFieldName("arguments"))
+	pkgForm := recv == "assert" || recv == "require"
+	switch {
+	case recv == "reflect" && method == "DeepEqual" && len(args) == 2:
+		return args[0], args[1], ""
+	case comparators[method] && pkgForm && len(args) >= 3:
+		return args[1], args[2], ""
+	case comparators[method] && !pkgForm && len(args) >= 2 && fn.ChildByFieldName("operand").Kind() == "identifier" && f.Text(args[0]) != "t":
+		return args[0], args[1], ""
+	case pkgForm && len(args) >= 2 && constantAssert[method] == args[1].Kind():
+		return nil, nil, "asserts a constant"
+	}
+	return nil, nil, ""
+}
+
+var constantAssert = map[string]string{"True": "true", "False": "false", "Nil": "nil"}
 
 var fatalMethods = map[string]bool{"Fatal": true, "Fatalf": true, "FailNow": true, "Skip": true, "Skipf": true, "SkipNow": true}
 

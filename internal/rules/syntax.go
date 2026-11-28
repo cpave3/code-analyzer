@@ -96,3 +96,19 @@ func Same(a, b *sitter.Node, src []byte) bool {
 	}
 	return space.ReplaceAllString(a.Utf8Text(src), "") == space.ReplaceAllString(b.Utf8Text(src), "")
 }
+
+// Tautology explains why an assertion comparing a with b cannot fail: two
+// literals, or the same expression on both sides (unless it contains one of
+// effectKinds, e.g. calls, which may be a deliberate determinism check).
+// It returns "" when the comparison can fail.
+func Tautology(a, b *sitter.Node, src []byte, literal func(*sitter.Node) bool, effectKinds ...string) string {
+	switch {
+	case a == nil || b == nil:
+		return ""
+	case literal(a) && literal(b):
+		return "compares two literals"
+	case Same(a, b, src) && !Contains(a, effectKinds...):
+		return "compares " + Norm(a.Utf8Text(src)) + " with itself"
+	}
+	return ""
+}

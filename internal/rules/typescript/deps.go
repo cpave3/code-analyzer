@@ -324,79 +324,103 @@ var textExts = map[string]bool{".js": true, ".jsx": true, ".mjs": true, ".cjs": 
 
 func unusedDependency(c *rules.Context) {
 	ms := loadManifests(c)
-	tsImports := map[string][]string{} // file -> package names
+	imports := importedPackages(c)
+	for _, m := range ms.list {
+		if len(m.deps) == 0 || !m.governsAny(c.Files) {
+			continue // no checked TypeScript (e.g. fixtures under testdata/): nothing to compare against
+		}
+		pending := m.unimported(imports)
+		pending = m.unmentioned(c, pending)
+		for _, d := range pending {
+			c.Report(rules.Finding{File: m.file, Line: m.depLine(d), Key: "dependency:" + d,
+				Message: "dependency \"" + d + "\" is declared in " + m.file + " but nothing under " + m.dir + " imports or names it"})
+		}
+	}
+}
+
+// importedPackages maps each file to the package names it imports.
+func importedPackages(c *rules.Context) map[string][]string {
+	out := map[string][]string{}
 	for _, f := range c.Files {
 		if f.Parsed == nil {
 			continue
 		}
 		for _, imp := range f.Parsed.Imports {
 			name, _ := tslang.PackageName(imp.Path)
-			tsImports[f.Path] = append(tsImports[f.Path], name)
+			out[f.Path] = append(out[f.Path], name)
 		}
 	}
-	for _, m := range ms.list {
-		if len(m.deps) == 0 {
-			continue
+	return out
+}
+
+func (m *manifest) under(p string) bool { return m.dir == "." || strings.HasPrefix(p, m.dir+"/") }
+
+func (m *manifest) governsAny(files []*rules.File) bool {
+	for _, f := range files {
+		if m.under(f.Path) {
+			return true
 		}
-		under := func(p string) bool { return m.dir == "." || strings.HasPrefix(p, m.dir+"/") }
-		governs := false
-		for _, f := range c.Files {
-			if under(f.Path) {
-				governs = true
-				break
+	}
+	return false
+}
+
+// unimported lists runtime dependencies no governed TypeScript file imports
+// (@types packages and names used in package scripts are skipped).
+func (m *manifest) unimported(imports map[string][]string) []string {
+	used := map[string]bool{}
+	for p, names := range imports {
+		if m.under(p) {
+			for _, n := range names {
+				used[n] = true
 			}
 		}
-		if !governs {
-			continue // no checked TypeScript (e.g. fixtures under testdata/): nothing to compare against
+	}
+	var out []string
+	for _, d := range m.deps {
+		if !used[d] && !strings.HasPrefix(d, "@types/") && !strings.Contains(m.scripts, d) {
+			out = append(out, d)
 		}
-		used := map[string]bool{}
-		for p, names := range tsImports {
-			if under(p) {
-				for _, n := range names {
-					used[n] = true
-				}
-			}
-		}
-		var pending []string
-		for _, d := range m.deps {
-			if !used[d] && !strings.HasPrefix(d, "@types/") && !strings.Contains(m.scripts, d) {
-				pending = append(pending, d)
-			}
-		}
+	}
+	return out
+}
+
+// unmentioned keeps the dependencies no other text file under the package
+// names in quotes (JS, CSS, HTML, configs).
+func (m *manifest) unmentioned(c *rules.Context, pending []string) []string {
+	for _, p := range c.AllPaths {
 		if len(pending) == 0 {
+			break
+		}
+		if !m.under(p) || p == m.file || strings.Contains(p, "node_modules/") || !textExts[path.Ext(p)] || path.Base(p) == "package-lock.json" {
 			continue
 		}
-		for _, p := range c.AllPaths {
-			if len(pending) == 0 {
-				break
-			}
-			if !under(p) || p == m.file || strings.Contains(p, "node_modules/") || !textExts[path.Ext(p)] || path.Base(p) == "package-lock.json" {
-				continue
-			}
-			data, err := c.ReadFile(p)
-			if err != nil || len(data) > 512<<10 {
-				continue
-			}
-			s := string(data)
-			kept := pending[:0]
-			for _, d := range pending {
-				if !(strings.Contains(s, "\""+d) || strings.Contains(s, "'"+d) || strings.Contains(s, "`"+d)) {
-					kept = append(kept, d)
-				}
-			}
-			pending = kept
+		data, err := c.ReadFile(p)
+		if err != nil || len(data) > 512<<10 {
+			continue
 		}
-		for _, d := range pending {
-			line := 1
-			if i := strings.Index(m.raw, "\"dependencies\""); i >= 0 {
-				if j := strings.Index(m.raw[i:], "\""+d+"\""); j >= 0 {
-					line = strings.Count(m.raw[:i+j], "\n") + 1
-				}
-			}
-			c.Report(rules.Finding{File: m.file, Line: line, Key: "dependency:" + d,
-				Message: "dependency \"" + d + "\" is declared in " + m.file + " but nothing under " + m.dir + " imports or names it"})
+		pending = withoutMentioned(string(data), pending)
+	}
+	return pending
+}
+
+func withoutMentioned(text string, deps []string) []string {
+	kept := deps[:0]
+	for _, d := range deps {
+		if !(strings.Contains(text, "\""+d) || strings.Contains(text, "'"+d) || strings.Contains(text, "`"+d)) {
+			kept = append(kept, d)
 		}
 	}
+	return kept
+}
+
+// depLine is the line of a dependency in the "dependencies" block.
+func (m *manifest) depLine(d string) int {
+	if i := strings.Index(m.raw, "\"dependencies\""); i >= 0 {
+		if j := strings.Index(m.raw[i:], "\""+d+"\""); j >= 0 {
+			return strings.Count(m.raw[:i+j], "\n") + 1
+		}
+	}
+	return 1
 }
 
 func isDefaultExport(st *sitter.Node) bool {

@@ -2,7 +2,6 @@ package scorev2
 
 import (
 	"fmt"
-	"path"
 	"sort"
 	"strings"
 
@@ -583,12 +582,4 @@ func NewCheckReport(repo, cfgHash string, baseRev, targetRev report.Revision, ba
 // Limit keeps the first n introduced/worsened and improved factors (0 = all).
 func (r *CheckReport) Limit(n int) {
 	r.Factors, r.Improved = limit(r.Factors, n), limit(r.Improved, n)
-}
-
-// ShortPath trims a path for display.
-func ShortPath(p string) string {
-	if len(p) <= 60 {
-		return p
-	}
-	return "…/" + path.Base(path.Dir(p)) + "/" + path.Base(p)
 }

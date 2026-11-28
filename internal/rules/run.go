@@ -67,61 +67,77 @@ func selected(id string, only, disabled []string) (bool, bool) {
 	return false, false
 }
 
-// Run checks a snapshot with every selected rule × language implementation.
-func Run(reg *Registry, snap *index.Snapshot, cfg *config.Config, langs *lang.Registry, opt Options) *Result {
-	res := &Result{}
-	type langFiles struct {
-		files []*File
-		count LanguageFiles
+type langFiles struct {
+	files []*File
+	count LanguageFiles
+}
+
+// checkable reports whether a snapshot file is given to rules: parsed
+// source, test or generated (context only) files.
+func checkable(f *index.File, adapter string) bool {
+	if f.Adapter == nil || f.Adapter.ID() != adapter || f.Parsed == nil {
+		return false
 	}
-	byLang := map[string]*langFiles{}
-	var trees []*File
-	for _, ad := range langs.Adapters() {
-		lf := &langFiles{count: LanguageFiles{Language: ad.ID()}}
-		byLang[ad.ID()] = lf
-		sp, ok := ad.(lang.SyntaxParser)
-		for _, p := range snap.Paths {
-			f := snap.Files[p]
-			if f.Adapter == nil || f.Adapter.ID() != ad.ID() || f.Parsed == nil || (f.Class != model.ClassSource && f.Class != model.ClassTest && f.Class != model.ClassGenerated) {
-				continue
-			}
-			if !ok {
-				continue
-			}
-			if len(f.Parsed.ParseErrors) > 0 {
-				lf.count.SkippedSyntaxErrors++
-				continue
-			}
-			src, err := snap.Content(p)
-			if err != nil {
-				res.Diagnostics = append(res.Diagnostics, model.Diagnostic{Severity: model.SevWarning, Code: "rules_unreadable", Message: err.Error(), File: p, Language: ad.ID()})
-				continue
-			}
-			tree, err := sp.ParseSyntax(src)
-			if err != nil {
-				res.Diagnostics = append(res.Diagnostics, model.Diagnostic{Severity: model.SevWarning, Code: "rules_parse_failed", Message: err.Error(), File: p, Language: ad.ID()})
-				continue
-			}
-			rf := &File{Path: p, Class: f.Class, Parsed: f.Parsed, Src: src, Tree: tree}
-			lf.files = append(lf.files, rf)
-			trees = append(trees, rf)
+	return f.Class == model.ClassSource || f.Class == model.ClassTest || f.Class == model.ClassGenerated
+}
+
+// loadLanguage parses the syntax trees of one language's checkable files.
+func (res *Result) loadLanguage(snap *index.Snapshot, ad lang.Adapter) *langFiles {
+	lf := &langFiles{count: LanguageFiles{Language: ad.ID()}}
+	sp, ok := ad.(lang.SyntaxParser)
+	if !ok {
+		res.Diagnostics = append(res.Diagnostics, model.Diagnostic{Severity: model.SevInfo, Code: "rules_no_syntax", Message: "adapter exposes no syntax tree; syntax rules cannot run", Language: ad.ID()})
+		return lf
+	}
+	for _, p := range snap.Paths {
+		f := snap.Files[p]
+		if !checkable(f, ad.ID()) {
+			continue
 		}
-		for _, f := range lf.files {
+		if len(f.Parsed.ParseErrors) > 0 {
+			lf.count.SkippedSyntaxErrors++
+			continue
+		}
+		if rf := res.parseFile(snap, f, sp, ad.ID()); rf != nil {
+			lf.files = append(lf.files, rf)
 			if f.Class != model.ClassGenerated {
 				lf.count.Checked++
 			}
 		}
-		if !ok && lf.count.Checked == 0 {
-			res.Diagnostics = append(res.Diagnostics, model.Diagnostic{Severity: model.SevInfo, Code: "rules_no_syntax", Message: "adapter exposes no syntax tree; syntax rules cannot run", Language: ad.ID()})
-		}
+	}
+	return lf
+}
+
+func (res *Result) parseFile(snap *index.Snapshot, f *index.File, sp lang.SyntaxParser, language string) *File {
+	src, err := snap.Content(f.Path)
+	if err != nil {
+		res.Diagnostics = append(res.Diagnostics, model.Diagnostic{Severity: model.SevWarning, Code: "rules_unreadable", Message: err.Error(), File: f.Path, Language: language})
+		return nil
+	}
+	tree, err := sp.ParseSyntax(src)
+	if err != nil {
+		res.Diagnostics = append(res.Diagnostics, model.Diagnostic{Severity: model.SevWarning, Code: "rules_parse_failed", Message: err.Error(), File: f.Path, Language: language})
+		return nil
+	}
+	return &File{Path: f.Path, Class: f.Class, Parsed: f.Parsed, Src: src, Tree: tree}
+}
+
+// Run checks a snapshot with every selected rule × language implementation.
+func Run(reg *Registry, snap *index.Snapshot, cfg *config.Config, langs *lang.Registry, opt Options) *Result {
+	res := &Result{}
+	byLang := map[string]*langFiles{}
+	for _, ad := range langs.Adapters() {
+		lf := res.loadLanguage(snap, ad)
+		byLang[ad.ID()] = lf
 		res.Files = append(res.Files, lf.count)
 	}
 	defer func() {
-		for _, f := range trees {
-			f.Tree.Close()
+		for _, lf := range byLang {
+			for _, f := range lf.files {
+				f.Tree.Close()
+			}
 		}
 	}()
-
 	var disabled []string
 	if cfg != nil {
 		disabled = cfg.Defects.Disable
@@ -140,38 +156,47 @@ func Run(reg *Registry, snap *index.Snapshot, cfg *config.Config, langs *lang.Re
 			case !run:
 				continue
 			default:
-				lf := byLang[ad.ID()]
 				if memo[ad.ID()] == nil {
 					memo[ad.ID()] = map[string]any{}
 				}
-				ctx := &Context{Rule: rule, Language: ad.ID(), Files: lf.files, AllPaths: snap.Paths, ReadFile: snap.Content,
-					Graph: snap.Graphs[ad.ID()], Config: cfg, cache: memo[ad.ID()]}
-				if err := safeCheck(impl, ctx); err != nil {
-					res.Diagnostics = append(res.Diagnostics, model.Diagnostic{Severity: model.SevError, Code: "rule_failed", Message: err.Error(), Analyzer: "rules:" + rule.ID, Language: ad.ID()})
-				}
-				for _, f := range ctx.findings {
-					if g := snap.Files[f.File]; g != nil && g.Class == model.ClassGenerated {
-						continue // generated code is context, not checked
-					}
-					res.Findings = append(res.Findings, f)
-				}
-				res.Diagnostics = append(res.Diagnostics, ctx.diags...)
-				cov.Status, cov.Files, cov.Note = "checked", lf.count.Checked, impl.Note
+				res.check(snap, cfg, rule, impl, byLang[ad.ID()], memo[ad.ID()])
+				cov.Status, cov.Files, cov.Note = "checked", byLang[ad.ID()].count.Checked, impl.Note
 			}
 			res.Coverage = append(res.Coverage, cov)
 		}
 	}
-	if opt.InScope != nil {
-		kept := res.Findings[:0]
-		for _, f := range res.Findings {
-			if opt.InScope(f.File) {
-				kept = append(kept, f)
-			}
-		}
-		res.Findings = kept
-	}
+	res.Findings = inScope(res.Findings, opt.InScope)
 	SortFindings(res.Findings)
 	return res
+}
+
+// check runs one implementation and keeps its findings outside generated code.
+func (res *Result) check(snap *index.Snapshot, cfg *config.Config, rule Rule, impl Impl, lf *langFiles, memo map[string]any) {
+	ctx := &Context{Rule: rule, Language: impl.Language, Files: lf.files, AllPaths: snap.Paths, ReadFile: snap.Content,
+		Graph: snap.Graphs[impl.Language], Config: cfg, cache: memo}
+	if err := safeCheck(impl, ctx); err != nil {
+		res.Diagnostics = append(res.Diagnostics, model.Diagnostic{Severity: model.SevError, Code: "rule_failed", Message: err.Error(), Analyzer: "rules:" + rule.ID, Language: impl.Language})
+	}
+	for _, f := range ctx.findings {
+		if g := snap.Files[f.File]; g != nil && g.Class == model.ClassGenerated {
+			continue // generated code is context, not checked
+		}
+		res.Findings = append(res.Findings, f)
+	}
+	res.Diagnostics = append(res.Diagnostics, ctx.diags...)
+}
+
+func inScope(fs []Finding, keep func(string) bool) []Finding {
+	if keep == nil {
+		return fs
+	}
+	out := fs[:0]
+	for _, f := range fs {
+		if keep(f.File) {
+			out = append(out, f)
+		}
+	}
+	return out
 }
 
 func safeCheck(impl Impl, ctx *Context) (err error) {

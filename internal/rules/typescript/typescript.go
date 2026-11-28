@@ -541,60 +541,70 @@ func tautological(c *rules.Context) {
 			if n.Kind() != "call_expression" {
 				return true
 			}
-			fn := n.ChildByFieldName("function")
-			args := rules.Named(n.ChildByFieldName("arguments"))
-			var a, b *sitter.Node
-			why := ""
-			switch {
-			case fn == nil:
-			case fn.Kind() == "member_expression":
-				prop := f.Text(fn.ChildByFieldName("property"))
-				obj := fn.ChildByFieldName("object")
-				switch {
-				case expectMatchers[prop] && len(args) == 1:
-					if x := expectArg(f, obj, nil); x != nil {
-						a, b = x, args[0]
-					}
-				case chaiMatchers[prop] && len(args) == 1:
-					if x := expectArg(f, obj, chaiChain); x != nil {
-						a, b = x, args[0]
-					}
-				case assertEq[prop] && len(args) >= 2 && obj.Kind() == "identifier" && f.Text(obj) == "assert":
-					a, b = args[0], args[1]
-				case prop == "ok" && len(args) >= 1 && f.Text(obj) == "assert" && args[0].Kind() == "true":
-					why = "asserts a constant"
-				case len(args) == 0:
-					x := expectArg(f, obj, nil)
-					if x == nil {
-						break
-					}
-					switch {
-					case prop == "toBeTruthy" && x.Kind() == "true", prop == "toBeFalsy" && x.Kind() == "false",
-						prop == "toBeNull" && x.Kind() == "null", prop == "toBeUndefined" && f.Text(x) == "undefined",
-						prop == "toBeDefined" && isLiteral(f, x) && f.Text(x) != "undefined":
-						why = "asserts a constant"
-					}
-				}
-			case fn.Kind() == "identifier" && f.Text(fn) == "assert" && len(args) >= 1 && args[0].Kind() == "true":
-				why = "asserts a constant"
-			}
+			a, b, why := assertion(f, n)
 			if a != nil {
-				switch {
-				case isLiteral(f, a) && isLiteral(f, b):
-					why = "compares two literals"
-				case rules.Same(a, b, f.Src) && !rules.Contains(a, "call_expression", "new_expression", "await_expression"):
-					why = "compares " + rules.Norm(f.Text(a)) + " with itself"
-				}
+				why = rules.Tautology(a, b, f.Src, func(x *sitter.Node) bool { return isLiteral(f, x) }, "call_expression", "new_expression", "await_expression")
 			}
-			if why != "" {
-				sym := symbol(f, n)
-				c.Report(rules.Finding{File: f.Path, Line: rules.Line(n), Symbol: sym, Key: sym + "|assert:" + rules.Norm(f.Text(n)),
-					Message: "`" + rules.Norm(f.Text(n)) + "` " + why + " and cannot fail"})
-				return false
+			if why == "" {
+				return true
 			}
-			return true
+			text := rules.Norm(f.Text(n))
+			c.At(f, n, symbol(f, n), "assert:"+text, "`"+text+"` "+why+" and cannot fail", "")
+			return false
 		})
 	}
+}
+
+// assertion returns the compared operands of a recognised assertion call,
+// or a reason when it asserts a constant.
+func assertion(f *rules.File, n *sitter.Node) (a, b *sitter.Node, why string) {
+	fn := n.ChildByFieldName("function")
+	args := rules.Named(n.ChildByFieldName("arguments"))
+	switch {
+	case fn == nil:
+	case fn.Kind() == "member_expression":
+		return memberAssertion(f, f.Text(fn.ChildByFieldName("property")), fn.ChildByFieldName("object"), args)
+	case fn.Kind() == "identifier" && f.Text(fn) == "assert" && len(args) >= 1 && args[0].Kind() == "true":
+		return nil, nil, "asserts a constant"
+	}
+	return nil, nil, ""
+}
+
+// memberAssertion handles obj.prop(args): expect/chai matchers and
+// node:assert methods.
+func memberAssertion(f *rules.File, prop string, obj *sitter.Node, args []*sitter.Node) (a, b *sitter.Node, why string) {
+	switch {
+	case expectMatchers[prop] && len(args) == 1:
+		return expectArg(f, obj, nil), args[0], ""
+	case chaiMatchers[prop] && len(args) == 1:
+		return expectArg(f, obj, chaiChain), args[0], ""
+	case assertEq[prop] && len(args) >= 2 && obj.Kind() == "identifier" && f.Text(obj) == "assert":
+		return args[0], args[1], ""
+	case prop == "ok" && len(args) >= 1 && f.Text(obj) == "assert" && args[0].Kind() == "true":
+		return nil, nil, "asserts a constant"
+	case len(args) == 0:
+		if x := expectArg(f, obj, nil); x != nil && constantMatcher(f, prop, x) {
+			return nil, nil, "asserts a constant"
+		}
+	}
+	return nil, nil, ""
+}
+
+// constantMatcher: expect(<constant>).toBeTruthy() and similar.
+func constantMatcher(f *rules.File, prop string, x *sitter.Node) bool {
+	switch prop {
+	case "toBeTruthy":
+		return x.Kind() == "true"
+	case "toBeFalsy":
+		return x.Kind() == "false"
+	case "toBeNull":
+		return x.Kind() == "null"
+	case "toBeUndefined":
+		return f.Text(x) == "undefined"
+	case "toBeDefined":
+		return isLiteral(f, x) && f.Text(x) != "undefined"
+	}
+	return false
 }
 
 // promiseAssertion reports whether an expression is a call chain through
