@@ -13,4 +13,5 @@ if printf '%s' "$input" | grep -Eq '"source"[[:space:]]*:[[:space:]]*"(resume|co
   exit 0
 fi
 git rev-parse HEAD > "$file" 2>/dev/null || true
+rm -f "$gitdir/codeeval-hook-state"
 exit 0

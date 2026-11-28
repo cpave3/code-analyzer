@@ -6,6 +6,8 @@ package combined
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"sort"
@@ -47,14 +49,18 @@ type Report struct {
 	Clones *CloneSection `json:"clones"`
 	// FactorsWorse / FactorsBetter count debt factors before any --top limit
 	// (change mode).
-	FactorsWorse  int              `json:"factorsIntroducedOrWorsened,omitempty"`
-	FactorsBetter int              `json:"factorsReducedOrRemoved,omitempty"`
-	Failed        bool             `json:"failed"`
-	Reasons       []string         `json:"failReasons"`
-	Notes         []string         `json:"notes"`
-	Revision      *report.Revision `json:"revision,omitempty"`
-	Base          *report.Revision `json:"base,omitempty"`
-	Target        *report.Revision `json:"target,omitempty"`
+	FactorsWorse  int      `json:"factorsIntroducedOrWorsened,omitempty"`
+	FactorsBetter int      `json:"factorsReducedOrRemoved,omitempty"`
+	Failed        bool     `json:"failed"`
+	Reasons       []string `json:"failReasons"`
+	// FailureFingerprint identifies what failed (introduced gate defects and
+	// introduced/worsened debt factors), so a hook can avoid blocking twice
+	// on the same items. Empty when the analysis passes.
+	FailureFingerprint string           `json:"failureFingerprint,omitempty"`
+	Notes              []string         `json:"notes"`
+	Revision           *report.Revision `json:"revision,omitempty"`
+	Base               *report.Revision `json:"base,omitempty"`
+	Target             *report.Revision `json:"target,omitempty"`
 
 	explain *scorev2.ExplainReport
 	check   *scorev2.CheckReport
@@ -198,6 +204,7 @@ func Snapshot(ex *scorev2.ExplainReport, d *rules.Report) *Report {
 		r.Failed = true
 		r.Reasons = append(r.Reasons, "defects: "+d.Reason)
 	}
+	r.fingerprint(nil, false)
 	return r
 }
 
@@ -215,7 +222,31 @@ func Change(ck *scorev2.CheckReport, d *rules.Report) *Report {
 		r.Failed = true
 		r.Reasons = append(r.Reasons, "defects: "+d.Reason)
 	}
+	r.fingerprint(ck.Factors, ck.Failed)
 	return r
+}
+
+// fingerprint hashes the identities of the failing items.
+func (r *Report) fingerprint(factors []scorev2.Factor, debtFailed bool) {
+	if !r.Failed {
+		return
+	}
+	var ids []string
+	if debtFailed {
+		for _, f := range factors {
+			ids = append(ids, "factor:"+f.ID)
+		}
+	}
+	if r.Defects.Failed {
+		for _, f := range r.Defects.Findings {
+			if f.Severity == rules.Gate || r.Defects.FailOn == rules.FailAny {
+				ids = append(ids, "defect:"+f.Rule+"|"+f.File+"|"+f.Key)
+			}
+		}
+	}
+	sort.Strings(ids)
+	h := sha256.Sum256([]byte(strings.Join(ids, "\n")))
+	r.FailureFingerprint = hex.EncodeToString(h[:6])
 }
 
 // demote shifts Markdown headings one level down and drops the first H1.
@@ -263,7 +294,11 @@ func WriteMarkdown(w io.Writer, r *Report, files, detailed, clonesTop int) {
 	if r.Failed {
 		status = "FAIL: " + strings.Join(r.Reasons, "; ")
 	}
-	fmt.Fprintf(w, "**%s**\n\n## Summary\n\n| Measure | Value |\n|---|---|\n", status)
+	fmt.Fprintf(w, "**%s**\n\n", status)
+	if r.FailureFingerprint != "" {
+		fmt.Fprintf(w, "Failure fingerprint: `%s`\n\n", r.FailureFingerprint)
+	}
+	fmt.Fprintf(w, "## Summary\n\n| Measure | Value |\n|---|---|\n")
 	if ex := r.explain; ex != nil {
 		t := ex.Totals
 		fmt.Fprintf(w, "| Size | %d source files, %d lines, %d callables |\n", t.SourceFiles, t.SourceLines, t.Callables)

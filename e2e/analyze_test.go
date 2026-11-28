@@ -60,6 +60,13 @@ func TestAnalyzeCombinesDebtAndDefects(t *testing.T) {
 	if ch["mode"] != "change" || ch["failed"] != true || ch["factorsIntroducedOrWorsened"] == nil {
 		t.Errorf("change: mode %v failed %v worse %v", ch["mode"], ch["failed"], ch["factorsIntroducedOrWorsened"])
 	}
+	if fp, _ := ch["failureFingerprint"].(string); len(fp) != 12 || !strings.Contains(cmd, "Failure fingerprint: `"+fp+"`") {
+		t.Errorf("failure fingerprint %q missing from JSON or Markdown", fp)
+	}
+	again, _ := analyze(t, 3, "--base", "base", "--target", "bad", "--top", "5")
+	if again["failureFingerprint"] != ch["failureFingerprint"] {
+		t.Error("fingerprint depends on --top or is not deterministic")
+	}
 	if !strings.Contains(cmd, "FAIL: defects:") {
 		t.Errorf("markdown status:\n%s", cmd[:200])
 	}

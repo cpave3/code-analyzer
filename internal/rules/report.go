@@ -49,6 +49,9 @@ type Report struct {
 	Findings   []Finding `json:"findings"`
 	Resolved   []Finding `json:"resolved,omitempty"`
 	Persisting int       `json:"persisting,omitempty"`
+	// Suppressed lists findings silenced by codeeval-ignore comments (in the
+	// revision, or the target in change mode), for audit.
+	Suppressed []Finding `json:"suppressed,omitempty"`
 	Totals     struct {
 		Gate     int `json:"gate"`
 		Advisory int `json:"advisory"`
@@ -75,7 +78,7 @@ func notes() []string {
 // and after; in snapshot mode before is nil.
 func NewReport(reg *Registry, before, after *Result, failOn string) *Report {
 	r := &Report{Schema: Schema, RulesVersion: Version, Tool: report.Tool{Name: "codeeval", Version: report.ToolVersion}, FailOn: failOn, Notes: notes()}
-	r.Files, r.Coverage, r.Diagnostics = after.Files, after.Coverage, after.Diagnostics
+	r.Files, r.Coverage, r.Diagnostics, r.Suppressed = after.Files, after.Coverage, after.Diagnostics, after.Suppressed
 	counts := map[string]*RuleSummary{}
 	checked := map[string]bool{}
 	for _, c := range after.Coverage {
@@ -212,6 +215,9 @@ func WriteMarkdown(w io.Writer, r *Report) {
 	}
 	if r.Mode == "change" && len(r.Resolved) > 0 {
 		writeFindings(w, "Resolved findings", r.Resolved)
+	}
+	if len(r.Suppressed) > 0 {
+		writeFindings(w, fmt.Sprintf("Suppressed by codeeval-ignore (%d)", len(r.Suppressed)), r.Suppressed)
 	}
 	fmt.Fprintln(w, "## Coverage")
 	fmt.Fprintln(w)

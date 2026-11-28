@@ -311,6 +311,12 @@ JSON report).
 - **Not covered:** redundant conditions need types and control flow. Mutation
   testing needs the tests to run, which the read-only rules forbid. Both are
   better left to `tsc --strict`, staticcheck and a mutation tool.
+- **Suppressing a false positive:** put a comment on the line or the line
+  above: `// codeeval-ignore dead-code/unused-export: kept for the plugin API`.
+  It accepts a comma-separated list of rule IDs or categories, and the text
+  after `:` is the reason. Suppressed findings are left out of counts and
+  comparisons but listed in reports with their reason, so a suppression is
+  visible in review.
 - **Configuration:** `"defects": {"disable": ["dead-code/unused-export"]}`
   turns off rules or whole categories. An architecture rule with
   `"only": ["web/src/shared/**"]` (and `"to": ""`) is an allow-list:

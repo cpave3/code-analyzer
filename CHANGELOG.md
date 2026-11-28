@@ -4,6 +4,15 @@ All versions are local proof-of-concept builds; there is no remote or release.
 
 ## 0.5.0-poc
 
+- **Escape hatches for the Stop hook and the rules:**
+  - `codeeval-ignore <rule>[, …]: <reason>` comments suppress defect findings
+    on the same or the next line. Suppressed findings are listed in reports
+    and never counted.
+  - `analyze` reports a `failureFingerprint`.
+  - The analyze Stop hook never blocks twice on the same fingerprint in a
+    session, has a block budget (`CODEEVAL_HOOK_MAX_BLOCKS`, default 3) and
+    can be switched off (`CODEEVAL_HOOK=off`).
+
 - **`--working-tree` reads untracked files by default:** files Git does not
   ignore are read, each up to 8 MB, and appear as added files in the change
   set. `--untracked=false` restores the earlier tracked-only behaviour.

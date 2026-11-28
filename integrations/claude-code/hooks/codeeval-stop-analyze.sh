@@ -8,11 +8,26 @@
 # Base, first that exists: $CODEEVAL_BASE, <git-dir>/codeeval-session-base
 # (written by codeeval-session-base.sh), merge-base with origin/main, HEAD.
 #
+# Escape hatches, so the hook never traps an agent in a fixing loop or forces
+# it to "fix" a false positive:
+#   - it blocks at most once per turn (stop_hook_active);
+#   - it never blocks twice on the same failure: analyze prints a failure
+#     fingerprint (the failing items' identities), and fingerprints already
+#     shown this session pass;
+#   - at most CODEEVAL_HOOK_MAX_BLOCKS blocks per session (default 3);
+#   - CODEEVAL_HOOK=off disables it;
+#   - a false positive can be suppressed in code with a reasoned comment
+#     `codeeval-ignore <rule-id>: <reason>` (listed in reports, not hidden).
+# Session state lives in <git-dir>/codeeval-hook-state (reset by
+# codeeval-session-base.sh at session start).
+#
 # Environment (optional): CODEEVAL_BIN, CODEEVAL_BASE, CODEEVAL_CONFIG,
 # CODEEVAL_DEBT_FAIL_ON (new-debt|net-debt|gates|none, default net-debt),
-# CODEEVAL_DEFECTS_FAIL_ON (gate|any|none, default gate), CODEEVAL_PATHS.
+# CODEEVAL_DEFECTS_FAIL_ON (gate|any|none, default gate), CODEEVAL_PATHS,
+# CODEEVAL_HOOK, CODEEVAL_HOOK_MAX_BLOCKS.
 set -u
 input=$(cat)
+[ "${CODEEVAL_HOOK:-on}" = "off" ] && exit 0
 if printf '%s' "$input" | grep -q '"stop_hook_active"[[:space:]]*:[[:space:]]*true'; then exit 0; fi
 bin=${CODEEVAL_BIN:-codeeval}
 command -v "$bin" >/dev/null 2>&1 || [ -x "$bin" ] || exit 0
@@ -29,8 +44,15 @@ args=(analyze --repo "$repo" --base "$base" --working-tree --debt-fail-on "${COD
 [ -n "${CODEEVAL_PATHS:-}" ] && args+=(--path "$CODEEVAL_PATHS")
 out=$("$bin" "${args[@]}" 2>/dev/null); code=$?
 if [ "$code" -eq 3 ]; then
+  state="$gitdir/codeeval-hook-state"
+  fp=$(printf '%s\n' "$out" | sed -n 's/^Failure fingerprint: `\([0-9a-f]*\)`.*/\1/p' | head -1)
+  [ -n "$fp" ] && [ -f "$state" ] && grep -qx "$fp" "$state" && exit 0   # already shown this session
+  blocks=$( [ -f "$state" ] && wc -l < "$state" || echo 0 )
+  [ "$blocks" -ge "${CODEEVAL_HOOK_MAX_BLOCKS:-3}" ] && exit 0            # session budget spent
+  echo "${fp:-unknown-$blocks}" >> "$state"
   {
     echo "codeeval analyze (base ${base:0:12} → working tree) failed: fix what this change introduced, or explain in your reply why it is justified."
+    echo "This is reported once: the same findings will not block again. For a false positive, add \`codeeval-ignore <rule-id>: <reason>\` on or above the line rather than reshaping correct code."
     echo
     printf '%s\n' "$out" | head -c 7000
   } >&2

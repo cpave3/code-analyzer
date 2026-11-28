@@ -47,6 +47,17 @@ checked too.
 - **When it blocks:** on introduced gate defects (`CODEEVAL_DEFECTS_FAIL_ON`,
   default `gate`) or a debt rise (`CODEEVAL_DEBT_FAIL_ON`, default
   `net-debt`).
+- **Escape hatches:** these keep the hook from trapping an agent in a fixing
+  loop or forcing it to "fix" a false positive.
+  - It blocks at most once per turn.
+  - It never blocks twice in a session on the same failure. `analyze` prints
+    a failure fingerprint of the failing items, and fingerprints already
+    shown pass.
+  - It blocks at most `CODEEVAL_HOOK_MAX_BLOCKS` times per session
+    (default 3).
+  - `CODEEVAL_HOOK=off` disables it.
+  - False positives can be suppressed with a reasoned
+    `codeeval-ignore <rule>: <reason>` comment, which reports list.
 - **Untracked files:** they are checked by default (`--untracked`), except
   those Git ignores.
 

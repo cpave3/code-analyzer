@@ -44,7 +44,10 @@ type LanguageFiles struct {
 
 // Result is the outcome of running rules on one snapshot.
 type Result struct {
-	Findings    []Finding          `json:"findings"`
+	Findings []Finding `json:"findings"`
+	// Suppressed findings matched a codeeval-ignore comment; they are kept
+	// for audit and never counted or compared.
+	Suppressed  []Finding          `json:"suppressed,omitempty"`
 	Coverage    []Coverage         `json:"coverage"`
 	Files       []LanguageFiles    `json:"files"`
 	Diagnostics []model.Diagnostic `json:"diagnostics,omitempty"`
@@ -166,6 +169,8 @@ func Run(reg *Registry, snap *index.Snapshot, cfg *config.Config, langs *lang.Re
 		}
 	}
 	res.Findings = inScope(res.Findings, opt.InScope)
+	res.Suppressed = inScope(res.Suppressed, opt.InScope)
+	SortFindings(res.Suppressed)
 	SortFindings(res.Findings)
 	return res
 }
@@ -177,9 +182,18 @@ func (res *Result) check(snap *index.Snapshot, cfg *config.Config, rule Rule, im
 	if err := safeCheck(impl, ctx); err != nil {
 		res.Diagnostics = append(res.Diagnostics, model.Diagnostic{Severity: model.SevError, Code: "rule_failed", Message: err.Error(), Analyzer: "rules:" + rule.ID, Language: impl.Language})
 	}
+	src := map[string][]byte{}
+	for _, f := range lf.files {
+		src[f.Path] = f.Src
+	}
 	for _, f := range ctx.findings {
 		if g := snap.Files[f.File]; g != nil && g.Class == model.ClassGenerated {
 			continue // generated code is context, not checked
+		}
+		if reason, ok := Suppression(src[f.File], f.Line, f.Rule); ok {
+			f.Change, f.Message = "", f.Message+" [suppressed: "+reason+"]"
+			res.Suppressed = append(res.Suppressed, f)
+			continue
 		}
 		res.Findings = append(res.Findings, f)
 	}
