@@ -17,6 +17,8 @@ import (
 	"sort"
 	"strings"
 
+	sitter "github.com/tree-sitter/go-tree-sitter"
+
 	"github.com/cameron/code-evaluator/internal/model"
 )
 
@@ -59,6 +61,13 @@ type Adapter interface {
 	// BuildGraph builds the dependency graph over the snapshot's files of this
 	// language.
 	BuildGraph(in GraphInput) (*Graph, []model.Diagnostic)
+}
+
+// SyntaxParser is implemented by adapters backed by Tree-sitter. Defect rules
+// (internal/rules) use it to inspect a file's concrete syntax tree. The caller
+// closes the returned tree.
+type SyntaxParser interface {
+	ParseSyntax(src []byte) (*sitter.Tree, error)
 }
 
 // GraphFile is a parsed, classified file given to BuildGraph.

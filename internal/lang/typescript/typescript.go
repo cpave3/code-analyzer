@@ -543,91 +543,7 @@ func (a *Adapter) BuildGraph(in lang.GraphInput) (*lang.Graph, []model.Diagnosti
 	g := lang.NewGraph()
 	g.Note = "TypeScript directory imports (non-test files): relative specifiers, tsconfig paths and workspace packages; node_modules are external"
 	var diags []model.Diagnostic
-	exists := map[string]bool{}
-	for _, p := range in.AllPaths {
-		exists[p] = true
-	}
-
-	// tsconfig aliases, applied to files under the config's directory.
-	var configs []tsconfig
-	// workspace packages: package.json "name" → directory.
-	pkgs := map[string]string{}
-	for _, p := range in.AllPaths {
-		if strings.Contains(p, "node_modules/") {
-			continue
-		}
-		base := path.Base(p)
-		if strings.HasPrefix(base, "tsconfig") && strings.HasSuffix(base, ".json") {
-			baseDir, paths := loadTSConfig(p, in.ReadFile, 0)
-			if len(paths) == 0 {
-				continue
-			}
-			c := tsconfig{dir: path.Dir(p)}
-			keys := make([]string, 0, len(paths))
-			for k := range paths {
-				keys = append(keys, k)
-			}
-			sort.Strings(keys)
-			for _, k := range keys {
-				al := alias{}
-				if i := strings.Index(k, "*"); i >= 0 {
-					al.prefix, al.suffix, al.wild = k[:i], k[i+1:], true
-				} else {
-					al.prefix = k
-				}
-				for _, t := range paths[k] {
-					al.targets = append(al.targets, path.Clean(path.Join(baseDir, t)))
-				}
-				c.aliases = append(c.aliases, al)
-			}
-			configs = append(configs, c)
-		}
-		if base == "package.json" {
-			data, err := in.ReadFile(p)
-			if err != nil {
-				continue
-			}
-			var pj struct {
-				Name string `json:"name"`
-			}
-			if json.Unmarshal(data, &pj) == nil && pj.Name != "" {
-				pkgs[pj.Name] = path.Dir(p)
-			}
-		}
-	}
-	sort.Slice(configs, func(i, j int) bool { return len(configs[i].dir) > len(configs[j].dir) })
-
-	resolveFile := func(cand string) string {
-		cand = path.Clean(cand)
-		if exists[cand] && isTS(cand) {
-			return cand
-		}
-		stem := cand
-		for _, js := range []string{".js", ".jsx", ".mjs", ".cjs"} {
-			if strings.HasSuffix(cand, js) {
-				stem = strings.TrimSuffix(cand, js)
-			}
-		}
-		for _, e := range tsExts {
-			if exists[stem+e] {
-				return stem + e
-			}
-		}
-		for _, e := range tsExts {
-			if exists[cand+"/index"+e] {
-				return cand + "/index" + e
-			}
-		}
-		return ""
-	}
-	isAsset := func(spec string) bool {
-		ext := path.Ext(spec)
-		switch ext {
-		case ".css", ".scss", ".sass", ".less", ".json", ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".woff", ".woff2", ".ttf", ".md", ".html", ".wasm", ".txt":
-			return true
-		}
-		return strings.Contains(spec, "?")
-	}
+	r := NewResolver(in.AllPaths, in.ReadFile)
 	inGraph := func(f lang.GraphFile) bool { return f.Class == model.ClassSource || f.Class == model.ClassGenerated }
 
 	for _, f := range in.Files {
@@ -642,88 +558,28 @@ func (a *Adapter) BuildGraph(in lang.GraphInput) (*lang.Graph, []model.Diagnosti
 		}
 		from := path.Dir(f.Path)
 		for _, imp := range f.Parsed.Imports {
-			spec := imp.Path
-			target := ""
-			switch {
-			case strings.HasPrefix(spec, "./") || strings.HasPrefix(spec, "../") || spec == "." || spec == "..":
-				if isAsset(spec) {
-					continue
+			res := r.Resolve(f.Path, imp.Path)
+			switch res.Kind {
+			case KindAsset:
+				continue
+			case KindExternal:
+				ext := g.External[from]
+				if ext == nil {
+					ext = map[string]bool{}
+					g.External[from] = ext
 				}
-				target = resolveFile(path.Join(from, spec))
-				if target == "" {
-					diags = append(diags, model.Diagnostic{Severity: model.SevInfo, Code: "import_unresolved", Message: "relative import has no indexed TypeScript file: " + spec, File: f.Path, Line: imp.Line, Language: "typescript"})
-					continue
-				}
-			default:
-				matched := false
-				for _, c := range configs {
-					if c.dir != "." && !strings.HasPrefix(f.Path, c.dir+"/") {
-						continue
-					}
-					for _, al := range c.aliases {
-						var star string
-						if al.wild {
-							if !strings.HasPrefix(spec, al.prefix) || !strings.HasSuffix(spec, al.suffix) || len(spec) < len(al.prefix)+len(al.suffix) {
-								continue
-							}
-							star = spec[len(al.prefix) : len(spec)-len(al.suffix)]
-						} else if spec != al.prefix {
-							continue
-						}
-						matched = true
-						external := true
-						for _, t := range al.targets {
-							if !strings.Contains(t, "node_modules/") {
-								external = false
-							}
-						}
-						if external {
-							// An alias into node_modules (e.g. react → node_modules/@types/react)
-							// names an external package, not internal code.
-							matched = false
-							break
-						}
-						for _, t := range al.targets {
-							if target = resolveFile(strings.Replace(t, "*", star, 1)); target != "" {
-								break
-							}
-						}
-						break
-					}
-					if matched {
-						break
-					}
-				}
-				if !matched {
-					name, sub := packageName(spec)
-					if dir, ok := pkgs[name]; ok {
-						matched = true
-						for _, cand := range []string{path.Join(dir, sub), path.Join(dir, "src", sub)} {
-							if target = resolveFile(cand); target != "" {
-								break
-							}
-						}
-					}
-				}
-				if !matched {
-					if isAsset(spec) {
-						continue
-					}
-					ext := g.External[from]
-					if ext == nil {
-						ext = map[string]bool{}
-						g.External[from] = ext
-					}
-					name, _ := packageName(spec)
-					ext[name] = true
-					continue
-				}
-				if target == "" {
-					diags = append(diags, model.Diagnostic{Severity: model.SevInfo, Code: "import_unresolved", Message: "aliased or workspace import has no indexed TypeScript file: " + spec, File: f.Path, Line: imp.Line, Language: "typescript"})
-					continue
-				}
+				ext[res.Package] = true
+				continue
 			}
-			g.AddEdge(from, path.Dir(target), model.Location{File: f.Path, Line: imp.Line})
+			if res.Target == "" {
+				msg := "relative import has no indexed TypeScript file: "
+				if res.Kind != KindRelative {
+					msg = "aliased or workspace import has no indexed TypeScript file: "
+				}
+				diags = append(diags, model.Diagnostic{Severity: model.SevInfo, Code: "import_unresolved", Message: msg + imp.Path, File: f.Path, Line: imp.Line, Language: "typescript"})
+				continue
+			}
+			g.AddEdge(from, path.Dir(res.Target), model.Location{File: f.Path, Line: imp.Line})
 		}
 	}
 	return g, diags
@@ -745,4 +601,49 @@ func packageName(spec string) (string, string) {
 		return parts[0] + "/" + parts[1], strings.Join(parts[2:], "/")
 	}
 	return parts[0], strings.Join(parts[1:], "/")
+}
+
+// ParseSyntax returns the Tree-sitter syntax tree (lang.SyntaxParser), using
+// the same grammar choice as Parse: TSX, or TypeScript when that yields fewer
+// syntax errors.
+func (a *Adapter) ParseSyntax(src []byte) (*sitter.Tree, error) {
+	parse := func(l *sitter.Language) (*sitter.Tree, int, error) {
+		parser := sitter.NewParser()
+		defer parser.Close()
+		if err := parser.SetLanguage(l); err != nil {
+			return nil, 0, err
+		}
+		tree := parser.Parse(src, nil)
+		if tree == nil {
+			return nil, 0, fmt.Errorf("tree-sitter returned no tree")
+		}
+		return tree, countErrors(tree.RootNode()), nil
+	}
+	tree, errs, err := parse(a.tsx)
+	if err != nil || errs == 0 {
+		return tree, err
+	}
+	if t2, errs2, err2 := parse(a.ts); err2 == nil {
+		if errs2 < errs {
+			tree.Close()
+			return t2, nil
+		}
+		t2.Close()
+	}
+	return tree, nil
+}
+
+// countErrors counts error and missing nodes, capped like collectErrors.
+func countErrors(n *sitter.Node) int {
+	if n.IsError() || n.IsMissing() {
+		return 1
+	}
+	if !n.HasError() {
+		return 0
+	}
+	c := 0
+	for i := uint(0); i < n.ChildCount() && c < 20; i++ {
+		c += countErrors(n.Child(i))
+	}
+	return c
 }

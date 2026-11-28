@@ -523,3 +523,17 @@ func modulePath(gomod []byte) string {
 	}
 	return string(m[2])
 }
+
+// ParseSyntax returns the Tree-sitter syntax tree (lang.SyntaxParser).
+func (a *Adapter) ParseSyntax(src []byte) (*sitter.Tree, error) {
+	parser := sitter.NewParser()
+	defer parser.Close()
+	if err := parser.SetLanguage(a.language); err != nil {
+		return nil, err
+	}
+	tree := parser.Parse(src, nil)
+	if tree == nil {
+		return nil, fmt.Errorf("tree-sitter returned no tree")
+	}
+	return tree, nil
+}
