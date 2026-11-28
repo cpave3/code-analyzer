@@ -3,16 +3,16 @@
 // each step changed, metrics over the window and step changes by
 // provenance group.
 import { useCallback, useMemo, useState } from "react";
-import type { Commit, Meta, Metrics } from "../api";
+import type { Commit, Meta, Metrics } from "../core/api";
 import { EChart, type EChartsOption } from "../components/EChart";
 import { Next, Pause, Play, Prev } from "../components/icons";
 import { usePlayback } from "../components/Playback";
 import { ErrorBanner, Skeleton } from "../components/states";
-import { useDefects, useMeta, useMetrics, useSelection, useSetWindow } from "../data";
+import { useDefects, useMeta, useMetrics, useSelection, useSetWindow } from "../core/data";
 import { fieldValue, keyColors, stepKey } from "../lib/provenance";
 import { fmt, short, signed, stamp } from "../lib/format";
 import { change, COMPONENTS, dateWindow, debtChange, groupRows, lastN, recentre, usable } from "../lib/history";
-import { useTheme, type Tokens } from "../theme";
+import { useTheme, type Tokens } from "../core/theme";
 
 export default function Changes() {
   const meta = useMeta().data!;
@@ -232,9 +232,47 @@ function CommitPanel({ meta, index, byIndex, select, from, to, fields }: { meta:
   );
 }
 
+interface DeltaSpec {
+  label: string;
+  get: (x: Metrics) => number | null | undefined;
+  d: number;
+  goodDown: boolean | null; // null: neither direction is better
+}
+
+const DELTAS: DeltaSpec[] = [
+  { label: "Debt", get: (x) => x.debt.total, d: 1, goodDown: true },
+  { label: "Score", get: (x) => x.score, d: 1, goodDown: false },
+  { label: "Hotspots", get: (x) => x.hotspots, d: 0, goodDown: true },
+  { label: "Decision points", get: (x) => x.decisionPoints, d: 0, goodDown: true },
+  { label: "Source lines", get: (x) => x.lines, d: 0, goodDown: null },
+];
+
+const nearPairs = (x: Metrics) => (x.detail ? (x.nearMisses ?? 0) + (x.fragments ?? 0) : null);
+
+// tone is the class for a change: bad when it moves the wrong way.
+function tone(v: number | null, goodDown: boolean | null): string {
+  if (v == null || Math.abs(v) < 1e-9 || goodDown == null) return "";
+  return v > 0 === goodDown ? "bad" : "good";
+}
+
+function Kpi({ label, value, sub, cls = "" }: { label: string; value: string; sub: string; cls?: string }) {
+  return (
+    <div className="kpi">
+      <div className="label">{label}</div>
+      <div className={"value " + cls}>{value}</div>
+      <div className="sub">{sub}</div>
+    </div>
+  );
+}
+
+function DeltaKpi({ spec, byIndex, index }: { spec: DeltaSpec; byIndex: (Metrics | undefined)[]; index: number }) {
+  const v = change(byIndex, index, spec.get);
+  const now = spec.get(byIndex[index]!);
+  return <Kpi label={spec.label} value={signed(v, spec.d)} sub={now != null ? "now " + fmt(now, spec.d) : ""} cls={tone(v, spec.goodDown)} />;
+}
+
 function Deltas({ meta, index, byIndex }: { meta: Meta; index: number; byIndex: (Metrics | undefined)[] }) {
   const m = byIndex[index];
-  const c = meta.commits[index];
   if (m?.error) return <ErrorBanner title="This commit could not be measured" error={new Error(m.error)} />;
   if (!usable(m))
     return (
@@ -242,41 +280,25 @@ function Deltas({ meta, index, byIndex }: { meta: Meta; index: number; byIndex: 
         Measuring this commit…
       </p>
     );
-  const d = (label: string, get: (x: Metrics) => number | null | undefined, dd: number, goodDown: boolean | null, now?: number | null) => {
-    const v = change(byIndex, index, get);
-    const cls = v == null || Math.abs(v) < 1e-9 || goodDown == null ? "" : v > 0 === goodDown ? "bad" : "good";
-    return (
-      <div className="kpi" key={label}>
-        <div className="label">{label}</div>
-        <div className={"value " + cls}>{signed(v, dd)}</div>
-        <div className="sub">{now != null ? "now " + fmt(now, dd) : ""}</div>
-      </div>
-    );
-  };
+  const changed = index === 0 ? "–" : m.stepDone ? fmt(m.changedLines) : "…";
   return (
     <div className="kpis compact" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
-      {d("Debt", (x) => x.debt.total, 1, true, m.debt.total)}
-      {d("Score", (x) => x.score, 1, false, m.score)}
-      {d("Hotspots", (x) => x.hotspots, 0, true, m.hotspots)}
-      {d("Decision points", (x) => x.decisionPoints, 0, true, m.decisionPoints)}
-      {d("Source lines", (x) => x.lines, 0, null, m.lines)}
-      <div className="kpi">
-        <div className="label">Changed lines</div>
-        <div className="value">{index === 0 ? "–" : m.stepDone ? fmt(m.changedLines) : "…"}</div>
-        <div className="sub">measured source</div>
-      </div>
-      {meta.defects ? (
-        <div className="kpi">
-          <div className="label">Defects introduced</div>
-          <div className={"value " + ((m.introducedGate ?? 0) > 0 ? "bad" : "")}>{m.introducedGate == null ? (m.detailStep ? "–" : "…") : `${m.introducedGate} gate`}</div>
-          <div className="sub">{m.introducedGate == null ? (m.detailStep ? "" : "checking…") : `${m.introducedAdvisory ?? 0} advisory · ${m.resolved ?? 0} resolved · now ${m.gate ?? 0} gate`}</div>
-        </div>
-      ) : (
-        <DefectCheck sha={c.sha} />
-      )}
-      {meta.nearDuplication && (m.detail ? d("Near-dup pairs", (x) => (x.detail ? (x.nearMisses ?? 0) + (x.fragments ?? 0) : null), 0, true, (m.nearMisses ?? 0) + (m.fragments ?? 0)) : <div className="kpi"><div className="label">Near-dup pairs</div><div className="value">…</div><div className="sub">checking…</div></div>)}
+      {DELTAS.map((spec) => (
+        <DeltaKpi key={spec.label} spec={spec} byIndex={byIndex} index={index} />
+      ))}
+      <Kpi label="Changed lines" value={changed} sub="measured source" />
+      {meta.defects ? <DefectsIntroduced m={m} /> : <DefectCheck sha={meta.commits[index].sha} />}
+      {meta.nearDuplication && (m.detail ? <DeltaKpi spec={{ label: "Near-dup pairs", get: nearPairs, d: 0, goodDown: true }} byIndex={byIndex} index={index} /> : <Kpi label="Near-dup pairs" value="…" sub="checking…" />)}
     </div>
   );
+}
+
+// DefectsIntroduced shows what the server's per-commit defect check found
+// (with --defects).
+function DefectsIntroduced({ m }: { m: Metrics }) {
+  if (m.introducedGate == null) return <Kpi label="Defects introduced" value={m.detailStep ? "–" : "…"} sub={m.detailStep ? "" : "checking…"} />;
+  const sub = `${m.introducedAdvisory ?? 0} advisory · ${m.resolved ?? 0} resolved · now ${m.gate ?? 0} gate`;
+  return <Kpi label="Defects introduced" value={`${m.introducedGate} gate`} sub={sub} cls={m.introducedGate > 0 ? "bad" : ""} />;
 }
 
 // DefectCheck offers the whole-commit defect check when the server does not

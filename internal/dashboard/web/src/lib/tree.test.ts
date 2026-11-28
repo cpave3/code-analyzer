@@ -1,4 +1,4 @@
-import type { GraphModule } from "../api";
+import type { GraphModule } from "../core/api";
 import { buildTree, densityBand, findNode, parentPath } from "./tree";
 
 const mod = (id: string, lines: number, debt: number): GraphModule => ({

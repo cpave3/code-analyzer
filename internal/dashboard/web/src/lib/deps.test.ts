@@ -1,5 +1,5 @@
-import type { GraphData, GraphModule } from "../api";
-import { buildDeps, groupKey } from "./deps";
+import type { GraphData, GraphModule } from "../core/api";
+import { buildDeps, components, groupKey } from "./deps";
 
 const mod = (path: string, lines = 100): GraphModule => ({ id: "go:" + path, lang: "go", group: "", lines, callables: 1, hotspots: 0, debt: { complexity: 0, nesting: 0, duplication: 0, architecture: 0, total: 0 }, density: 0, score: null });
 
@@ -39,5 +39,15 @@ describe("buildDeps", () => {
     const g = buildDeps(data, new Set(["web", "web/src"]));
     expect(g.groups.filter((x) => x.inCycle).map((x) => x.key).sort()).toEqual(["web/src/x", "web/src/y"]);
     expect(g.edges.filter((e) => e.cycle)).toHaveLength(2);
+  });
+});
+
+describe("components", () => {
+  it("finds strongly connected components", () => {
+    // 0 → 1 → 2 → 0 is a cycle; 3 → 0 and 2 → 4 are not in it.
+    const comp = components([[1], [2], [0, 4], [0], []]);
+    expect(comp[0]).toBe(comp[1]);
+    expect(comp[1]).toBe(comp[2]);
+    expect(new Set([comp[0], comp[3], comp[4]]).size).toBe(3);
   });
 });

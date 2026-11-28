@@ -1,4 +1,4 @@
-import type { Commit } from "../api";
+import type { Commit } from "../core/api";
 import { keyColors, stepKey } from "./provenance";
 
 const c = (prov: Commit["provenance"]): Commit => ({ index: 0, sha: "a", parent: "", subject: "", author: "", time: "", merge: false, provenance: prov });

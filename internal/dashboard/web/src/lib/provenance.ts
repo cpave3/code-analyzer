@@ -1,7 +1,7 @@
 // Provenance grouping (mirrors internal/attribution.GroupKey and the
 // previous dashboard): each step is keyed by the chosen fields of the
 // commits it brings in.
-import type { Commit, ProvenanceRecord } from "../api";
+import type { Commit, ProvenanceRecord } from "../core/api";
 
 export function fieldValue(r: ProvenanceRecord, f: string): string {
   if (f === "model" || f === "agent") return (r.model ?? []).join("+");

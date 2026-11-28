@@ -1,6 +1,6 @@
 // Stepping through the window: ← and → move one commit, space plays.
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { useMetrics, useSelection } from "../data";
+import { useMetrics, useSelection } from "../core/data";
 
 interface PlaybackValue {
   playing: boolean;

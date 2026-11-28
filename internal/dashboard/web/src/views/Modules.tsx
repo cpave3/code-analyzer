@@ -4,19 +4,19 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
-import type { ExplainReport, Factor, GraphData, Metrics } from "../api";
+import type { DefectReport, ExplainReport, Factor, GraphData, Metrics } from "../core/api";
 import { EChart, type EChartsOption } from "../components/EChart";
 import { EmptyState, ErrorBanner, Skeleton } from "../components/states";
-import { useDefects, useExplain, useGraph, useMeta, useMetrics, useSelection } from "../data";
-import { compare, moduleKey, type Comparison } from "../lib/changes";
+import { useDefects, useExplain, useGraph, useMeta, useMetrics, useSelection } from "../core/data";
+import { compare, type Comparison } from "../lib/changes";
 import { fmt, pct, short } from "../lib/format";
 import { COMPONENTS, usable } from "../lib/history";
-import { BANDS, band, byFile, bySubfolder, componentOf, crumbs, KIND_NAMES } from "../lib/report";
-import { buildTree, DENSITY_STEPS, densityBand, findNode, parentPath, sizeOf, type SizeBy, type TreeNode } from "../lib/tree";
-import { useTheme, type Tokens } from "../theme";
+import { agentPrompt, BANDS, band, byFile, bySubfolder, componentOf, crumbs, groupFindings, KIND_NAMES, sortedItems, type SortKey } from "../lib/report";
+import { buildTree, DENSITY_STEPS, densityBand, type SizeBy } from "../lib/tree";
+import { useTheme } from "../core/theme";
+import { markedModules, shownFolder, treemapOption, type ColourBy } from "../lib/treemap";
 import { CommitTitle } from "./Overview";
 
-type ColourBy = "density" | "component";
 
 const NO_FACTORS: Factor[] = [];
 
@@ -92,90 +92,17 @@ export default function Modules() {
   );
 }
 
-function treemapData(n: TreeNode, sizeBy: SizeBy, colourBy: ColourBy, t: Tokens, cmp: Comparison | null, focus: string, lang: string, marked: Set<string>): unknown[] {
-  const kids = n.children.filter((c) => !lang || !c.module || c.module.lang === lang);
-  return kids
-    .map((c) => {
-      const children = c.module ? [] : treemapData(c, sizeBy, colourBy, t, cmp, focus, lang, marked);
-      if (!c.module && !children.length) return null;
-      let color = t.ramp[densityBand(c.density)];
-      if (colourBy === "component" && c.module) {
-        const top = COMPONENTS.map((k) => [k, c.module!.debt[k]] as const).sort((a, b) => b[1] - a[1])[0];
-        color = top[1] > 0 ? t.components[top[0]] : t.track;
-      }
-      const st = c.module && cmp ? cmp.states.get(moduleKey(c.module.id))?.state : undefined;
-      const ring = c.path === focus && c.module ? t.fg : st === "up" ? t.bad : st === "down" ? t.good : st === "new" ? t.accent : undefined;
-      const bad = !!c.module && marked.has(c.module.id);
-      return {
-        name: bad ? "↻ " + c.name : c.name,
-        path: c.path,
-        bad,
-        value: sizeOf(c, sizeBy),
-        debt: c.debt,
-        lines: c.lines,
-        density: c.density,
-        state: st,
-        children: children.length ? children : undefined,
-        itemStyle: c.module ? { color, borderColor: ring ?? t.panel, borderWidth: ring ? 3 : 1 } : { borderColor: t.line, color: t.bg },
-        label: c.module ? { color: inkFor(color) } : undefined,
-      };
-    })
-    .filter(Boolean);
-}
-
 function ModuleMap({ graph, prev, path, sizeBy, colourBy, lang }: { graph?: GraphData; prev: GraphData | null; path: string; sizeBy: SizeBy; colourBy: ColourBy; lang: string }) {
   const { tokens } = useTheme();
   const nav = useNavigate();
   const { search } = useLocation();
   const tree = useMemo(() => (graph ? buildTree(graph.modules) : null), [graph]);
   const cmp = useMemo(() => (graph && prev ? compare(graph, prev) : null), [graph, prev]);
-  const marked = useMemo(() => {
-    const out = new Set<string>();
-    for (const e of graph?.imports ?? []) if (e.cycle || e.violation) out.add(e.from).add(e.to);
-    return out;
-  }, [graph]);
-  const shown = useMemo(() => {
-    if (!tree) return null;
-    const n = findNode(tree, path);
-    if (n && !n.module) return n;
-    if (n?.module) return findNode(tree, parentPath(path)) ?? tree;
-    let p = parentPath(path);
-    while (p && !findNode(tree, p)) p = parentPath(p);
-    return findNode(tree, p) ?? tree;
-  }, [tree, path]);
-  const option = useMemo<EChartsOption | null>(() => {
-    if (!shown) return null;
-    return {
-      animation: false,
-      tooltip: {
-        confine: true,
-        formatter: (p: { data: { path: string; debt: number; lines: number; density: number; state?: string; bad?: boolean } }) => {
-          const d = p.data;
-          const bad = d.bad ? " · in an import cycle or breaking a rule" : "";
-          const st = d.state === "up" ? " · more debt than the previous commit" : d.state === "down" ? " · less debt than the previous commit" : d.state === "new" ? " · new in this commit" : "";
-          return `<b>${esc(d.path || "(repository)")}</b><br>${fmt(d.lines)} lines · debt ${fmt(d.debt, 1)} · ${fmt(d.density, 1)} per kLOC${st}${bad}`;
-        },
-      },
-      series: [
-        {
-          type: "treemap",
-          data: treemapData(shown, sizeBy, colourBy, tokens, cmp, path, lang, marked),
-          roam: false,
-          nodeClick: false,
-          breadcrumb: { show: false },
-          width: "100%",
-          height: "100%",
-          top: 0,
-          left: 0,
-          squareRatio: 1.2,
-          label: { show: true, formatter: "{b}", color: "#111", fontSize: 11, overflow: "truncate" },
-          upperLabel: { show: true, height: 18, color: tokens.fg, fontSize: 11, fontWeight: 600 },
-          itemStyle: { gapWidth: 2 },
-          levels: [{ itemStyle: { borderWidth: 0, gapWidth: 3 } }, { itemStyle: { borderWidth: 1, gapWidth: 2 } }, { itemStyle: { gapWidth: 1 } }],
-        },
-      ],
-    };
-  }, [shown, sizeBy, colourBy, tokens, cmp, path, lang, marked]);
+  const marked = useMemo(() => markedModules(graph), [graph]);
+  const option = useMemo<EChartsOption | null>(
+    () => (tree ? treemapOption(shownFolder(tree, path), { sizeBy, colourBy, lang, focus: path, marked, cmp }, tokens) : null),
+    [tree, sizeBy, colourBy, tokens, cmp, path, lang, marked],
+  );
   const onClick = (p: unknown) => {
     const d = (p as { data?: { path?: string } }).data;
     if (d?.path != null) nav({ pathname: "/modules/" + d.path, search });
@@ -184,50 +111,38 @@ function ModuleMap({ graph, prev, path, sizeBy, colourBy, lang }: { graph?: Grap
     <section className="card" aria-labelledby="map">
       <div className="head">
         <h2 id="map">Module map</h2>
-        <span className="note">{tree ? `${fmt(graph!.modules.length)} modules · click a box to open it` : ""}</span>
+        <span className="note">{graph ? `${fmt(graph.modules.length)} modules · click a box to open it` : ""}</span>
       </div>
       <div className="body" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {option ? <EChart option={option} height={520} onEvents={{ click: onClick }} label="Treemap of folders and modules, sized by source lines or debt and coloured by debt" /> : <Skeleton height={520} />}
-        <div className="legend" style={{ alignItems: "center" }}>
-          {colourBy === "density" ? (
-            <>
-              <span>Debt per kLOC</span>
-              {tokens.ramp.map((c, i) => (
-                <span key={c}>
-                  <span className="sw" style={{ background: c }} />
-                  {i === 0 ? `< ${DENSITY_STEPS[0]}` : i === tokens.ramp.length - 1 ? `≥ ${DENSITY_STEPS[i - 1]}` : `${DENSITY_STEPS[i - 1]}–${DENSITY_STEPS[i]}`}
-                </span>
-              ))}
-            </>
-          ) : (
-            COMPONENTS.map((k) => (
-              <span key={k}>
-                <span className="sw" style={{ background: tokens.components[k] }} />
-                {k}
-              </span>
-            ))
-          )}
-          {marked.size > 0 && <span>↻ in an import cycle or breaking a rule (see Graph)</span>}
-          {cmp && (
-            <span>
-              Outline vs previous commit: <span style={{ color: tokens.bad }}>{cmp.counts.up} more debt</span> · <span style={{ color: tokens.good }}>{cmp.counts.down} less</span> · <span style={{ color: tokens.accent }}>{cmp.counts.new} new</span>
-            </span>
-          )}
-        </div>
+        <MapLegend colourBy={colourBy} marked={marked.size > 0} cmp={cmp} />
       </div>
     </section>
   );
 }
 
-// inkFor picks dark or light text for a tile colour by its luminance.
-function inkFor(hex: string): string {
-  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
-  if (!m) return "#111";
-  const [r, g, b] = [m[1], m[2], m[3]].map((x) => parseInt(x, 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.3 ? "#111" : "#fff";
+function MapLegend({ colourBy, marked, cmp }: { colourBy: ColourBy; marked: boolean; cmp: Comparison | null }) {
+  const { tokens } = useTheme();
+  const steps = (i: number) => (i === 0 ? `< ${DENSITY_STEPS[0]}` : i === tokens.ramp.length - 1 ? `≥ ${DENSITY_STEPS[i - 1]}` : `${DENSITY_STEPS[i - 1]}–${DENSITY_STEPS[i]}`);
+  const swatches = colourBy === "density" ? tokens.ramp.map((c, i) => [c, steps(i)]) : COMPONENTS.map((k) => [tokens.components[k], k]);
+  return (
+    <div className="legend" style={{ alignItems: "center" }}>
+      {colourBy === "density" && <span>Debt per kLOC</span>}
+      {swatches.map(([c, label]) => (
+        <span key={c}>
+          <span className="sw" style={{ background: c }} />
+          {label}
+        </span>
+      ))}
+      {marked && <span>↻ in an import cycle or breaking a rule (see Graph)</span>}
+      {cmp && (
+        <span>
+          Outline vs previous commit: <span style={{ color: tokens.bad }}>{cmp.counts.up} more debt</span> · <span style={{ color: tokens.good }}>{cmp.counts.down} less</span> · <span style={{ color: tokens.accent }}>{cmp.counts.new} new</span>
+        </span>
+      )}
+    </div>
+  );
 }
-
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
 function FolderReport({ sha, path, repo }: { sha: string; path: string; repo?: Metrics }) {
   const { tokens } = useTheme();
@@ -429,22 +344,11 @@ function FactorItem({ f }: { f: Factor }) {
   const rem = f.remediation;
   const loc = f.location;
   const [copied, setCopied] = useState(false);
-  const prompt = () => {
-    const text = [
-      `Reduce the ${KIND_NAMES[f.kind] ?? f.kind} debt of ${loc.symbol || f.module} at ${loc.file}:${loc.startLine}.`,
-      f.explanation,
-      rem.strategy && `Fix: ${rem.strategy}. ${rem.target}`,
-      ...rem.steps.map((s) => "- " + s),
-      rem.acceptance.length ? "Done when: " + rem.acceptance.join("; ") : "",
-      rem.caution ? "Caution: " + rem.caution : "",
-    ]
-      .filter(Boolean)
-      .join("\n");
-    navigator.clipboard?.writeText(text).then(
+  const prompt = () =>
+    navigator.clipboard?.writeText(agentPrompt(f)).then(
       () => setCopied(true),
       () => setCopied(false),
     );
-  };
   return (
     <details className="item">
       <summary>
@@ -506,71 +410,74 @@ function FactorItem({ f }: { f: Factor }) {
 
 function Defects({ sha, path }: { sha: string; path: string }) {
   const q = useDefects(sha, path);
-  const r = q.data;
-  const groups = useMemo(() => {
-    const g = new Map<string, NonNullable<typeof r>["findings"]>();
-    for (const f of r?.findings ?? []) {
-      const k = f.severity + "|" + f.rule;
-      g.set(k, [...(g.get(k) ?? []), f]);
-    }
-    return [...g.values()].sort((a, b) => (a![0].severity === "gate" ? 0 : 1) - (b![0].severity === "gate" ? 0 : 1) || b!.length - a!.length);
-  }, [r]);
   return (
     <div className="body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <h3>Defect findings</h3>
-      {q.isPending || q.run.isPending ? (
-        <p className="dim" role="status">
-          {q.run.isPending ? "Checking this commit…" : "Looking for an earlier check…"}
-        </p>
-      ) : q.isError || q.run.isError ? (
-        <ErrorBanner title="The defect check failed" error={q.error ?? q.run.error} onRetry={() => q.run.mutate()} />
-      ) : r === null ? (
-        <>
-          <p className="dim" style={{ margin: 0, fontSize: 13 }}>
-            Not checked for {short(sha)} yet. The rules run once for the whole commit (about 30 s on a large repository the first time); every folder then reuses the result.
-          </p>
-          <div>
-            <button className="btn" onClick={() => q.run.mutate()}>
-              Check defects for this commit
-            </button>
-          </div>
-        </>
-      ) : r ? (
-        <>
-          <p style={{ margin: 0, fontSize: 13 }}>
-            <b className={r.totals.gate ? "bad" : ""}>{fmt(r.totals.gate)} gate</b> · {fmt(r.totals.advisory)} advisory
-            {r.suppressed?.length ? ` · ${fmt(r.suppressed.length)} suppressed` : ""} <span className="dim">(gate = provable from syntax; advisory = needs a human decision)</span>
-          </p>
-          {!groups.length && <p className="dim">No findings in this folder.</p>}
-          {groups.map((xs) => (
-            <details key={xs![0].severity + xs![0].rule} className="item">
-              <summary>
-                <span className={"sev " + xs![0].severity}>{xs![0].severity}</span>
-                <b>{xs![0].rule}</b>
-                <span className="dim">· {xs!.length}</span>
-              </summary>
-              <div className="body">
-                <ul>
-                  {xs!.slice(0, 40).map((f, i) => (
-                    <li key={i}>
-                      <span className="mono">
-                        {f.file}:{f.line}
-                      </span>
-                      {f.symbol ? ` (${f.symbol})` : ""} — {f.message}
-                    </li>
-                  ))}
-                </ul>
-                {xs!.length > 40 && <p className="dim">{fmt(xs!.length - 40)} more</p>}
-              </div>
-            </details>
-          ))}
-        </>
-      ) : null}
+      <DefectBody q={q} sha={sha} />
     </div>
   );
 }
 
-type SortKey = "debt" | "cc" | "nest" | "lines" | "name";
+function DefectBody({ q, sha }: { q: ReturnType<typeof useDefects>; sha: string }) {
+  if (q.isPending || q.run.isPending)
+    return (
+      <p className="dim" role="status">
+        {q.run.isPending ? "Checking this commit…" : "Looking for an earlier check…"}
+      </p>
+    );
+  if (q.isError || q.run.isError) return <ErrorBanner title="The defect check failed" error={q.error ?? q.run.error} onRetry={() => q.run.mutate()} />;
+  if (q.data === null)
+    return (
+      <>
+        <p className="dim" style={{ margin: 0, fontSize: 13 }}>
+          Not checked for {short(sha)} yet. The rules run once for the whole commit (about 30 s on a large repository the first time); every folder then reuses the result.
+        </p>
+        <div>
+          <button className="btn" onClick={() => q.run.mutate()}>
+            Check defects for this commit
+          </button>
+        </div>
+      </>
+    );
+  return q.data ? <DefectFindings r={q.data} /> : null;
+}
+
+function DefectFindings({ r }: { r: DefectReport }) {
+  const groups = useMemo(() => groupFindings(r.findings ?? []), [r]);
+  const suppressed = r.suppressed?.length ? ` · ${fmt(r.suppressed.length)} suppressed` : "";
+  return (
+    <>
+      <p style={{ margin: 0, fontSize: 13 }}>
+        <b className={r.totals.gate ? "bad" : ""}>{fmt(r.totals.gate)} gate</b> · {fmt(r.totals.advisory)} advisory
+        {suppressed} <span className="dim">(gate = provable from syntax; advisory = needs a human decision)</span>
+      </p>
+      {!groups.length && <p className="dim">No findings in this folder.</p>}
+      {groups.map((xs) => (
+        <details key={xs[0].severity + xs[0].rule} className="item">
+          <summary>
+            <span className={"sev " + xs[0].severity}>{xs[0].severity}</span>
+            <b>{xs[0].rule}</b>
+            <span className="dim">· {xs.length}</span>
+          </summary>
+          <div className="body">
+            <ul>
+              {xs.slice(0, 40).map((f, i) => (
+                <li key={i}>
+                  <span className="mono">
+                    {f.file}:{f.line}
+                  </span>
+                  {f.symbol ? ` (${f.symbol})` : ""} — {f.message}
+                </li>
+              ))}
+            </ul>
+            {xs.length > 40 && <p className="dim">{fmt(xs.length - 40)} more</p>}
+          </div>
+        </details>
+      ))}
+    </>
+  );
+}
+
 
 function ScopeTables({ sha, path }: { sha: string; path: string }) {
   const r = useExplain(sha, path);
@@ -579,16 +486,8 @@ function ScopeTables({ sha, path }: { sha: string; path: string }) {
   const [sort, setSort] = useState<SortKey>("debt");
   const factors = r.data?.factors ?? NO_FACTORS;
   const files = useMemo(() => byFile(factors), [factors]);
-  const items = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    const xs = needle ? factors.filter((f) => (f.location.symbol ?? "").toLowerCase().includes(needle) || f.location.file.toLowerCase().includes(needle) || f.kind.includes(needle)) : factors;
-    const key = (f: Factor) => (sort === "debt" ? f.debt : sort === "cc" ? (f.metrics?.cyclomatic ?? -1) : sort === "nest" ? (f.metrics?.nesting ?? -1) : sort === "lines" ? (f.metrics?.lines ?? -1) : 0);
-    return sort === "name" ? [...xs].sort((a, b) => (a.location.symbol ?? "").localeCompare(b.location.symbol ?? "")) : [...xs].sort((a, b) => key(b) - key(a));
-  }, [factors, q, sort]);
-  const shownFiles = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    return needle ? files.filter((f) => f.file.toLowerCase().includes(needle)) : files;
-  }, [files, q]);
+  const items = useMemo(() => sortedItems(factors, q, sort), [factors, q, sort]);
+  const shownFiles = useMemo(() => files.filter((f) => f.file.toLowerCase().includes(q.trim().toLowerCase())), [files, q]);
   if (!r.data) return null;
   return (
     <section className="card" aria-label="Items and files in this folder">

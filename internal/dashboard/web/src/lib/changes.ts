@@ -1,6 +1,6 @@
 // Commit-to-commit comparison of two module graphs: which modules and
 // functions gained or lost debt, which are new and which are gone.
-import type { GraphData } from "../api";
+import type { GraphData } from "../core/api";
 import { moduleLabel } from "./format";
 
 export type ChangeState = "new" | "up" | "down" | "same";

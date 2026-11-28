@@ -1,7 +1,7 @@
 // The About drawer: versions, weights, thresholds and the limits of the
 // numbers (the previous page's notes and "How to read" text).
 import { useEffect } from "react";
-import { useMeta, useMetrics } from "../data";
+import { useMeta, useMetrics } from "../core/data";
 import { fmt } from "../lib/format";
 import { Close } from "./icons";
 

@@ -1,5 +1,5 @@
-import type { Commit, Metrics } from "../api";
-import { change, clampWindow, dateWindow, debtChange, groupRows, lastN, recentre } from "./history";
+import type { Commit, Metrics } from "../core/api";
+import { change, clampWindow, dateWindow, debtChange, findCommits, groupRows, lastN, recentre } from "./history";
 
 const debt = (t: number) => ({ complexity: t, nesting: 0, duplication: 0, architecture: 0, total: t });
 const m = (t: number, extra: Partial<Metrics> = {}): Metrics =>
@@ -41,5 +41,15 @@ describe("windows", () => {
     expect(recentre(2, 10, 19, 100)).toEqual([0, 9]);
     expect(recentre(50, 10, 19, 100)).toEqual([46, 55]);
     expect(recentre(99, 10, 19, 100)).toEqual([90, 99]);
+  });
+});
+
+describe("findCommits", () => {
+  it("lists matches newest first, up to the limit", () => {
+    const cs = [commit(0, "a"), commit(1, "b"), commit(2, "c")];
+    cs[1].subject = "Fix the parser";
+    expect(findCommits(cs, "", 2).map((c) => c.index)).toEqual([2, 1]);
+    expect(findCommits(cs, "PARSER", 5).map((c) => c.index)).toEqual([1]);
+    expect(findCommits(cs, "s0", 5).map((c) => c.index)).toEqual([0]);
   });
 });

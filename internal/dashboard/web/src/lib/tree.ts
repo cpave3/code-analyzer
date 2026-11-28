@@ -1,7 +1,7 @@
 // The folder tree behind the Modules treemap: modules (Go packages,
 // TypeScript or C# directories) placed in their folders, with chains of
 // single-child folders merged ("internal/lang" rather than two levels).
-import type { GraphModule } from "../api";
+import type { GraphModule } from "../core/api";
 import { moduleLabel } from "./format";
 
 export interface TreeNode {
@@ -70,16 +70,16 @@ function collapse(n: TreeNode): TreeNode {
 // findNode returns the folder or module tile at path, or null.
 export function findNode(root: TreeNode, path: string): TreeNode | null {
   if (root.path === path && !root.module) return root;
-  for (const c of root.children) {
-    if (c.path === path && !c.module) return c;
-    if (c.module && c.path === path && c.children.length === 0 && !root.children.some((x) => x.path === path && !x.module)) return c;
-    if (path === c.path || path.startsWith(c.path === "" ? "" : c.path + "/")) {
-      const r = c.children.length ? findNode(c, path) : null;
-      if (r) return r;
-    }
+  const here = root.children.find((c) => !c.module && c.path === path) ?? root.children.find((c) => c.module && c.path === path);
+  if (here) return here;
+  for (const c of root.children.filter((x) => !x.module && within(path, x.path))) {
+    const r = findNode(c, path);
+    if (r) return r;
   }
   return null;
 }
+
+const within = (path: string, dir: string) => dir === "" || path.startsWith(dir + "/");
 
 // parentPath is the folder above path ("" for top-level entries).
 export function parentPath(path: string): string {

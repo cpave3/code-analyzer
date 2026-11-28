@@ -1,15 +1,15 @@
 // Overview: what to look at first for the selected commit.
 import { useMemo } from "react";
 import { Link, useNavigate } from "react-router";
-import type { Commit, ExplainReport, GraphData, Metrics } from "../api";
+import type { Commit, ExplainReport, GraphData, Metrics } from "../core/api";
 import { EChart, type EChartsOption } from "../components/EChart";
 import { EmptyState, ErrorBanner, Skeleton } from "../components/states";
-import { useExplain, useGraph, useMeta, useMetrics, useSelection } from "../data";
+import { useExplain, useGraph, useMeta, useMetrics, useSelection } from "../core/data";
 import { compare } from "../lib/changes";
 import { day, fmt, moduleLabel, pct, short, signed, stamp } from "../lib/format";
 import { COMPONENTS, usable } from "../lib/history";
 import { componentOf } from "../lib/report";
-import { useTheme, type Tokens } from "../theme";
+import { useTheme, type Tokens } from "../core/theme";
 
 export function Overview() {
   const meta = useMeta().data!;

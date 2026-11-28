@@ -1,24 +1,21 @@
 // Graph: the previous page's Dependencies (who uses what, layered) and
 // Network (force layout) views, drawn with Sigma.js (WebGL) on graphology.
 // The Structure (folders) view is the Modules page's treemap.
-import Graph from "graphology";
-import forceAtlas2 from "graphology-layout-forceatlas2";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import Sigma from "sigma";
 import { extremityArrow, pathLine } from "sigma/rendering";
-import type { GraphData } from "../api";
+import type { GraphCallable, GraphData, GraphModule } from "../core/api";
 import { ErrorBanner, Skeleton } from "../components/states";
-import { useGraph, useMeta, useMetrics, useSelection } from "../data";
+import { useGraph, useMeta, useMetrics, useSelection } from "../core/data";
 import { compare, functionKey, moduleKey, type Comparison } from "../lib/changes";
+import { depsGraph, edgeStyle, networkGraph, nodeStyle, type EdgeAttrs, type NodeAttrs, type SizeBy, type StyleState } from "../lib/sigmaGraph";
 import { buildDeps, type DepGraph } from "../lib/deps";
 import { fmt, moduleLabel, short, signed } from "../lib/format";
 import { COMPONENTS, usable } from "../lib/history";
-import { densityBand } from "../lib/tree";
-import { useTheme, type Tokens } from "../theme";
+import { useTheme } from "../core/theme";
 
 type Mode = "deps" | "network";
-type SizeBy = "lines" | "debt";
 
 interface Opts {
   mode: Mode;
@@ -180,89 +177,21 @@ function Rail({ o, set, switchMode, graph, deps, onCollapseAll, onRelayout }: { 
   );
 }
 
-interface NodeAttrs {
-  x: number;
-  y: number;
-  size: number;
-  color: string;
-  label: string;
-  ring?: string;
-  bad?: boolean;
-  kind: "group" | "module" | "function";
-}
-interface EdgeAttrs {
-  size: number;
-  color: string;
-  bad?: boolean;
-  arrow?: boolean;
-}
-
-function buildSigmaGraph(data: GraphData, deps: DepGraph, o: Opts, t: Tokens, cmp: Comparison | null, layoutSeq: number): Graph<NodeAttrs, EdgeAttrs> {
-  const g = new Graph<NodeAttrs, EdgeAttrs>({ type: "directed", multi: false });
-  const ringOf = (key: string) => {
-    const st = cmp?.states.get(key)?.state;
-    return st === "up" ? t.bad : st === "down" ? t.good : st === "new" ? t.accent : undefined;
-  };
-  if (o.mode === "deps") {
-    const max = Math.max(1, ...deps.groups.map((x) => (o.sizeBy === "debt" ? x.debt : x.lines)));
-    for (const n of deps.groups) {
-      const v = o.sizeBy === "debt" ? n.debt : n.lines;
-      g.addNode(n.key, { x: n.x, y: -n.y, size: 5 + 13 * Math.sqrt(v / max), color: t.ramp[densityBand(n.density)], label: (n.expandable ? "▸ " : "") + n.label, bad: n.inCycle, kind: "group" });
-    }
-    for (const e of deps.edges) g.mergeEdge(e.from, e.to, { size: 0.8 + Math.log2(1 + e.count), color: e.cycle || e.rule ? t.bad : t.dim, bad: e.cycle || e.rule, arrow: true });
-    return g;
-  }
-  // Network: modules with debt (or ≥ 150 lines) and the functions with the
-  // most debt, pulled together by imports and clone links.
-  const max = Math.max(1, ...data.modules.map((m) => (o.sizeBy === "debt" ? m.debt.total : m.lines)));
-  const badMods = new Set<string>();
-  for (const e of data.imports) if (e.violation || e.cycle) badMods.add(e.from).add(e.to);
-  let seed = 1 + layoutSeq * 7919;
-  const rnd = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
-  for (const m of data.modules) {
-    if (m.debt.total <= 0 && m.lines < 150) continue;
-    const v = o.sizeBy === "debt" ? m.debt.total : m.lines;
-    g.addNode(m.id, { x: rnd() * 100, y: rnd() * 100, size: 3 + 11 * Math.sqrt(v / max), color: t.ramp[densityBand(m.density)], label: moduleLabel(m.id), ring: ringOf(moduleKey(m.id)), bad: badMods.has(m.id), kind: "module" });
-  }
-  if (o.functions) {
-    for (const c of data.callables) {
-      const d = c.debt + c.cloneDebt;
-      if (d < o.minDebt || !g.hasNode(c.module) || g.hasNode(c.id)) continue;
-      const p = g.getNodeAttributes(c.module);
-      g.addNode(c.id, { x: p.x + rnd() * 6 - 3, y: p.y + rnd() * 6 - 3, size: 1.5 + Math.sqrt(d) * 0.4, color: d < 5 ? t.ramp[1] : d < 15 ? t.ramp[3] : t.ramp[4], label: c.name, ring: ringOf(functionKey(c.file, c.name)), kind: "function" });
-      g.mergeEdge(c.id, c.module, { size: 0.5, color: t.line });
-    }
-    if (o.clones)
-      for (const cg of data.clones)
-        for (let k = 1; k < cg.members.length; k++) {
-          const a = cg.members[0],
-            b = cg.members[k];
-          if (g.hasNode(a) && g.hasNode(b) && !g.hasEdge(a, b)) g.addEdge(a, b, { size: 1.2, color: t.components.duplication });
-        }
-  }
-  if (o.imports)
-    for (const e of data.imports) {
-      if (!g.hasNode(e.from) || !g.hasNode(e.to) || g.hasEdge(e.from, e.to)) continue;
-      const bad = !!(e.violation || e.cycle);
-      g.addEdge(e.from, e.to, { size: bad ? 2 : 0.8, color: bad ? t.bad : t.dim, bad, arrow: true });
-    }
-  if (g.order > 1) forceAtlas2.assign(g, { iterations: 220, settings: { ...forceAtlas2.inferSettings(g), barnesHutOptimize: g.order > 400, gravity: 1, scalingRatio: 12, adjustSizes: true } });
-  return g;
-}
-
 function SigmaCanvas({ data, deps, o, cmp, picked, setPicked, onExpand, layoutSeq }: { data: GraphData; deps: DepGraph; o: Opts; cmp: Comparison | null; picked: string | null; setPicked: (k: string | null) => void; onExpand: (k: string) => void; layoutSeq: number }) {
   const { tokens } = useTheme();
   const el = useRef<HTMLDivElement>(null);
   const sigma = useRef<Sigma<NodeAttrs, EdgeAttrs> | null>(null);
   const hover = useRef<string | null>(null);
-  const state = useRef({ picked, o, tokens });
-  state.current = { picked, o, tokens };
+  const style = useRef<() => StyleState>(() => ({ focus: null, picked: null, marks: true, labels: true, find: "" }));
+  style.current = () => ({ focus: picked ?? hover.current, picked, marks: o.marks, labels: o.labels, find: o.find });
+  const theme = useRef(tokens);
+  theme.current = tokens;
   const handlers = useRef({ setPicked, onExpand });
   handlers.current = { setPicked, onExpand };
   // Rebuild the graph when the data, mode or what is shown changes; other
   // options only restyle it through the reducers.
   const g = useMemo(
-    () => buildSigmaGraph(data, deps, o, tokens, cmp, layoutSeq),
+    () => (o.mode === "deps" ? depsGraph(deps, o.sizeBy, tokens) : networkGraph(data, o, tokens, cmp, layoutSeq)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [data, deps, o.mode, o.sizeBy, o.functions, o.clones, o.imports, o.minDebt, tokens, cmp, layoutSeq],
   );
@@ -270,42 +199,11 @@ function SigmaCanvas({ data, deps, o, cmp, picked, setPicked, onExpand, layoutSe
     const s = new Sigma<NodeAttrs, EdgeAttrs>(g, el.current!, {
       primitives: { edges: { paths: [pathLine()], extremities: [extremityArrow({ lengthRatio: 3, widthRatio: 2 })] } },
       settings: { renderEdgeLabels: false, labelRenderedSizeThreshold: 5, stagePadding: 40, itemSizesReference: "screen" } as never,
-      nodeReducer: (key, d, attrs) => {
-        const { picked: p, o: opts, tokens: t } = state.current;
-        const focus = p ?? hover.current;
-        const out: Record<string, unknown> = { ...d, labelColor: t.fg, backdropColor: t.panel };
-        if (opts.marks && attrs.bad) out.color = t.bad;
-        if (attrs.ring) out.color = attrs.ring === t.bad && !(opts.marks && attrs.bad) ? mix(attrs.color, t.bad) : out.color;
-        if (!opts.labels && key !== focus) out.label = "";
-        const needle = opts.find.trim().toLowerCase();
-        if (needle && !attrs.label.toLowerCase().includes(needle)) {
-          out.color = t.track;
-          out.label = "";
-        }
-        if (focus && key !== focus && !g.areNeighbors(key, focus)) {
-          out.color = t.track;
-          out.label = "";
-        }
-        if (key === p) {
-          out.highlighted = true;
-          out.forceLabel = true;
-        }
-        return out;
-      },
-      edgeReducer: (key, d, attrs) => {
-        const { picked: p, o: opts, tokens: t } = state.current;
-        const focus = p ?? hover.current;
-        const out: Record<string, unknown> = { ...d, head: attrs.arrow ? "arrow" : "none" };
-        if (!opts.marks && attrs.bad) out.color = t.dim;
-        if (focus) {
-          const [a, b] = g.extremities(key);
-          if (a !== focus && b !== focus) out.visibility = "hidden";
-          else if (!attrs.bad) out.color = a === focus ? t.accent : t.components.duplication;
-        }
-        return out;
-      },
+      nodeReducer: (key, d, attrs) => ({ ...d, ...nodeStyle(g, key, attrs, style.current(), theme.current) }),
+      edgeReducer: (key, d, attrs) => ({ ...d, ...edgeStyle(g, key, attrs, style.current(), theme.current) }),
     });
     sigma.current = s;
+    const refresh = () => s.refresh({ skipIndexation: true } as never);
     s.on("clickNode", ({ node }: { node: string }) => handlers.current.setPicked(node));
     s.on("doubleClickNode", (e: { node: string; preventSigmaDefault?: () => void }) => {
       e.preventSigmaDefault?.();
@@ -314,11 +212,11 @@ function SigmaCanvas({ data, deps, o, cmp, picked, setPicked, onExpand, layoutSe
     s.on("clickStage", () => handlers.current.setPicked(null));
     s.on("enterNode", ({ node }: { node: string }) => {
       hover.current = node;
-      s.refresh({ skipIndexation: true } as never);
+      refresh();
     });
     s.on("leaveNode", () => {
       hover.current = null;
-      s.refresh({ skipIndexation: true } as never);
+      refresh();
     });
     return () => {
       s.kill();
@@ -328,30 +226,23 @@ function SigmaCanvas({ data, deps, o, cmp, picked, setPicked, onExpand, layoutSe
   useEffect(() => {
     sigma.current?.refresh({ skipIndexation: true } as never);
   }, [picked, o.marks, o.labels, o.find, tokens]);
+  const camera = () => sigma.current?.getCamera();
   return (
     <>
       <div ref={el} style={{ position: "absolute", inset: 0 }} role="img" aria-label={o.mode === "deps" ? "Layered dependency graph of module groups" : "Force layout of modules and the functions with the most debt"} />
       <div style={{ position: "absolute", right: 14, bottom: 14, display: "flex", flexDirection: "column", gap: 4 }}>
-        <button className="btn icon" aria-label="Zoom in" onClick={() => sigma.current?.getCamera().zoomIn({ duration: 200 })}>
+        <button className="btn icon" aria-label="Zoom in" onClick={() => camera()?.zoomIn({ duration: 200 })}>
           +
         </button>
-        <button className="btn icon" aria-label="Zoom out" onClick={() => sigma.current?.getCamera().zoomOut({ duration: 200 })}>
+        <button className="btn icon" aria-label="Zoom out" onClick={() => camera()?.zoomOut({ duration: 200 })}>
           −
         </button>
-        <button className="btn icon" aria-label="Fit" title="Fit" onClick={() => sigma.current?.getCamera().reset({ duration: 200 })}>
+        <button className="btn icon" aria-label="Fit" title="Fit" onClick={() => camera()?.reset({ duration: 200 })}>
           ⤢
         </button>
       </div>
     </>
   );
-}
-
-// mix blends two hex colours half and half.
-function mix(a: string, b: string): string {
-  const p = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
-  if (!/^#[0-9a-f]{6}$/i.test(a) || !/^#[0-9a-f]{6}$/i.test(b)) return a;
-  const [x, y] = [p(a), p(b)];
-  return "#" + x.map((v, i) => Math.round((v + y[i]) / 2).toString(16).padStart(2, "0")).join("");
 }
 
 function GroupDetail({ deps, picked, setPicked, expanded, onExpand, onCollapse }: { deps: DepGraph; picked: string | null; setPicked: (k: string) => void; expanded: Set<string>; onExpand: (k: string) => void; onCollapse: (k: string) => void }) {
@@ -425,25 +316,28 @@ function GroupDetail({ deps, picked, setPicked, expanded, onExpand, onCollapse }
 }
 
 function NodeDetail({ data, cmp, picked, setPicked }: { data: GraphData; cmp: Comparison | null; picked: string | null; setPicked: (k: string) => void }) {
-  const meta = useMeta().data!;
+  const mod = data.modules.find((m) => m.id === picked);
+  if (mod) return <ModuleDetail data={data} cmp={cmp} mod={mod} setPicked={setPicked} />;
+  const fn = data.callables.find((c) => c.id === picked);
+  if (fn) return <FunctionDetail data={data} cmp={cmp} fn={fn} setPicked={setPicked} />;
+  return <p className="dim">Click a circle for its details. Modules are sized by source lines or debt and coloured by debt per kLOC; small circles are the functions with the most debt.</p>;
+}
+
+// ChangeText says how an item's debt changed since the previous commit.
+function ChangeText({ cmp, k }: { cmp: Comparison | null; k: string }) {
+  const { tokens } = useTheme();
+  const c = cmp?.states.get(k);
+  if (!c) return null;
+  if (c.state === "new") return <span style={{ color: tokens.accent }}>new in this commit</span>;
+  if (c.state === "same") return <span className="dim">unchanged since the previous commit</span>;
+  return <span className={c.delta > 0 ? "bad" : "good"}>{signed(c.delta, 1)} debt since the previous commit</span>;
+}
+
+function ModuleDetail({ data, cmp, mod, setPicked }: { data: GraphData; cmp: Comparison | null; mod: GraphModule; setPicked: (k: string) => void }) {
+  const t = useMeta().data!.thresholds;
   const { tokens } = useTheme();
   const nav = useNavigate();
   const { search } = useLocation();
-  const t = meta.thresholds;
-  const mod = data.modules.find((m) => m.id === picked);
-  const fn = data.callables.find((c) => c.id === picked);
-  const changeText = (key: string) => {
-    const c = cmp?.states.get(key);
-    if (!c) return null;
-    if (c.state === "new") return <span style={{ color: tokens.accent }}>new in this commit</span>;
-    if (c.state === "same") return <span className="dim">unchanged since the previous commit</span>;
-    return (
-      <span className={c.delta > 0 ? "bad" : "good"}>
-        {signed(c.delta, 1)} debt since the previous commit
-      </span>
-    );
-  };
-  if (mod) {
     const label = moduleLabel(mod.id);
     const fns = data.callables.filter((c) => c.module === mod.id).sort((a, b) => b.debt + b.cloneDebt - (a.debt + a.cloneDebt)).slice(0, 8);
     const out = data.imports.filter((e) => e.from === mod.id).length;
@@ -453,7 +347,7 @@ function NodeDetail({ data, cmp, picked, setPicked }: { data: GraphData; cmp: Co
         <h2 className="mono" style={{ margin: 0, fontSize: 15, fontWeight: 600, wordBreak: "break-all" }}>
           {label} <span className="dim" style={{ fontSize: 12 }}>{mod.lang} module</span>
         </h2>
-        <div>{changeText(moduleKey(mod.id))}</div>
+        <div><ChangeText cmp={cmp} k={moduleKey(mod.id)} /></div>
         <div className="kpis compact" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
           <div className="kpi">
             <div className="label">Debt</div>
@@ -502,7 +396,9 @@ function NodeDetail({ data, cmp, picked, setPicked }: { data: GraphData; cmp: Co
       </>
     );
   }
-  if (fn) {
+
+function FunctionDetail({ data, cmp, fn, setPicked }: { data: GraphData; cmp: Comparison | null; fn: GraphCallable; setPicked: (k: string) => void }) {
+  const t = useMeta().data!.thresholds;
     const cx = Math.max(0, fn.cc - t.cyclomatic + 1);
     const nx = fn.nest >= t.nesting ? 2 * (fn.nest - t.nesting + 1) : 0;
     const partners = data.clones.filter((g) => g.members.includes(fn.id)).flatMap((g) => g.members.filter((m) => m !== fn.id));
@@ -519,7 +415,7 @@ function NodeDetail({ data, cmp, picked, setPicked }: { data: GraphData; cmp: Co
           <button className="mono" style={{ background: "none", border: 0, padding: 0, color: "var(--accent)", cursor: "pointer" }} onClick={() => setPicked(fn.module)}>
             {moduleLabel(fn.module)}
           </button>{" "}
-          · {changeText(functionKey(fn.file, fn.name))}
+          · <ChangeText cmp={cmp} k={functionKey(fn.file, fn.name)} />
         </div>
         <div>
           Debt <b>{fmt(fn.debt + fn.cloneDebt, 1)}</b> · cc {fn.cc} · nesting {fn.nest} · {fmt(fn.lines)} lines
@@ -558,5 +454,3 @@ function NodeDetail({ data, cmp, picked, setPicked }: { data: GraphData; cmp: Co
       </>
     );
   }
-  return <p className="dim">Click a circle for its details. Modules are sized by {"source lines or debt"} and coloured by debt per kLOC; small circles are the functions with the most debt.</p>;
-}

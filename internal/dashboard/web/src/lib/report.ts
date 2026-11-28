@@ -1,5 +1,5 @@
 // Derivations for a folder report (an explain report for one path).
-import type { Factor } from "../api";
+import type { DefectFinding, Factor } from "../core/api";
 
 export type Band = "critical" | "high" | "medium" | "low";
 export const BANDS: Band[] = ["critical", "high", "medium", "low"];
@@ -69,4 +69,46 @@ export function crumbs(path: string): { name: string; path: string }[] {
     out.push({ name: p, path: acc });
   }
   return out;
+}
+
+// agentPrompt is a factor written as a task for a coding agent.
+export function agentPrompt(f: Factor): string {
+  const rem = f.remediation;
+  const loc = f.location;
+  const lines = [
+    `Reduce the ${KIND_NAMES[f.kind] ?? f.kind} debt of ${loc.symbol || f.module} at ${loc.file}:${loc.startLine}.`,
+    f.explanation,
+    rem.strategy && `Fix: ${rem.strategy}. ${rem.target}`,
+    ...rem.steps.map((s) => "- " + s),
+    rem.acceptance.length ? "Done when: " + rem.acceptance.join("; ") : "",
+    rem.caution ? "Caution: " + rem.caution : "",
+  ];
+  return lines.filter(Boolean).join("\n");
+}
+
+// groupFindings groups defect findings by severity and rule, gate rules
+// first, then the most frequent.
+export function groupFindings(findings: DefectFinding[]): DefectFinding[][] {
+  const g = new Map<string, DefectFinding[]>();
+  for (const f of findings) {
+    const k = f.severity + "|" + f.rule;
+    g.set(k, [...(g.get(k) ?? []), f]);
+  }
+  const rank = (xs: DefectFinding[]) => (xs[0].severity === "gate" ? 0 : 1);
+  return [...g.values()].sort((a, b) => rank(a) - rank(b) || b.length - a.length);
+}
+
+export type SortKey = "debt" | "cc" | "nest" | "lines" | "name";
+
+const METRIC: Record<Exclude<SortKey, "debt" | "name">, string> = { cc: "cyclomatic", nest: "nesting", lines: "lines" };
+
+// sortedItems filters factors by symbol, file or kind and sorts them, largest
+// first (by name: alphabetically).
+export function sortedItems(factors: Factor[], query: string, sort: SortKey): Factor[] {
+  const q = query.trim().toLowerCase();
+  const hit = (f: Factor) => (f.location.symbol ?? "").toLowerCase().includes(q) || f.location.file.toLowerCase().includes(q) || f.kind.includes(q);
+  const xs = q ? factors.filter(hit) : [...factors];
+  if (sort === "name") return xs.sort((a, b) => (a.location.symbol ?? "").localeCompare(b.location.symbol ?? ""));
+  const key = (f: Factor) => (sort === "debt" ? f.debt : (f.metrics?.[METRIC[sort]] ?? -1));
+  return xs.sort((a, b) => key(b) - key(a));
 }

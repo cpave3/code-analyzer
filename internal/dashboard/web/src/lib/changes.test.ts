@@ -1,4 +1,4 @@
-import type { GraphData } from "../api";
+import type { GraphData } from "../core/api";
 import { compare } from "./changes";
 
 const g = (mods: [string, number][], fns: [string, string, number][]): GraphData => ({

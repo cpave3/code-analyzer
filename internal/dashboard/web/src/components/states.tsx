@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { HttpError } from "../api";
+import { HttpError } from "../core/api";
 import { Alert, Empty } from "./icons";
 
 export function Skeleton({ height, width = "100%" }: { height: number; width?: number | string }) {

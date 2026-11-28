@@ -4,7 +4,7 @@ import { About } from "./components/About";
 import { Header } from "./components/Header";
 import { PlaybackProvider } from "./components/Playback";
 import { ErrorBanner, Skeleton } from "./components/states";
-import { useMeta, useMetrics } from "./data";
+import { useMeta, useMetrics } from "./core/data";
 import { Overview } from "./views/Overview";
 
 // Charts and the graph renderer load with the views that use them.

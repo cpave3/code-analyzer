@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import type { Commit } from "../core/api";
 import { NavLink, useLocation } from "react-router";
 import { day, short } from "../lib/format";
-import { recentre } from "../lib/history";
-import { progress, progressText, useMeta, useMetrics, useSelection, useSetWindow } from "../data";
-import { useTheme } from "../theme";
+import { findCommits, recentre } from "../lib/history";
+import { progress, progressText, useMeta, useMetrics, useSelection, useSetWindow } from "../core/data";
+import { useTheme } from "../core/theme";
 import { Chevron, Info, Logo, Moon, Sun } from "./icons";
 
 const VIEWS = [
@@ -53,46 +54,47 @@ export function Header({ onAbout }: { onAbout: () => void }) {
   );
 }
 
-function CommitPicker() {
+// useDismiss closes a popover on an outside click or Escape.
+function useDismiss(open: boolean, close: () => void, box: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    if (!open) return;
+    const outside = (e: MouseEvent) => !box.current?.contains(e.target as Node) && close();
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && close();
+    addEventListener("mousedown", outside);
+    addEventListener("keydown", esc);
+    return () => {
+      removeEventListener("mousedown", outside);
+      removeEventListener("keydown", esc);
+    };
+  }, [open, close, box]);
+}
+
+// usePick selects a commit; one outside the measured window first moves a
+// same-size window there.
+function usePick() {
   const meta = useMeta().data;
   const win = useMetrics().data?.window;
-  const { index, commit, select } = useSelection();
+  const { select } = useSelection();
   const setWindow = useSetWindow();
+  return (i: number) => {
+    const inside = !win || (i >= win.from && i <= win.to);
+    if (inside || !meta) return select(i);
+    const [from, to] = recentre(i, win.from, win.to, meta.commits.length);
+    setWindow.mutate({ from, to });
+    select(i, true);
+  };
+}
+
+function CommitPicker() {
+  const meta = useMeta().data;
+  const { index, commit } = useSelection();
+  const pick = usePick();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const box = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const close = (e: MouseEvent) => {
-      if (!box.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    addEventListener("mousedown", close);
-    addEventListener("keydown", esc);
-    return () => {
-      removeEventListener("mousedown", close);
-      removeEventListener("keydown", esc);
-    };
-  }, [open]);
-  const list = useMemo(() => {
-    if (!meta) return [];
-    const needle = q.trim().toLowerCase();
-    const out = [];
-    for (let i = meta.commits.length - 1; i >= 0 && out.length < 300; i--) {
-      const c = meta.commits[i];
-      if (!needle || c.sha.startsWith(needle) || c.subject.toLowerCase().includes(needle) || c.author.toLowerCase().includes(needle)) out.push(c);
-    }
-    return out;
-  }, [meta, q]);
+  const close = useCallback(() => setOpen(false), []);
+  useDismiss(open, close, box);
   if (!meta || !commit) return null;
-  const pick = (i: number) => {
-    setOpen(false);
-    if (win && (i < win.from || i > win.to)) {
-      const [from, to] = recentre(i, win.from, win.to, meta.commits.length);
-      setWindow.mutate({ from, to });
-      select(i, true);
-    } else select(i);
-  };
   return (
     <div ref={box} style={{ position: "relative" }}>
       <button className="btn" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen((o) => !o)} title="Choose the commit every view shows">
@@ -108,23 +110,35 @@ function CommitPicker() {
       {open && (
         <div className="popover" role="dialog" aria-label="Choose a commit">
           <input type="search" autoFocus placeholder="SHA, subject or author" aria-label="Find a commit" value={q} onChange={(e) => setQ(e.target.value)} />
-          <div className="commit-list">
-            {list.map((c) => {
-              const inWin = win && c.index >= win.from && c.index <= win.to;
-              return (
-                <button key={c.sha} className={c.index === index ? "on" : ""} onClick={() => pick(c.index)}>
-                  <span className="mono">{short(c.sha)}</span>
-                  <span className="subj">{c.subject}</span>
-                  <span className="dim" style={{ fontSize: 12, whiteSpace: "nowrap" }}>
-                    {inWin ? day(c.time) : "not measured"}
-                  </span>
-                </button>
-              );
-            })}
-            {!list.length && <p className="dim">No commit matches.</p>}
-          </div>
+          <CommitList
+            commits={findCommits(meta.commits, q, 300)}
+            index={index}
+            onPick={(i) => {
+              close();
+              pick(i);
+            }}
+          />
         </div>
       )}
+    </div>
+  );
+}
+
+function CommitList({ commits, index, onPick }: { commits: Commit[]; index: number; onPick: (i: number) => void }) {
+  const win = useMetrics().data?.window;
+  const measured = (c: Commit) => !win || (c.index >= win.from && c.index <= win.to);
+  return (
+    <div className="commit-list">
+      {commits.map((c) => (
+        <button key={c.sha} className={c.index === index ? "on" : ""} onClick={() => onPick(c.index)}>
+          <span className="mono">{short(c.sha)}</span>
+          <span className="subj">{c.subject}</span>
+          <span className="dim" style={{ fontSize: 12, whiteSpace: "nowrap" }}>
+            {measured(c) ? day(c.time) : "not measured"}
+          </span>
+        </button>
+      ))}
+      {!commits.length && <p className="dim">No commit matches.</p>}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 // Derivations over the measured window: per-commit step changes and the
 // "step changes by provenance group" table.
-import type { Commit, Debt, Metrics } from "../api";
+import type { Commit, Debt, Metrics } from "../core/api";
 import { stepKey } from "./provenance";
 
 export type MetricsByIndex = (Metrics | undefined)[];
@@ -50,6 +50,25 @@ export interface GroupRow {
   near: number;
 }
 
+const emptyRow = (key: string): GroupRow => ({ key, steps: 0, lines: 0, debt: 0, up: 0, down: 0, hotspots: 0, gate: 0, advisory: 0, resolved: 0, near: 0 });
+
+const nearPairs = (m: Metrics) => (m.nearMisses ?? 0) + (m.fragments ?? 0);
+
+// addStep adds one step (commit m against its parent p) to a group's row.
+function addStep(a: GroupRow, m: Metrics, p: Metrics) {
+  const dd = m.debt.total - p.debt.total;
+  a.steps++;
+  a.lines += m.changedLines;
+  a.debt += dd;
+  a.hotspots += m.hotspots - p.hotspots;
+  a.up += dd > 0.005 ? 1 : 0;
+  a.down += dd < -0.005 ? 1 : 0;
+  a.gate += m.introducedGate ?? 0;
+  a.advisory += m.introducedAdvisory ?? 0;
+  a.resolved += m.resolved ?? 0;
+  a.near += m.detail && p.detail ? nearPairs(m) - nearPairs(p) : 0;
+}
+
 // groupRows sums the window's steps per provenance key, most steps first.
 export function groupRows(commits: Commit[], ms: MetricsByIndex, from: number, to: number, fields: string[]): GroupRow[] {
   const g = new Map<string, GroupRow>();
@@ -58,19 +77,7 @@ export function groupRows(commits: Commit[], ms: MetricsByIndex, from: number, t
       p = ms[i - 1];
     if (!usable(m) || !usable(p) || !m.stepDone) continue;
     const key = stepKey(commits[i], fields);
-    let a = g.get(key);
-    if (!a) g.set(key, (a = { key, steps: 0, lines: 0, debt: 0, up: 0, down: 0, hotspots: 0, gate: 0, advisory: 0, resolved: 0, near: 0 }));
-    const dd = m.debt.total - p.debt.total;
-    a.steps++;
-    a.lines += m.changedLines;
-    a.debt += dd;
-    a.hotspots += m.hotspots - p.hotspots;
-    if (dd > 0.005) a.up++;
-    else if (dd < -0.005) a.down++;
-    a.gate += m.introducedGate ?? 0;
-    a.advisory += m.introducedAdvisory ?? 0;
-    a.resolved += m.resolved ?? 0;
-    if (m.detail && p.detail) a.near += (m.nearMisses ?? 0) + (m.fragments ?? 0) - ((p.nearMisses ?? 0) + (p.fragments ?? 0));
+    addStep(g.get(key) ?? g.set(key, emptyRow(key)).get(key)!, m, p);
   }
   return [...g.values()].sort((x, y) => y.steps - x.steps || x.key.localeCompare(y.key));
 }
@@ -106,4 +113,14 @@ export function recentre(i: number, from: number, to: number, n: number): [numbe
   let lo = i - half;
   lo = Math.max(0, Math.min(n - 1 - size, lo));
   return [lo, lo + size];
+}
+
+// findCommits lists commits newest first whose SHA starts with, or whose
+// subject or author contains, the query (all of them for an empty query).
+export function findCommits(commits: Commit[], query: string, limit: number): Commit[] {
+  const q = query.trim().toLowerCase();
+  const hit = (c: Commit) => !q || c.sha.startsWith(q) || c.subject.toLowerCase().includes(q) || c.author.toLowerCase().includes(q);
+  const out: Commit[] = [];
+  for (let i = commits.length - 1; i >= 0 && out.length < limit; i--) if (hit(commits[i])) out.push(commits[i]);
+  return out;
 }
