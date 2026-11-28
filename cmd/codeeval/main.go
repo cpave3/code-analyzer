@@ -32,6 +32,7 @@ Usage:
   codeeval defects  --repo PATH (--rev REV | --base REV (--target REV | --working-tree)) [--rule ID ...] [--path P ...] [--fail-on gate|any|none] [--top N]   (defect rules, rules/v1)
   codeeval analyze  --repo PATH (--rev REV | --base REV (--target REV | --working-tree)) [--path P ...] [--debt-fail-on ...] [--defects-fail-on ...]   (v2 debt + defects in one report)
   codeeval serve    [PATH] [--last N | --since DATE --until DATE] [--base REV] [--target REV] [--max N] [--addr 127.0.0.1:8765]   (web dashboard of the checkout's history: quality over time, graph per commit, provenance)
+  codeeval hook     install|uninstall --tool claude-code [--bin PATH] [--config FILE] [--dry-run]   (add the analyze hooks to the project in the current directory)
   codeeval rules                                                          (defect rules × languages)
   codeeval attribution --repo PATH --base REV --target REV [--group-by model,harness,workflow] [--defects] [--infer-co-authors=false]   (step deltas by commit provenance)
   codeeval languages
@@ -84,6 +85,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return listRules(stdout)
 	case "analyze":
 		return analyzeCmd(args[1:], stdout, stderr)
+	case "hook":
+		return hookCmd(args[1:], stdout, stderr)
 	case "serve":
 		return serveCmd(args[1:], stdout, stderr)
 	case "attribution":

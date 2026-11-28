@@ -36,6 +36,30 @@ Configure it with environment variables: `CODEEVAL_BIN`, `CODEEVAL_BASE`,
 `CODEEVAL_CONFIG`, `CODEEVAL_FAIL_ON` (`new-debt`, `net-debt`, `gates` or
 `none`), `CODEEVAL_PATHS` and `CODEEVAL_TOP`.
 
+## Install into a project
+
+From anywhere inside the project's git repository:
+
+```bash
+codeeval hook install --tool claude-code [--config codeeval.json] [--bin /path/to/codeeval] [--dry-run]
+codeeval hook uninstall --tool claude-code
+```
+
+- **What it writes:** `.claude/hooks/codeeval-session-base.sh` and
+  `.claude/hooks/codeeval-stop-analyze.sh`, both embedded in the binary.
+- **Settings:** it registers them in `.claude/settings.json` under
+  `SessionStart` and `Stop`. Other settings and hooks are kept, with
+  top-level key order unchanged.
+- **Running it again:** a reinstall updates in place and changes nothing
+  when already current.
+- **Refusals:** it never rewrites a `settings.json` that is not valid JSON.
+- **Which binary:** the hook runs `codeeval` from `PATH` when it is there.
+  Otherwise it pins this binary's path. `--bin` overrides either.
+- **Uninstall:** removes only CodeEval's entries and scripts.
+
+This is the only CodeEval command that writes into a repository, and only
+the one you run it in.
+
 ## Analyze Stop hook (session-wide)
 
 `hooks/codeeval-stop-analyze.sh` runs `codeeval analyze` instead of `check`.

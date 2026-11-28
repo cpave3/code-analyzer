@@ -2,6 +2,16 @@
 
 All versions are local proof-of-concept builds; there is no remote or release.
 
+## Unreleased
+
+- **`codeeval hook install|uninstall --tool claude-code`:**
+  - Installs the analyze Stop hook and session-base hook (embedded in the
+    binary) into the git repository you run it from, and registers them in
+    `.claude/settings.json`.
+  - Keeps other settings, hooks and key order, and refuses invalid JSON.
+  - Idempotent.
+  - `--bin`, `--config`, `--dry-run`.
+
 ## 0.7.0-poc
 
 - **Provenance standard fields are now model and harness:**
