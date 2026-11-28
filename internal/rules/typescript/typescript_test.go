@@ -163,13 +163,14 @@ import amb from "ambient-mod";
 import { shared } from "@acme/shared";
 import { nope } from "@acme/shared/nope";
 `,
-		"web/src/x.ts":             "export const x = 1;\n",
-		"web/src/y.js":             "export const y = 1;\n",
-		"web/src/data.json":        "{}",
-		"web/src/icon.svg":         "<svg/>",
-		"web/src/env.d.ts":         "declare module \"ambient-mod\";\n",
-		"pkgs/shared/package.json": `{"name":"@acme/shared"}`,
-		"pkgs/shared/src/index.ts": "export const shared = 1;\n",
+		"web/src/x.ts":              "export const x = 1;\n",
+		"web/src/y.js":              "export const y = 1;\n",
+		"web/src/data.json":         "{}",
+		"web/src/icon.svg":          "<svg/>",
+		"web/src/env.d.ts":          "declare module \"ambient-mod\";\n",
+		"pkgs/shared/package.json":  `{"name":"@acme/shared"}`,
+		"testdata/app/package.json": `{"name":"fixture","dependencies":{"never-checked":"1"}}`,
+		"pkgs/shared/src/index.ts":  "export const shared = 1;\n",
 	}
 	check(t, []tc{
 		{"unresolved", catalog.UnresolvedImport, files, []string{"gate:relative import \"./gone\"", "advisory:workspace import \"@acme/shared/nope\""}},

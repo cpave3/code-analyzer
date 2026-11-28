@@ -339,6 +339,16 @@ func unusedDependency(c *rules.Context) {
 			continue
 		}
 		under := func(p string) bool { return m.dir == "." || strings.HasPrefix(p, m.dir+"/") }
+		governs := false
+		for _, f := range c.Files {
+			if under(f.Path) {
+				governs = true
+				break
+			}
+		}
+		if !governs {
+			continue // no checked TypeScript (e.g. fixtures under testdata/): nothing to compare against
+		}
 		used := map[string]bool{}
 		for p, names := range tsImports {
 			if under(p) {
