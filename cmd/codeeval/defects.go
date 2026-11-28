@@ -7,9 +7,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/cameron/code-evaluator/internal/index"
+	"github.com/cameron/code-evaluator/internal/config"
 	"github.com/cameron/code-evaluator/internal/languages"
-	"github.com/cameron/code-evaluator/internal/report"
 	"github.com/cameron/code-evaluator/internal/rules"
 	"github.com/cameron/code-evaluator/internal/rules/all"
 	"github.com/cameron/code-evaluator/internal/scorev2"
@@ -32,19 +31,12 @@ func defectsCmd(args []string, stdout, stderr io.Writer) int {
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
-	change := *base != ""
-	if fs.NArg() > 0 || (*rev != "") == change || (change && (*target == "") == !*worktree) || (!change && (*target != "" || *worktree)) {
+	change, ok := modeArgs(fs, *rev, *base, *target, *worktree)
+	if !ok {
 		fmt.Fprintln(stderr, "defects needs --rev R, or --base B with exactly one of --target T or --working-tree")
 		return 2
 	}
-	if *failOn == "" {
-		*failOn = rules.FailNone
-		if change {
-			*failOn = rules.FailGate
-		}
-	}
-	if *failOn != rules.FailGate && *failOn != rules.FailAny && *failOn != rules.FailNone {
-		fmt.Fprintln(stderr, "--fail-on must be gate, any or none")
+	if !defectsFailOn(failOn, change, "--fail-on", stderr) {
 		return 2
 	}
 	ev, cfg, code := c.open(stderr)
@@ -54,57 +46,27 @@ func defectsCmd(args []string, stdout, stderr io.Writer) int {
 	defer ev.Close()
 	langs := languages.Default()
 	reg := all.Default(langs)
-	for _, id := range append(append([]string{}, only...), cfg.Defects.Disable...) {
-		if !knownRule(reg, id) {
-			fmt.Fprintf(stderr, "unknown rule or category %q (see `codeeval rules`)\n", id)
-			return 2
-		}
+	if !rulesKnown(reg, cfg, only, stderr) {
+		return 2
 	}
-	scope := scorev2.Scope{Paths: c.paths}
-	opt := rules.Options{Only: only, InScope: scope.Match}
-
+	opt := rules.Options{Only: only, InScope: scorev2.Scope{Paths: c.paths}.Match}
 	var r *rules.Report
 	if !change {
-		sha, snap, err := ev.ResolveSnapshot(*rev)
+		s, err := snapshotOf(ev, *rev)
 		if err != nil {
-			fmt.Fprintln(stderr, "error:", err)
-			return 1
+			return fail(stderr, err)
 		}
-		res := rules.Run(reg, snap, cfg, langs, opt)
-		r = rules.NewReport(reg, nil, res, *failOn)
-		r.Revision = &report.Revision{Ref: *rev, Commit: sha, Tree: snap.Tree, CommitTime: ev.CommitTime(sha)}
+		r = rules.NewReport(reg, nil, rules.Run(reg, s.snap, cfg, langs, opt), *failOn)
+		r.Revision = &s.rev
 	} else {
-		bsha, bsnap, err := ev.ResolveSnapshot(*base)
+		b, t, err := changePair(ev, *base, *target, *worktree)
 		if err != nil {
-			fmt.Fprintln(stderr, "error:", err)
-			return 1
+			return fail(stderr, err)
 		}
-		var tsnap *index.Snapshot
-		trev := &report.Revision{Ref: *target}
-		if *worktree {
-			tsnap, err = ev.WorktreeSnapshot()
-			trev = &report.Revision{Ref: "WORKTREE", Commit: "WORKTREE"}
-		} else {
-			var tsha string
-			tsha, tsnap, err = ev.ResolveSnapshot(*target)
-			trev.Commit, trev.CommitTime = tsha, ev.CommitTime(tsha)
-		}
-		if err != nil {
-			fmt.Fprintln(stderr, "error:", err)
-			return 1
-		}
-		trev.Tree = tsnap.Tree
-		before := rules.Run(reg, bsnap, cfg, langs, opt)
-		after := rules.Run(reg, tsnap, cfg, langs, opt)
-		r = rules.NewReport(reg, before, after, *failOn)
-		r.Base = &report.Revision{Ref: *base, Commit: bsha, Tree: bsnap.Tree, CommitTime: ev.CommitTime(bsha)}
-		r.Target = trev
+		r = rules.NewReport(reg, rules.Run(reg, b.snap, cfg, langs, opt), rules.Run(reg, t.snap, cfg, langs, opt), *failOn)
+		r.Base, r.Target = &b.rev, &t.rev
 	}
-	r.Repository, r.ConfigHash, r.Selected = ev.RepoName(), cfg.Hash(), only
-	r.Scope = c.paths
-	if r.Scope == nil {
-		r.Scope = []string{}
-	}
+	r.Repository, r.ConfigHash, r.Selected, r.Scope = ev.RepoName(), cfg.Hash(), only, c.scopeList()
 	r.Limit(*top)
 	var md bytes.Buffer
 	rules.WriteMarkdown(&md, r)
@@ -115,6 +77,32 @@ func defectsCmd(args []string, stdout, stderr io.Writer) int {
 		return 3
 	}
 	return 0
+}
+
+// defectsFailOn applies the mode default and validates a defects fail-on flag.
+func defectsFailOn(v *string, change bool, flagName string, stderr io.Writer) bool {
+	if *v == "" {
+		*v = rules.FailNone
+		if change {
+			*v = rules.FailGate
+		}
+	}
+	if *v != rules.FailGate && *v != rules.FailAny && *v != rules.FailNone {
+		fmt.Fprintln(stderr, flagName+" must be gate, any or none")
+		return false
+	}
+	return true
+}
+
+// rulesKnown checks --rule selections and config defects.disable entries.
+func rulesKnown(reg *rules.Registry, cfg *config.Config, only []string, stderr io.Writer) bool {
+	for _, id := range append(append([]string{}, only...), cfg.Defects.Disable...) {
+		if !knownRule(reg, id) {
+			fmt.Fprintf(stderr, "unknown rule or category %q (see `codeeval rules`)\n", id)
+			return false
+		}
+	}
+	return true
 }
 
 func knownRule(reg *rules.Registry, id string) bool {

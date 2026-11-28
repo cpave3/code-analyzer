@@ -8,15 +8,16 @@ import (
 
 	"github.com/cameron/code-evaluator/internal/clones"
 	"github.com/cameron/code-evaluator/internal/combined"
-	"github.com/cameron/code-evaluator/internal/index"
+	"github.com/cameron/code-evaluator/internal/config"
+	"github.com/cameron/code-evaluator/internal/engine"
+	"github.com/cameron/code-evaluator/internal/lang"
 	"github.com/cameron/code-evaluator/internal/languages"
-	"github.com/cameron/code-evaluator/internal/report"
 	"github.com/cameron/code-evaluator/internal/rules"
 	"github.com/cameron/code-evaluator/internal/rules/all"
 	"github.com/cameron/code-evaluator/internal/scorev2"
 )
 
-// analyzeCmd runs v2 debt and defect rules together.
+// analyzeCmd runs v2 debt, defect rules and near-duplication together.
 func analyzeCmd(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("analyze", flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -34,29 +35,16 @@ func analyzeCmd(args []string, stdout, stderr io.Writer) int {
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
-	change := *base != ""
-	if fs.NArg() > 0 || (*rev != "") == change || (change && (*target == "") == !*worktree) || (!change && (*target != "" || *worktree)) {
+	change, ok := modeArgs(fs, *rev, *base, *target, *worktree)
+	if !ok {
 		fmt.Fprintln(stderr, "analyze needs --rev R, or --base B with exactly one of --target T or --working-tree")
 		return 2
 	}
-	switch *debtFail {
-	case "new-debt", "net-debt", "gates", "none":
-	default:
-		fmt.Fprintln(stderr, "--debt-fail-on must be new-debt, net-debt, gates or none")
+	if msg := analyzeDebtArgs(*debtFail, change); msg != "" {
+		fmt.Fprintln(stderr, msg)
 		return 2
 	}
-	if !change && *debtFail != "none" {
-		fmt.Fprintln(stderr, "--debt-fail-on applies to change mode only")
-		return 2
-	}
-	if *defFail == "" {
-		*defFail = rules.FailNone
-		if change {
-			*defFail = rules.FailGate
-		}
-	}
-	if *defFail != rules.FailGate && *defFail != rules.FailAny && *defFail != rules.FailNone {
-		fmt.Fprintln(stderr, "--defects-fail-on must be gate, any or none")
+	if !defectsFailOn(defFail, change, "--defects-fail-on", stderr) {
 		return 2
 	}
 	ev, cfg, code := c.open(stderr)
@@ -64,72 +52,22 @@ func analyzeCmd(args []string, stdout, stderr io.Writer) int {
 		return code
 	}
 	defer ev.Close()
-	langs := languages.Default()
-	reg := all.Default(langs)
-	for _, id := range cfg.Defects.Disable {
-		if !knownRule(reg, id) {
-			fmt.Fprintf(stderr, "unknown rule or category %q in config defects.disable\n", id)
-			return 2
-		}
+	a := analysis{ev: ev, cfg: cfg, langs: languages.Default(), scope: scorev2.Scope{Paths: c.paths}, defFail: *defFail, top: *top}
+	a.reg = all.Default(a.langs)
+	if !rulesKnown(a.reg, cfg, nil, stderr) {
+		return 2
 	}
-	scope := scorev2.Scope{Paths: c.paths}
-	opt := rules.Options{InScope: scope.Match}
-	w := scorev2.DefaultWeights()
 	var out *combined.Report
-	if !change {
-		sha, snap, err := ev.ResolveSnapshot(*rev)
-		if err != nil {
-			fmt.Fprintln(stderr, "error:", err)
-			return 1
-		}
-		rv := report.Revision{Ref: *rev, Commit: sha, Tree: snap.Tree, CommitTime: ev.CommitTime(sha)}
-		ex := scorev2.NewExplainReport(ev.RepoName(), cfg.Hash(), rv, snap, scorev2.Analyze(snap, cfg, w), scope, 0)
-		d := rules.NewReport(reg, nil, rules.Run(reg, snap, cfg, langs, opt), *defFail)
-		d.Revision, d.Repository, d.ConfigHash, d.Scope = &rv, ev.RepoName(), cfg.Hash(), scopeList(c.paths)
-		out = combined.Snapshot(ex, d)
-		out.AddClones(clones.Analyze(snap, cfg, langs, scope.Match))
-		if *top > 0 && len(ex.Factors) > *top {
-			ex.Omitted += len(ex.Factors) - *top
-			ex.Factors = ex.Factors[:*top]
-		}
-		d.Limit(*top)
+	var err error
+	if change {
+		out, err = a.change(*base, *target, *worktree, *debtFail)
 	} else {
-		bsha, bsnap, err := ev.ResolveSnapshot(*base)
-		if err != nil {
-			fmt.Fprintln(stderr, "error:", err)
-			return 1
-		}
-		var tsnap *index.Snapshot
-		trev := report.Revision{Ref: *target}
-		if *worktree {
-			tsnap, err = ev.WorktreeSnapshot()
-			trev = report.Revision{Ref: "WORKTREE", Commit: "WORKTREE"}
-		} else {
-			var tsha string
-			tsha, tsnap, err = ev.ResolveSnapshot(*target)
-			trev.Commit, trev.CommitTime = tsha, ev.CommitTime(tsha)
-		}
-		if err != nil {
-			fmt.Fprintln(stderr, "error:", err)
-			return 1
-		}
-		trev.Tree = tsnap.Tree
-		brev := report.Revision{Ref: *base, Commit: bsha, Tree: bsnap.Tree, CommitTime: ev.CommitTime(bsha)}
-		cs, err := ev.ChangeSet(bsnap, tsnap)
-		if err != nil {
-			fmt.Fprintln(stderr, "error:", err)
-			return 1
-		}
-		ck := scorev2.NewCheckReport(ev.RepoName(), cfg.Hash(), brev, trev, bsnap, tsnap, scorev2.Analyze(bsnap, cfg, w), scorev2.Analyze(tsnap, cfg, w), cs, scope, *debtFail)
-		d := rules.NewReport(reg, rules.Run(reg, bsnap, cfg, langs, opt), rules.Run(reg, tsnap, cfg, langs, opt), *defFail)
-		d.Base, d.Target, d.Repository, d.ConfigHash, d.Scope = &brev, &trev, ev.RepoName(), cfg.Hash(), scopeList(c.paths)
-		out = combined.Change(ck, d)
-		bc, tc := clones.Analyze(bsnap, cfg, langs, scope.Match), clones.Analyze(tsnap, cfg, langs, scope.Match)
-		tc.NearMisses, tc.Fragments = clones.Introduced(bc.NearMisses, tc.NearMisses), clones.Introduced(bc.Fragments, tc.Fragments)
-		out.AddClones(tc)
-		ck.Limit(*top)
-		d.Limit(*top)
+		out, err = a.snapshot(*rev)
 	}
+	if err != nil {
+		return fail(stderr, err)
+	}
+	out.Defects.Repository, out.Defects.ConfigHash, out.Defects.Scope = ev.RepoName(), cfg.Hash(), c.scopeList()
 	var md bytes.Buffer
 	combined.WriteMarkdown(&md, out, *files, *detailed, *top)
 	if code := c.emit(out, md.Bytes(), stdout, stderr); code != 0 {
@@ -141,9 +79,62 @@ func analyzeCmd(args []string, stdout, stderr io.Writer) int {
 	return 0
 }
 
-func scopeList(p pathList) []string {
-	if p == nil {
-		return []string{}
+func analyzeDebtArgs(debtFail string, change bool) string {
+	switch {
+	case !checkFailOn[debtFail]:
+		return "--debt-fail-on must be new-debt, net-debt, gates or none"
+	case !change && debtFail != "none":
+		return "--debt-fail-on applies to change mode only"
 	}
-	return p
+	return ""
+}
+
+type analysis struct {
+	ev      *engine.Evaluator
+	cfg     *config.Config
+	langs   *lang.Registry
+	reg     *rules.Registry
+	scope   scorev2.Scope
+	defFail string
+	top     int
+}
+
+func (a analysis) opt() rules.Options { return rules.Options{InScope: a.scope.Match} }
+
+func (a analysis) snapshot(rev string) (*combined.Report, error) {
+	s, err := snapshotOf(a.ev, rev)
+	if err != nil {
+		return nil, err
+	}
+	ex := scorev2.NewExplainReport(a.ev.RepoName(), a.cfg.Hash(), s.rev, s.snap, scorev2.Analyze(s.snap, a.cfg, scorev2.DefaultWeights()), a.scope, 0)
+	d := rules.NewReport(a.reg, nil, rules.Run(a.reg, s.snap, a.cfg, a.langs, a.opt()), a.defFail)
+	d.Revision = &s.rev
+	out := combined.Snapshot(ex, d)
+	out.AddClones(clones.Analyze(s.snap, a.cfg, a.langs, a.scope.Match))
+	if a.top > 0 && len(ex.Factors) > a.top {
+		ex.Omitted += len(ex.Factors) - a.top
+		ex.Factors = ex.Factors[:a.top]
+	}
+	d.Limit(a.top)
+	return out, nil
+}
+
+func (a analysis) change(base, target string, worktree bool, debtFail string) (*combined.Report, error) {
+	b, t, err := changePair(a.ev, base, target, worktree)
+	if err != nil {
+		return nil, err
+	}
+	ck, err := checkReport(a.ev, a.cfg, b, t, a.scope, debtFail)
+	if err != nil {
+		return nil, err
+	}
+	d := rules.NewReport(a.reg, rules.Run(a.reg, b.snap, a.cfg, a.langs, a.opt()), rules.Run(a.reg, t.snap, a.cfg, a.langs, a.opt()), a.defFail)
+	d.Base, d.Target = &b.rev, &t.rev
+	out := combined.Change(ck, d)
+	bc, tc := clones.Analyze(b.snap, a.cfg, a.langs, a.scope.Match), clones.Analyze(t.snap, a.cfg, a.langs, a.scope.Match)
+	tc.NearMisses, tc.Fragments = clones.Introduced(bc.NearMisses, tc.NearMisses), clones.Introduced(bc.Fragments, tc.Fragments)
+	out.AddClones(tc)
+	ck.Limit(a.top)
+	d.Limit(a.top)
+	return out, nil
 }

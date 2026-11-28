@@ -4,18 +4,15 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/cameron/code-evaluator/internal/analyzers"
 	"github.com/cameron/code-evaluator/internal/config"
-	"github.com/cameron/code-evaluator/internal/engine"
 	"github.com/cameron/code-evaluator/internal/lang"
 	"github.com/cameron/code-evaluator/internal/languages"
 	"github.com/cameron/code-evaluator/internal/report"
@@ -110,73 +107,35 @@ func evaluate(args []string, stdout, stderr io.Writer, history bool) int {
 	}
 	fs := flag.NewFlagSet(name, flag.ContinueOnError)
 	fs.SetOutput(stderr)
-	repo := fs.String("repo", ".", "repository path")
+	var k conn
+	var o out
+	k.register(fs)
+	o.register(fs)
 	base := fs.String("base", "", "base revision")
 	target := fs.String("target", "", "target revision")
 	worktree := fs.Bool("working-tree", false, "evaluate tracked working-tree changes against base")
-	cfgPath := fs.String("config", "", "config file")
-	output := fs.String("output", "", "JSON report path")
-	summary := fs.String("summary", "", "Markdown summary path")
-	format := fs.String("format", "md", "stdout format: md, json, none")
-	cacheDir := fs.String("cache-dir", "", "index cache directory")
-	noCache := fs.Bool("no-cache", false, "in-memory index only")
-	timing := fs.Bool("timing", false, "include timing metadata")
+	fs.BoolVar(&k.timing, "timing", false, "include timing metadata")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
-	if fs.NArg() > 0 {
-		fmt.Fprintf(stderr, "unexpected arguments: %v\n", fs.Args())
+	if msg := evaluateArgs(fs, *base, *target, *worktree, history); msg != "" {
+		fmt.Fprintln(stderr, msg)
 		return 2
 	}
-	if *base == "" {
-		fmt.Fprintln(stderr, "--base is required")
+	if !o.valid(stderr) {
 		return 2
 	}
-	if history && (*target == "" || *worktree) {
-		fmt.Fprintln(stderr, "history needs --target and does not support --working-tree")
-		return 2
-	}
-	if !history && (*target == "") == !*worktree {
-		fmt.Fprintln(stderr, "exactly one of --target or --working-tree is required")
-		return 2
-	}
-	if *format != "md" && *format != "json" && *format != "none" {
-		fmt.Fprintln(stderr, "--format must be md, json or none")
-		return 2
-	}
-	cfg, err := config.Load(*cfgPath)
-	if err != nil {
-		fmt.Fprintln(stderr, "error:", err)
-		return 1
-	}
-	dir := *cacheDir
-	if *noCache {
-		dir = ""
-	} else if dir == "" {
-		if ucd, err := os.UserCacheDir(); err == nil {
-			dir = filepath.Join(ucd, "codeeval")
-		}
-	}
-	ev, err := engine.New(engine.Options{RepoPath: *repo, Config: cfg, CacheDir: dir, Langs: languages.Default(), Analyzers: analyzers.Default(), Timing: *timing})
-	if err != nil {
-		fmt.Fprintln(stderr, "error:", err)
-		return 1
+	ev, _, code := k.open(stderr, o.output, o.summary)
+	if ev == nil {
+		return code
 	}
 	defer ev.Close()
-	for _, p := range []string{*output, *summary} {
-		if p != "" && inside(ev.RepoPath(), p) {
-			fmt.Fprintf(stderr, "error: refusing to write %s inside the evaluated repository\n", p)
-			return 1
-		}
-	}
-
 	var payload any
 	var md bytes.Buffer
 	if history {
 		h, err := ev.History(*base, *target, func(s string) { fmt.Fprintln(stderr, "codeeval:", s) })
 		if err != nil {
-			fmt.Fprintln(stderr, "error:", err)
-			return 1
+			return fail(stderr, err)
 		}
 		payload = h
 		report.WriteHistoryMarkdown(&md, h)
@@ -185,49 +144,27 @@ func evaluate(args []string, stdout, stderr io.Writer, history bool) int {
 	} else {
 		r, err := ev.Evaluate(*base, *target, *worktree)
 		if err != nil {
-			fmt.Fprintln(stderr, "error:", err)
-			return 1
+			return fail(stderr, err)
 		}
 		payload = r
 		report.WriteMarkdown(&md, r)
 	}
-	js, err := json.MarshalIndent(payload, "", "  ")
-	if err != nil {
-		fmt.Fprintln(stderr, "error:", err)
-		return 1
-	}
-	js = append(js, '\n')
-	if *output != "" {
-		if err := writeFile(*output, js); err != nil {
-			fmt.Fprintln(stderr, "error:", err)
-			return 1
-		}
-	}
-	if *summary != "" {
-		if err := writeFile(*summary, md.Bytes()); err != nil {
-			fmt.Fprintln(stderr, "error:", err)
-			return 1
-		}
-	}
-	switch *format {
-	case "md":
-		stdout.Write(md.Bytes())
-	case "json":
-		stdout.Write(js)
-	}
-	return 0
+	return o.emit(payload, md.Bytes(), stdout, stderr)
 }
 
-func inside(repo, p string) bool {
-	abs, err := filepath.Abs(p)
-	if err != nil {
-		return true
+// evaluateArgs returns a usage error for evaluate/history, or "".
+func evaluateArgs(fs *flag.FlagSet, base, target string, worktree, history bool) string {
+	switch {
+	case fs.NArg() > 0:
+		return fmt.Sprintf("unexpected arguments: %v", fs.Args())
+	case base == "":
+		return "--base is required"
+	case history && (target == "" || worktree):
+		return "history needs --target and does not support --working-tree"
+	case !history && (target == "") == !worktree:
+		return "exactly one of --target or --working-tree is required"
 	}
-	if resolved, err := filepath.EvalSymlinks(filepath.Dir(abs)); err == nil {
-		abs = filepath.Join(resolved, filepath.Base(abs))
-	}
-	rel, err := filepath.Rel(repo, abs)
-	return err == nil && !strings.HasPrefix(rel, "..")
+	return ""
 }
 
 func writeFile(p string, data []byte) error {
