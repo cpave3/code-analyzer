@@ -21,6 +21,8 @@ evaluated code and makes no claim about correctness or design quality.
 | `codeeval explain --rev R --path P` | Which items make up a scope's debt, where they are, how much each contributes, and how to fix them | v2 |
 | `codeeval check --base A --target B\|--working-tree` | PR check: items a change introduced or worsened. Exit 3 on failure | v2 |
 | `codeeval graph --rev R --output g.html` | Interactive offline debt graph (POC) | v2 |
+| `codeeval defects --rev R` or `--base A --target B\|--working-tree` | Concrete defects (dead code, lost errors, dependency integrity, architecture policy, test-oracle defects), or those a change introduced. Exit 3 on introduced gate findings | `rules/v1` (no score) |
+| `codeeval rules` | The defect rules and which languages implement each, with per-language coverage notes | – |
 | `codeeval languages` / `analyzers` / `version` | Adapters and their limits, analyzers, version | – |
 
 Languages: **Go** and **TypeScript** (Tree-sitter adapters). Other languages
@@ -259,6 +261,55 @@ style of Obsidian's graph view, showing v2 debt.
 Sizes and colours are uncalibrated structural proxies, not quality verdicts.
 See `examples/legato/viz/`.
 
+## Defect rules (`codeeval defects`, rules/v1)
+
+```bash
+# Every finding in a revision (optionally one category or rule, one scope)
+codeeval defects --repo PATH --rev REV [--rule dead-code] [--path web/src]
+# What a change introduced and resolved. Exit 3 when it introduces a gate finding.
+codeeval defects --repo PATH --base origin/main --target HEAD
+codeeval defects --repo PATH --base HEAD --working-tree
+codeeval rules    # rule × language matrix with coverage notes
+```
+
+These checks report concrete defects, not whether code "looks AI-written".
+They are findings, not a score, and they are not part of v1 or v2 debt.
+Nothing is type-checked, built or run, so each rule covers what syntax and
+repository files can prove. Each language's implementation states what it
+covers and misses (`codeeval rules`, and `rules[].implementations` in the
+JSON report).
+
+| Rule | Severity | What it catches (Go / TypeScript) |
+|---|---|---|
+| `dead-code/unused-import` | gate | Unused import or binding. Go: unnamed imports whose package name is only inferred from a non-stdlib path are advisory |
+| `dead-code/unused-variable` | gate | Local declared and never read in its function (TS: also non-exported module-level bindings) |
+| `dead-code/unreachable-code` | gate | Statement after return/throw/panic/break/continue/goto in the same block |
+| `dead-code/unused-private-function` | gate | Unexported Go function unused in its package; module-private TS function or private method unused |
+| `dead-code/unused-export` | advisory | Go: exported function under `internal/` never referenced. TS: export no file imports, in a module others import by name |
+| `lost-errors/empty-handler` | gate | Empty `if err != nil {}`, discarded `recover()`, `_ = err` (advisory); empty `catch {}`, empty `.catch()`/`.then(_, fn)` handler. Comment-only handlers are advisory |
+| `lost-errors/error-to-success` | advisory | `if err != nil { return …, nil }`; `catch { return null/[]/{} }`, `.catch(() => constant)` |
+| `dependencies/unresolved-import` | gate | Import of repository code that resolves to nothing in the snapshot (TS alias/workspace misses are advisory) |
+| `dependencies/undeclared-dependency` | gate | External import not covered by `go.mod` requires / any `package.json` from the file up to the root |
+| `dependencies/unused-dependency` | advisory | Direct `go.mod` require or `package.json` dependency nothing imports or names |
+| `architecture/import-policy` | gate | An edge that breaks a configured rule: `to` (forbidden) or the new `only` allow-list |
+| `test-oracle/tautological-assertion` | gate | An assertion comparing an expression with itself or two literals, or asserting a constant |
+| `test-oracle/lost-async-assertion` | gate | `expect(…).resolves/.rejects` neither awaited nor returned; `t.Fatal`/`FailNow`/`require.*` inside a goroutine |
+
+- **Change mode:** findings are matched across revisions by rule, file and a
+  line-independent key, so pre-existing defects never fail a change. A
+  finding in a moved file counts as resolved plus introduced.
+- **Defaults:** `--fail-on gate` in change mode. In snapshot mode the
+  default is `none` (report only).
+- **Not covered:** redundant conditions need types and control flow. Mutation
+  testing needs the tests to run, which the read-only rules forbid. Both are
+  better left to `tsc --strict`, staticcheck and a mutation tool.
+- **Configuration:** `"defects": {"disable": ["dead-code/unused-export"]}`
+  turns off rules or whole categories. An architecture rule with
+  `"only": ["web/src/shared/**"]` (and `"to": ""`) is an allow-list:
+  `from` units may depend only on matching units or on units matching
+  `from` itself. Allow-lists are enforced by `defects` only; v1 and v2 still
+  read only `to`.
+
 ## Languages
 
 | Language | Status |
@@ -317,6 +368,31 @@ grammars, tsconfig/workspace resolution, callback-inclusive complexity).
 Analyzers need no change. If your adapter lacks a capability, the analyzers
 that need it report your files as unsupported coverage.
 
+### Add a defect rule
+
+Rules are defined once and implemented per language, so a rule can start in
+one language and gain others later.
+
+1. Define it in `internal/rules/catalog/catalog.go`: ID `<category>/<name>`,
+   severity (`gate` = provable, `advisory` = needs a human), summary and
+   limits.
+2. Implement it per language as a `rules.Impl{Rule, Note, Check}`. Put it in
+   `internal/rules/golang/` and `internal/rules/typescript/` and add it to
+   that package's `Register` list. A check that needs only the dependency
+   graph goes in `internal/rules/generic/`. `Check(ctx)` gets the language's
+   files with their Tree-sitter trees, all snapshot paths, a file reader, the
+   graph and the config. It calls `ctx.Report(Finding{File, Line, Key,
+   Message})`. The `Key` must not contain line numbers. Shared values (a
+   resolver, parsed manifests) go through `ctx.Memo`.
+3. Test it with `internal/rules/rulestest.Run` on in-memory sources, and add
+   the defect to `testdata/fixtures/defects/bad`.
+   `TestDefectsEveryRuleAndLanguageDetects` requires every rule × language
+   pair to fire there. `internal/rules/all` fails when a rule lacks a
+   language without a recorded reason (`knownGaps`).
+
+A new language adapter gets rules by implementing `lang.SyntaxParser` and
+adding a `internal/rules/<lang>` package to `internal/rules/all`.
+
 ### Add an analyzer
 
 1. Implement `analyzer.Analyzer` (`internal/analyzer/analyzer.go`). The
@@ -339,13 +415,19 @@ findings deterministically and adds the result to the report schema.
   "exclude": ["gen/**"],
   "duplication": {"minTokens": 40, "nearThreshold": 0.85, "includeTests": false, "degradeAt": 1, "significantDegradeAt": 3},
   "complexity": {"hotspotCyclomatic": 10, "hotspotNesting": 4, "degradeAt": 3, "significantDegradeAt": 10},
-  "architecture": {"rules": [{"name": "store must not depend on presentation", "from": "internal/store/**", "to": "internal/cli/**"}]},
-  "scope": {"formattingOnlyChurnAt": 3}
+  "architecture": {"rules": [
+    {"name": "store must not depend on presentation", "from": "internal/store/**", "to": "internal/cli/**"},
+    {"name": "lib allow-list", "from": "web/src/lib/**", "to": "", "only": ["web/src/shared/**"]}
+  ]},
+  "scope": {"formattingOnlyChurnAt": 3},
+  "defects": {"disable": []}
 }
 ```
 
 Each report records `configVersion`, a hash of the effective config and the
-`scoringVersion` (`scoring/v1`).
+`scoringVersion` (`scoring/v1`). The `defects` section and `only` lists are
+omitted from the hash when empty or absent, so hashes of earlier
+configurations are unchanged.
 
 ## Proof of value
 

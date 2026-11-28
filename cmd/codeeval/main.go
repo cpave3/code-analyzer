@@ -32,6 +32,8 @@ Usage:
   codeeval check    --repo PATH --base REV (--target REV | --working-tree) [--path P ...] [--fail-on new-debt|net-debt|gates|none] [--top N]
                                                                                     (PR check: factors introduced/worsened; exit 3 on failure)
   codeeval graph    --repo PATH --rev REV --output FILE.html [--json FILE] [--max-callables N] [--config FILE]   (POC debt graph view)
+  codeeval defects  --repo PATH (--rev REV | --base REV (--target REV | --working-tree)) [--rule ID ...] [--path P ...] [--fail-on gate|any|none] [--top N]   (defect rules, rules/v1)
+  codeeval rules                                                          (defect rules × languages)
   codeeval languages
   codeeval analyzers
   codeeval version
@@ -76,6 +78,10 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return checkCmd(args[1:], stdout, stderr)
 	case "graph":
 		return graphCmd(args[1:], stdout, stderr)
+	case "defects":
+		return defectsCmd(args[1:], stdout, stderr)
+	case "rules":
+		return listRules(stdout)
 	case "languages":
 		return listLanguages(stdout)
 	case "analyzers":

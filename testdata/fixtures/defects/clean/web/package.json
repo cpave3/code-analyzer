@@ -1,0 +1,12 @@
+{
+  "name": "defects-web",
+  "private": true,
+  "dependencies": {
+    "dayjs": "1.11.13",
+    "react": "18.3.1"
+  },
+  "devDependencies": {
+    "vitest": "2.1.8",
+    "@types/react": "18.3.12"
+  }
+}

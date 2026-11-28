@@ -1,0 +1,1 @@
+fixture: no go.sum/node_modules; bad variant intentionally does not compile

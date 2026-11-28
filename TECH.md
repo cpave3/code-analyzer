@@ -49,6 +49,22 @@ resolve revs ─▶ index base snapshot ─┐
   report assembly. `history` evaluates the net change, then parent^1→commit
   for each first-parent commit.
 
+### Defect rules (`internal/rules`)
+
+```
+snapshot ─▶ per language: source/test/generated files without syntax errors, re-parsed to Tree-sitter trees
+         ─▶ each rule × language Impl.Check(ctx)   (ctx: files, all paths, reader, graph, config, memo)
+         ─▶ findings (generated files dropped, --path filter) ─▶ [change mode] multiset compare by rule|file|key
+```
+
+Rules are not analyzers. Analyzers score a change on v1 dimensions. Rules
+report defects that are either provable (gate) or need a human decision
+(advisory), and they are never folded into a score. The registry keeps the
+definition (catalog) separate from implementations (one per language), so
+coverage gaps are explicit and listed. Trees are parsed once per run and
+shared by all rules. Values shared across rules, such as the TS resolver,
+manifests and module lists, are memoised per language.
+
 ## Key decisions
 
 - **Scores are per analyzer, with no rollup**, even within a dimension

@@ -2,6 +2,34 @@
 
 All versions are local proof-of-concept builds; there is no remote or release.
 
+## 0.3.0-poc
+
+- **`codeeval defects`** (`rules/v1`, schema `codeeval.defects/v1`): concrete
+  defect findings for a revision, or the findings a change introduced and
+  resolved. Findings are matched by line-independent keys. Exit 3 on
+  introduced gate findings (`--fail-on gate|any|none`); also `--rule` and
+  `--path`. There are 13 rules in five categories (dead code, lost errors,
+  dependency integrity, architecture policy, test-oracle defects), and every
+  rule is implemented for both Go and TypeScript. Findings are separate from
+  v1 and v2 scoring, and that scoring is unchanged.
+- **`codeeval rules`:** lists the rule × language matrix with
+  per-implementation coverage notes.
+- **Rule framework** (`internal/rules`): a rule is defined once in
+  `catalog` and implemented per language (`rules/golang`,
+  `rules/typescript`, or `rules/generic` for graph-only checks). Includes a
+  `rulestest` harness and a contract test that every rule covers every
+  language.
+- **Adapters:** they implement `lang.SyntaxParser`. The TypeScript import
+  resolution has moved into an exported `typescript.Resolver`, which the
+  graph and the dependency rules share. Graph behaviour is unchanged.
+- **Config:** architecture rules accept `only` allow-lists (enforced by
+  `defects` only). A new `defects.disable` setting turns rules off. Neither
+  changes existing configuration hashes. A rule now needs `from` plus `to`
+  or `only`.
+- **Fixtures:** `testdata/fixtures/defects`. Its base is clean, `bad` has
+  every rule in both languages, and `clean` has the same features without
+  defects.
+
 ## 0.2.0-poc
 
 - **TypeScript adapter** (`.ts`, `.tsx`, `.mts`, `.cts`), built on

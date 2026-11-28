@@ -1,0 +1,9 @@
+{
+  "configVersion": 1,
+  "architecture": {
+    "rules": [
+      { "name": "store-not-api", "from": "internal/store", "to": "internal/api" },
+      { "name": "lib-allow-list", "from": "web/src/lib/**", "to": "", "only": ["web/src/shared/**"] }
+    ]
+  }
+}
