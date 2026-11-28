@@ -8,8 +8,10 @@
 //     Agent-Harness: claude-code/2.1      standard: the tool that ran it
 //     Agent-<Key>: <value>                any other metadata, e.g.
 //     Agent-Workflow: proposal-stack@2
-//     Lines are read anywhere in the body (not the subject), so trailers
-//     survive squash merges that concatenate commit messages.
+//     Lines are read from every trailer-style paragraph of the body (a
+//     blank-line-separated block whose lines are all "Key: value"), not only
+//     the last, so trailers survive squash merges that concatenate commit
+//     messages; prose that wraps onto a line starting "Agent:" is ignored.
 //  2. A note on the commit in refs/notes/agent-provenance with the same
 //     lines, for commits that are already made. Message values win per key.
 //  3. Inference from Co-Authored-By lines that name a known coding agent
@@ -76,12 +78,42 @@ func addUnique(list []string, v string) []string {
 	return append(list, v)
 }
 
-func parseLines(text string, skipFirst bool) fields {
-	f := fields{meta: map[string]string{}}
-	for i, line := range strings.Split(text, "\n") {
-		if i == 0 && skipFirst {
-			continue // the subject is prose, not metadata
+var trailerLine = regexp.MustCompile(`^\s*(?:[-*]\s+)?[A-Za-z][A-Za-z0-9-]*\s*:\s*\S`)
+
+// trailerBlocks returns the lines of a message's trailer-style paragraphs:
+// blank-line-separated blocks in which every line is "Key: value". Prose
+// that happens to wrap onto a line starting "Agent:" is not a trailer block.
+// The subject (first line) never counts.
+func trailerBlocks(message string) []string {
+	var out, block []string
+	lines := strings.Split(message, "\n")
+	flush := func() {
+		ok := len(block) > 0
+		for _, l := range block {
+			ok = ok && trailerLine.MatchString(l)
 		}
+		if ok {
+			out = append(out, block...)
+		}
+		block = nil
+	}
+	for i, l := range lines {
+		if i == 0 {
+			continue
+		}
+		if strings.TrimSpace(l) == "" {
+			flush()
+			continue
+		}
+		block = append(block, l)
+	}
+	flush()
+	return out
+}
+
+func parseLines(lines []string) fields {
+	f := fields{meta: map[string]string{}}
+	for _, line := range lines {
 		m := lineRe.FindStringSubmatch(line)
 		if m == nil {
 			continue
@@ -106,8 +138,8 @@ func parseLines(text string, skipFirst bool) fields {
 // Parse reads provenance from a commit message and an optional note.
 func Parse(commit, message, note string, infer bool) Record {
 	r := Record{Commit: commit, Source: SourceNone}
-	msg := parseLines(message, true)
-	nt := parseLines(note, false)
+	msg := parseLines(trailerBlocks(message))
+	nt := parseLines(strings.Split(note, "\n"))
 	switch {
 	case !msg.empty() && !nt.empty():
 		r.Source = SourceBoth

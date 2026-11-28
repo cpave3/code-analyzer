@@ -24,9 +24,12 @@ Agent-Workflow: proposal-stack@2
 | `Agent-<Key>:` | **Any other metadata**: workflow, workflow version, session, effort, prompt pack, … Keys are case-insensitive and read as lower-case (`Agent-Workflow` → `workflow`) |
 
 Rules the reader applies (`internal/provenance`):
-- **Where it looks:** the lines are read anywhere in the message body, but
-  never in the subject. A squash merge that concatenates commit messages
-  therefore keeps every contributor's lines.
+- **Where it looks:** the lines are read from every trailer-style paragraph
+  of the body (a blank-line-separated block whose lines are all
+  `Key: value`), never from the subject or prose. A squash merge that
+  concatenates commit messages therefore keeps every contributor's trailer
+  block, and a sentence that wraps onto a line starting with `Agent:` is not
+  mistaken for provenance.
 - **Notes:** commits that are already made can be annotated without
   rewriting them, with a note in `refs/notes/agent-provenance` holding the
   same lines:

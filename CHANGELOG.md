@@ -13,6 +13,10 @@ All versions are local proof-of-concept builds; there is no remote or release.
   - `attribution` and the dashboard group by model and harness by default.
     `agent` is still accepted as an alias of `model` in `--group-by`.
   - The hooks read `AGENT_MODEL`, with `AGENT_ID` still accepted.
+- **Provenance parsing:** message lines are read only from trailer-style
+  paragraphs, in which every line is `Key: value`. Before, a prose line
+  that wrapped to start with `Agent:` was parsed as the model; this
+  happened in this repository's commit 18c442e.
 
 ## 0.6.0-poc
 

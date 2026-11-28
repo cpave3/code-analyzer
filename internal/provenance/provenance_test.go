@@ -42,3 +42,17 @@ func TestInference(t *testing.T) {
 		t.Errorf("human co-author inferred as agent: %+v", r)
 	}
 }
+
+func TestProseIsNotProvenance(t *testing.T) {
+	// From this repository's history: a wrapped sentence put "Agent:" at
+	// the start of a body line.
+	msg := "Read agent provenance\n\nAgent: and Agent-Harness: are standard fields; any Agent-<Key>: line is\nfree-form metadata (e.g. Agent-Workflow).\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n"
+	r := Parse("c", msg, "Agent-Model: m\nAgent-Harness: h", false)
+	if r.Value("model") != "m" || r.Source != SourceNote {
+		t.Errorf("prose parsed as provenance: %+v", r)
+	}
+	mixed := "Fix\n\nSome prose.\n\nAgent-Model: x\nAgent-Harness: y\nCo-Authored-By: A <a@b>\n"
+	if r := Parse("c", mixed, "", false); r.Value("model") != "x" || r.Value("harness") != "y" {
+		t.Errorf("trailer block next to other trailers: %+v", r)
+	}
+}
