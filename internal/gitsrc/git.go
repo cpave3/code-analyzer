@@ -412,7 +412,8 @@ func (r *Repo) HasRef(ref string) bool {
 }
 
 // CommitsBetween lists commits reachable from target but not from base
-// (all parents, not only the first-parent path), newest first, with their
+// (all parents, not only the first-parent path; base "" = every commit
+// reachable from target), newest first, with their
 // messages and, when notesRef exists, their notes.
 func (r *Repo) CommitsBetween(base, target, notesRef string) ([]CommitMessage, error) {
 	args := []string{"log", "--no-show-signature", "--format=%H%x1f%P%x1f%B%x1f%N%x1e"}
@@ -421,7 +422,11 @@ func (r *Repo) CommitsBetween(base, target, notesRef string) ([]CommitMessage, e
 	} else {
 		args = append(args, "--no-notes")
 	}
-	args = append(args, "--end-of-options", base+".."+target)
+	spec := target
+	if base != "" {
+		spec = base + ".." + target
+	}
+	args = append(args, "--end-of-options", spec)
 	out, err := r.run(args...)
 	if err != nil {
 		return nil, err
@@ -452,4 +457,37 @@ func (r *Repo) RevList(base, target string) ([]string, error) {
 		return nil, err
 	}
 	return strings.Fields(string(out)), nil
+}
+
+// CommitInfo is a commit's author, author time and subject (untrusted text).
+type CommitInfo struct {
+	Author, Time, Subject string
+	Parents               []string
+}
+
+// Info returns a commit's author, author time (RFC 3339) and subject.
+func (r *Repo) Info(commit string) (CommitInfo, error) {
+	out, err := r.run("log", "-1", "--no-show-signature", "--format=%an%x1f%aI%x1f%P%x1f%s", "--end-of-options", commit)
+	if err != nil {
+		return CommitInfo{}, err
+	}
+	f := strings.SplitN(strings.TrimRight(string(out), "\n"), "\x1f", 4)
+	if len(f) < 4 {
+		return CommitInfo{}, fmt.Errorf("unexpected log output for %s", commit)
+	}
+	return CommitInfo{Author: f[0], Time: f[1], Parents: strings.Fields(f[2]), Subject: f[3]}, nil
+}
+
+// LastFirstParents lists up to n commits on target's first-parent chain,
+// oldest first, ending with target.
+func (r *Repo) LastFirstParents(target string, n int) ([]string, error) {
+	out, err := r.run("rev-list", "--first-parent", "-n", strconv.Itoa(n), "--end-of-options", target)
+	if err != nil {
+		return nil, err
+	}
+	shas := strings.Fields(string(out))
+	for i, j := 0, len(shas)-1; i < j; i, j = i+1, j-1 {
+		shas[i], shas[j] = shas[j], shas[i]
+	}
+	return shas, nil
 }

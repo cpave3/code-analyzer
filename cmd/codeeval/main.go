@@ -31,6 +31,7 @@ Usage:
   codeeval graph    --repo PATH --rev REV --output FILE.html [--json FILE] [--max-callables N] [--config FILE]   (POC debt graph view)
   codeeval defects  --repo PATH (--rev REV | --base REV (--target REV | --working-tree)) [--rule ID ...] [--path P ...] [--fail-on gate|any|none] [--top N]   (defect rules, rules/v1)
   codeeval analyze  --repo PATH (--rev REV | --base REV (--target REV | --working-tree)) [--path P ...] [--debt-fail-on ...] [--defects-fail-on ...]   (v2 debt + defects in one report)
+  codeeval serve    --repo PATH [--base REV] [--target REV] [--max N] [--addr 127.0.0.1:8765]   (web dashboard: quality over time, graph per commit, provenance)
   codeeval rules                                                          (defect rules × languages)
   codeeval attribution --repo PATH --base REV --target REV [--group-by agent,harness,workflow] [--defects] [--infer-co-authors=false]   (step deltas by commit provenance)
   codeeval languages
@@ -83,6 +84,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return listRules(stdout)
 	case "analyze":
 		return analyzeCmd(args[1:], stdout, stderr)
+	case "serve":
+		return serveCmd(args[1:], stdout, stderr)
 	case "attribution":
 		return attributionCmd(args[1:], stdout, stderr)
 	case "languages":

@@ -37,7 +37,9 @@ Rules the reader applies (`internal/provenance`):
 - **Inference:** a commit with neither may be inferred from a
   `Co-Authored-By` line naming a known coding agent (Claude, Codex,
   Copilot, Gemini, …). That gives the agent only, labelled
-  `co-author (inferred)`. Turn it off with `--infer-co-authors=false`.
+  `co-author (inferred)`. The name is ID-styled ("Claude Opus 5.5" →
+  `claude-opus-5-5`) so it groups with declared model IDs. Turn it off with
+  `--infer-co-authors=false`.
 - **Not verified:** all of it is self-reported text. It records what a commit
   claims, not what produced it.
 

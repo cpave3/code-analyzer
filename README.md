@@ -23,6 +23,7 @@ evaluated code and makes no claim about correctness or design quality.
 | `codeeval graph --rev R --output g.html` | Interactive offline debt graph (POC) | v2 |
 | `codeeval defects --rev R` or `--base A --target B\|--working-tree` | Concrete defects (dead code, lost errors, dependency integrity, architecture policy, test-oracle defects), or those a change introduced. Exit 3 on introduced gate findings | `rules/v1` (no score) |
 | `codeeval analyze --rev R` or `--base A --target B\|--working-tree` | Combined view in one report: v2 debt factors, defect findings, and near-miss and fragment duplication. A per-file table ranks files by gate defects, then debt, then advisory defects, then near-duplicate pairs. No combined score | v2 + `rules/v1` + `clones/v1` |
+| `codeeval serve [--base A] [--target B] [--max N]` | Local web dashboard on 127.0.0.1: per-commit debt, score, hotspots, defects and near-duplication charts; a commit stepper that shows the module graph change; provenance grouping (agent, harness, workflow) | v2 + `rules/v1` + `clones/v1` |
 | `codeeval rules` | The defect rules and which languages implement each, with per-language coverage notes | – |
 | `codeeval attribution --base A --target B --group-by agent,harness,workflow [--defects]` | Per-step v2 debt deltas (and defects) grouped by commit provenance: which agent, harness and workflow made each change | v2 (+ `rules/v1`) |
 | `codeeval languages` / `analyzers` / `version` | Adapters and their limits, analyzers, version | – |
@@ -345,6 +346,32 @@ callable names, not lines). These pairs are not part of v2 debt.
 Folding them into debt would be a new scoring version, after calibration.
 Similar structure is not always a copy: parallel per-language
 implementations and small boilerplate functions also match.
+
+## Dashboard: quality over time (`codeeval serve`)
+
+```bash
+codeeval serve --repo PATH                      # the last 60 first-parent commits of HEAD
+codeeval serve --repo PATH --base v1.0 --target main --addr 127.0.0.1:8765
+```
+
+It serves a self-contained page (no external scripts) on a loopback
+address; other addresses are refused. Metrics are computed in the
+background, oldest commit first, about 4 s per commit on this repository,
+and appear as they arrive.
+- **Charts:** v2 debt by component, score, debt/kLOC, hotspots and size,
+  defect findings and near-duplication pairs, per commit. Points are
+  coloured by the provenance group chosen above them.
+- **Stepper:** ◀ ▶, a slider, ▶ Play and the arrow keys step through
+  commits. The module graph keeps node positions between commits, and rings
+  mark nodes whose debt rose (red) or fell (green), and new nodes (dashed).
+  The panel also shows the commit's subject, author, provenance and deltas
+  against the previous commit.
+- **Group table:** step changes summed by provenance group (`--group-by` as
+  checkboxes: agent, harness and any `Agent-<Key>` metadata). As with
+  `attribution`, this is observational, not causal.
+
+`--defects=false` and `--near-duplication=false` skip the slower per-commit
+checks.
 
 ## Attribution by agent, harness and workflow
 

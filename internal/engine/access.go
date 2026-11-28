@@ -85,3 +85,14 @@ func (e *Evaluator) CommitsBetween(base, target, notesRef string) ([]gitsrc.Comm
 func (e *Evaluator) RevList(base, target string) ([]string, error) {
 	return e.repo.RevList(base, target)
 }
+
+// Info returns a commit's author, time, parents and subject.
+func (e *Evaluator) Info(sha string) (gitsrc.CommitInfo, error) { return e.repo.Info(sha) }
+
+// LastFirstParents lists up to n first-parent commits ending at target, oldest first.
+func (e *Evaluator) LastFirstParents(target string, n int) ([]string, error) {
+	return e.repo.LastFirstParents(target, n)
+}
+
+// ResolveCommit resolves a revision to a commit SHA.
+func (e *Evaluator) ResolveCommit(rev string) (string, error) { return e.repo.ResolveCommit(rev) }

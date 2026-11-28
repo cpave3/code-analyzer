@@ -2,6 +2,22 @@
 
 All versions are local proof-of-concept builds; there is no remote or release.
 
+## 0.6.0-poc
+
+- **`codeeval serve`** (`internal/dashboard`): a local, read-only web
+  dashboard of quality over the first-parent history.
+  - Per-commit charts: v2 debt by component, score, debt/kLOC, hotspots,
+    defects, near-duplication.
+  - A commit stepper with the module graph changing in place: stable
+    positions, rings for debt up, down and new.
+  - Commit details with provenance and deltas.
+  - A table of step changes grouped by agent, harness or any provenance
+    metadata.
+  - Loopback addresses only; a self-contained page with a strict CSP; metrics
+    are computed in the background.
+- **Provenance:** inferred co-author agent names are ID-styled
+  ("Claude Opus 5.5" → `claude-opus-5-5`), so they group with declared IDs.
+
 ## 0.5.0-poc
 
 - **Escape hatches for the Stop hook and the rules:**

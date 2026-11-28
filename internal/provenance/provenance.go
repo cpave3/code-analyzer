@@ -133,7 +133,7 @@ func Parse(commit, message, note string, infer bool) Record {
 	if r.Source == SourceNone && infer {
 		for _, line := range strings.Split(message, "\n") {
 			if m := coAuthorRe.FindStringSubmatch(line); m != nil && knownAgent.MatchString(m[1]) {
-				r.Agent = addUnique(r.Agent, strings.ToLower(strings.Join(strings.Fields(m[1]), "-")))
+				r.Agent = addUnique(r.Agent, inferredID(m[1]))
 			}
 		}
 		if len(r.Agent) > 0 {
@@ -174,4 +174,11 @@ func (r Record) Key(groupBy []string) string {
 		parts[i] = g + "=" + v
 	}
 	return strings.Join(parts, ", ")
+}
+
+// inferredID turns a co-author display name into an ID-style agent name
+// ("Claude Opus 5.5" -> "claude-opus-5-5"), so inferred values group with
+// declared model IDs.
+func inferredID(name string) string {
+	return strings.ToLower(strings.Join(strings.FieldsFunc(name, func(r rune) bool { return r == ' ' || r == '.' || r == '_' }), "-"))
 }

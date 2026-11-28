@@ -32,7 +32,7 @@ func TestSquashedMessageAndNotesOnly(t *testing.T) {
 
 func TestInference(t *testing.T) {
 	msg := "Fix\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nCo-authored-by: Jane Doe <jane@example.com>\n"
-	if r := Parse("c", msg, "", true); r.Value("agent") != "claude-opus-5.5" || r.Source != SourceInferred || len(r.Harness) != 0 {
+	if r := Parse("c", msg, "", true); r.Value("agent") != "claude-opus-5-5" || r.Source != SourceInferred || len(r.Harness) != 0 {
 		t.Errorf("inferred: %+v", r)
 	}
 	if r := Parse("c", msg, "", false); r.Source != SourceNone || len(r.Agent) != 0 {

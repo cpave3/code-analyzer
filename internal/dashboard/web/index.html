@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quality over time</title>
+<style>
+:root{--bg:#121218;--panel:#1b1b24;--fg:#dcdce6;--dim:#8b8ba0;--line:#2f2f3d;--accent:#a78bfa;--up:#f43f5e;--down:#22c55e;--new:#fbbf24}
+@media (prefers-color-scheme: light){:root{--bg:#f5f5f8;--panel:#fff;--fg:#22222c;--dim:#6b6b80;--line:#dcdce6;--accent:#7c3aed;--up:#e11d48;--down:#16a34a;--new:#d97706}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:13px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
+header{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;padding:12px 16px;border-bottom:1px solid var(--line)}
+header h1{font-size:16px;margin:0}
+.dim{color:var(--dim)}
+#progress{flex:1;min-width:160px;height:6px;background:var(--line);border-radius:3px;overflow:hidden;align-self:center}
+#progress div{height:100%;width:0;background:var(--accent);transition:width .3s}
+main{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:12px;padding:12px 16px}
+@media (max-width:1000px){main{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+.card h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin:0 0 8px}
+#stepper{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#stepper input[type=range]{flex:1;min-width:140px}
+button,select{background:transparent;color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:4px 9px;font:inherit;cursor:pointer}
+button:hover{border-color:var(--accent)}
+#commit{margin-top:8px}
+#commit .subject{font-size:14px;font-weight:600;word-break:break-word}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}
+.chip{border:1px solid var(--line);border-radius:999px;padding:1px 8px;font-size:12px}
+.deltas{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px;margin-top:6px}
+.delta{border:1px solid var(--line);border-radius:8px;padding:5px 8px}
+.delta b{display:block;font-size:15px;font-variant-numeric:tabular-nums}
+.up{color:var(--up)}.down{color:var(--down)}
+#graphWrap{position:relative;height:520px}
+#graph{width:100%;height:100%;display:block;border-radius:8px;cursor:grab}
+#graphLegend{font-size:12px;margin-top:6px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 4px 0 10px;vertical-align:-1px}
+#tip{position:fixed;pointer-events:none;display:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px;max-width:340px;z-index:9}
+.charts{display:grid;gap:10px}
+.chart svg{width:100%;height:150px;display:block;overflow:visible}
+.chart .ttl{display:flex;justify-content:space-between;gap:8px;font-size:12px}
+.chart .legend span{margin-left:8px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:4px 6px;border-top:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--dim);font-weight:500}
+.full{grid-column:1/-1}
+.notes{font-size:12px;color:var(--dim);margin:6px 0 0;padding-left:16px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">Quality over time</h1>
+  <span class="dim" id="range"></span>
+  <div id="progress" title="metrics computed"><div></div></div>
+  <span class="dim" id="progressText"></span>
+</header>
+<main>
+  <section class="card">
+    <h2>Commit</h2>
+    <div id="stepper">
+      <button id="prev" title="previous commit (←)">◀</button>
+      <button id="play" title="play / pause (space)">▶ Play</button>
+      <button id="next" title="next commit (→)">▶</button>
+      <input type="range" id="slider" min="0" max="0" value="0">
+      <span class="mono" id="pos"></span>
+    </div>
+    <div id="commit"></div>
+  </section>
+  <section class="card">
+    <h2>Colour points by provenance</h2>
+    <div id="groupPick" class="chips"></div>
+    <div id="groupLegend" class="chips"></div>
+  </section>
+  <section class="card">
+    <h2>Module graph at this commit</h2>
+    <div id="graphWrap"><canvas id="graph"></canvas></div>
+    <div id="graphLegend"></div>
+  </section>
+  <section class="card">
+    <h2>Metrics by commit</h2>
+    <div class="charts" id="charts"></div>
+  </section>
+  <section class="card full">
+    <h2>Step changes by provenance group</h2>
+    <div id="groups"></div>
+    <ul class="notes" id="notes"></ul>
+  </section>
+</main>
+<div id="tip"></div>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
+const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmt = (v, d = 0) => v == null || Number.isNaN(v) ? "–" : Number(v).toLocaleString(undefined, {maximumFractionDigits: d, minimumFractionDigits: d});
+const signed = (v, d = 0) => v == null ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "±") + fmt(Math.abs(v), d);
+const PALETTE = ["#60a5fa", "#f472b6", "#34d399", "#fbbf24", "#a78bfa", "#f87171", "#2dd4bf", "#fb923c", "#c084fc", "#4ade80", "#e879f9", "#38bdf8"];
+
+let meta = null, metrics = [], sel = 0, playing = null;
+let groupFields = ["agent", "harness"];
+const groupColor = {};
+
+// ---------- provenance grouping (mirrors internal/attribution.GroupKey) ----------
+function value(r, f) {
+  if (f === "agent") return (r.agent || []).join("+");
+  if (f === "harness") return (r.harness || []).join("+");
+  return (r.meta || {})[f] || "";
+}
+function recKey(r) { return groupFields.map(f => f + "=" + (value(r, f) || "(none)")).join(", "); }
+function stepKey(c) {
+  const rs = (c.provenance || []).filter(r => !(r.merge && r.source === "none"));
+  if (!rs.length) return c.provenance && c.provenance.length ? recKey(c.provenance[0]) : "(no commits)";
+  const k = recKey(rs[0]);
+  return rs.every(r => recKey(r) === k) ? k : "(mixed)";
+}
+function colorOfKey(k) {
+  if (!(k in groupColor)) groupColor[k] = k.includes("(mixed)") ? "#9ca3af" : /^[^=]*=\(none\)(, [^=]*=\(none\))*$/.test(k) ? "#6b7280" : PALETTE[Object.keys(groupColor).length % PALETTE.length];
+  return groupColor[k];
+}
+
+// ---------- data ----------
+async function load() {
+  meta = await (await fetch("api/meta")).json();
+  document.title = "Quality over time: " + meta.repository;
+  $("title").textContent = "Quality over time · " + meta.repository;
+  const cs = meta.commits;
+  $("range").textContent = `${cs.length} first-parent commits · ${cs[0].sha.slice(0, 8)} → ${cs[cs.length - 1].sha.slice(0, 8)} · ${meta.scoring} · ${meta.rules} · ${meta.clones} · tool ${meta.tool}`;
+  $("slider").max = cs.length - 1;
+  $("notes").innerHTML = meta.notes.map(n => `<li>${esc(n)}</li>`).join("");
+  renderGroupPick();
+  sel = cs.length - 1;
+  $("slider").value = sel;
+  await poll();
+  select(sel);
+}
+async function poll() {
+  const r = await (await fetch("api/metrics")).json();
+  metrics = r.metrics;
+  $("progress").firstElementChild.style.width = (100 * r.done / Math.max(1, r.total)) + "%";
+  $("progressText").textContent = r.done < r.total ? `measuring ${r.done}/${r.total} commits…` : `${r.total} commits measured`;
+  renderCharts(); renderCommit(); renderGroups();
+  if (r.done < r.total) setTimeout(poll, 1500);
+}
+
+// ---------- provenance picker ----------
+function renderGroupPick() {
+  $("groupPick").innerHTML = meta.groupFields.map(f => `<label class="chip"><input type="checkbox" value="${esc(f)}" ${groupFields.includes(f) ? "checked" : ""}> ${esc(f)}</label>`).join("");
+  $("groupPick").querySelectorAll("input").forEach(i => i.onchange = () => {
+    groupFields = [...$("groupPick").querySelectorAll("input:checked")].map(x => x.value);
+    if (!groupFields.length) { groupFields = ["agent"]; renderGroupPick(); }
+    for (const k in groupColor) delete groupColor[k];
+    renderAll();
+  });
+}
+function renderLegend() {
+  const keys = [...new Set(meta.commits.map(stepKey))];
+  $("groupLegend").innerHTML = keys.map(k => `<span class="chip"><span class="sw" style="background:${colorOfKey(k)};margin-left:0"></span>${esc(k)}</span>`).join("");
+}
+function renderAll() { renderLegend(); renderCharts(); renderCommit(); renderGroups(); drawGraph(); }
+
+// ---------- charts ----------
+const CHARTS = [
+  {title: "Debt (scoring/v2) by component", stack: true, series: [
+    {name: "complexity", color: "#f59e0b", get: m => m.debt.complexity},
+    {name: "nesting", color: "#a78bfa", get: m => m.debt.nesting},
+    {name: "duplication", color: "#22d3ee", get: m => m.debt.duplication},
+    {name: "architecture", color: "#f43f5e", get: m => m.debt.architecture}], total: m => m.debt.total},
+  {title: "Score (0–100, comparison only)", series: [{name: "score", color: "#34d399", get: m => m.score}], d: 1},
+  {title: "Debt per kLOC", series: [{name: "debt/kLOC", color: "#fb923c", get: m => m.debtPerKLOC}], d: 1},
+  {title: "Hotspots and source size", series: [
+    {name: "hotspots", color: "#f472b6", get: m => m.hotspots},
+    {name: "kLOC×10", color: "#60a5fa", get: m => m.lines / 100}]},
+  {title: "Defect findings (rules/v1)", needs: "defects", series: [
+    {name: "gate", color: "#f43f5e", get: m => m.gate},
+    {name: "advisory", color: "#fbbf24", get: m => m.advisory}]},
+  {title: "Near duplication (clones/v1, unscored)", needs: "nearDuplication", series: [
+    {name: "near-miss pairs", color: "#22d3ee", get: m => m.nearMisses},
+    {name: "fragment pairs", color: "#818cf8", get: m => m.fragments}]},
+];
+function renderCharts() {
+  const host = $("charts");
+  if (!host.children.length) host.innerHTML = CHARTS.filter(c => !c.needs || meta[c.needs]).map((c, i) =>
+    `<div class="chart" data-i="${CHARTS.indexOf(c)}"><div class="ttl"><span>${esc(c.title)}</span><span class="legend">${c.series.map(s => `<span><span class="sw" style="background:${s.color}"></span>${esc(s.name)}</span>`).join("")}</span></div><svg></svg></div>`).join("");
+  host.querySelectorAll(".chart").forEach(div => drawChart(div.querySelector("svg"), CHARTS[+div.dataset.i]));
+}
+function drawChart(svg, ch) {
+  const W = svg.clientWidth || 500, H = 150, L = 44, R = 8, T = 8, B = 18;
+  const n = meta.commits.length, xs = i => L + (n <= 1 ? 0 : i * (W - L - R) / (n - 1));
+  const done = metrics.map((m, i) => [m, i]).filter(([m]) => m && m.done && !m.error);
+  const vals = [];
+  for (const [m] of done) {
+    if (ch.stack) vals.push(ch.series.reduce((a, s) => a + (s.get(m) || 0), 0));
+    else for (const s of ch.series) { const v = s.get(m); if (v != null) vals.push(v); }
+  }
+  let lo = ch.stack ? 0 : Math.min(...vals), hi = Math.max(...vals);
+  if (!vals.length) { lo = 0; hi = 1; }
+  if (hi === lo) { hi += 1; lo = Math.max(0, lo - 1); }
+  const pad = (hi - lo) * .08; if (!ch.stack) lo = Math.max(0, lo - pad); hi += pad;
+  const ys = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+  let out = `<line x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}" stroke="var(--line)"/>`;
+  for (const t of [lo, (lo + hi) / 2, hi]) out += `<text x="${L - 4}" y="${ys(t) + 4}" text-anchor="end" font-size="10" fill="var(--dim)">${fmt(t, ch.d || 0)}</text>`;
+  if (ch.stack) {
+    let base = done.map(() => 0);
+    for (const s of ch.series) {
+      const top = done.map(([m], k) => base[k] + (s.get(m) || 0));
+      if (done.length) out += `<path d="M${done.map(([, i], k) => `${xs(i)},${ys(top[k])}`).join("L")}L${done.map(([, i], k) => `${xs(i)},${ys(base[k])}`).reverse().join("L")}Z" fill="${s.color}" opacity=".55"/>`;
+      base = top;
+    }
+  } else {
+    for (const s of ch.series) {
+      const pts = done.filter(([m]) => s.get(m) != null);
+      if (pts.length) out += `<polyline fill="none" stroke="${s.color}" stroke-width="1.6" points="${pts.map(([m, i]) => `${xs(i)},${ys(s.get(m))}`).join(" ")}"/>`;
+    }
+  }
+  // provenance-coloured markers on the first series (or total)
+  for (const [m, i] of done) {
+    const v = ch.stack ? ch.total(m) : ch.series[0].get(m);
+    if (v == null) continue;
+    out += `<circle cx="${xs(i)}" cy="${ys(v)}" r="${i === sel ? 5 : 3}" fill="${colorOfKey(stepKey(meta.commits[i]))}" stroke="${i === sel ? "var(--fg)" : "none"}" data-i="${i}" style="cursor:pointer"/>`;
+  }
+  out += `<line x1="${xs(sel)}" x2="${xs(sel)}" y1="${T}" y2="${H - B}" stroke="var(--fg)" stroke-dasharray="3 3" opacity=".5"/>`;
+  out += `<rect x="${L}" y="0" width="${W - L - R}" height="${H}" fill="transparent" class="hit"/>`;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.innerHTML = out;
+  const idx = ev => { const r = svg.getBoundingClientRect(); const x = (ev.clientX - r.left) * W / r.width; return Math.max(0, Math.min(n - 1, Math.round((x - L) / Math.max(1e-9, (W - L - R) / Math.max(1, n - 1))))); };
+  svg.onclick = ev => select(idx(ev));
+  svg.onmousemove = ev => {
+    const i = idx(ev), m = metrics[i], c = meta.commits[i];
+    if (!m || !m.done) return hideTip();
+    const rows = ch.series.map(s => `${esc(s.name)}: <b>${fmt(s.get(m), ch.d || 0)}</b>`).join("<br>");
+    showTip(ev, `<b>${esc(c.subject)}</b><br><span class="mono">${c.sha.slice(0, 10)}</span> · ${esc(stepKey(c))}<br>${rows}`);
+  };
+  svg.onmouseleave = hideTip;
+}
+
+// ---------- commit panel ----------
+function delta(get, i) {
+  const a = metrics[i - 1], b = metrics[i];
+  if (!a || !b || !a.done || !b.done || a.error || b.error) return null;
+  const x = get(a), y = get(b);
+  return x == null || y == null ? null : y - x;
+}
+function renderCommit() {
+  const c = meta.commits[sel], m = metrics[sel] || {};
+  $("pos").textContent = `${sel + 1}/${meta.commits.length}`;
+  const chips = [];
+  const fields = new Set(["agent", "harness", ...meta.groupFields]);
+  const recs = c.provenance.filter(r => !(r.merge && r.source === "none"));
+  for (const f of fields) {
+    const vs = [...new Set(recs.map(r => value(r, f)).filter(Boolean))];
+    if (vs.length) chips.push(`<span class="chip">${esc(f)}: <b>${esc(vs.join(" | "))}</b></span>`);
+  }
+  const sources = [...new Set(c.provenance.map(r => r.source))].join(", ");
+  const d = (label, get, dd = 0, goodDown = true, abs) => {
+    const v = delta(get, sel);
+    const cls = v == null || Math.abs(v) < 1e-9 ? "" : (v > 0) === goodDown ? "up" : "down";
+    return `<div class="delta"><span class="dim">${esc(label)}</span><b class="${cls}">${signed(v, dd)}</b><span class="dim">${abs != null ? "now " + fmt(abs, dd) : ""}</span></div>`;
+  };
+  let deltas = "";
+  if (m.done && !m.error) {
+    deltas = d("Debt", x => x.debt.total, 1, true, m.debt.total) + d("Score", x => x.score, 1, false, m.score) + d("Hotspots", x => x.hotspots, 0, true, m.hotspots)
+      + d("Decision points", x => x.decisionPoints, 0, true, m.decisionPoints) + d("Source lines", x => x.lines, 0, null, m.lines);
+    if (meta.defects) deltas += `<div class="delta"><span class="dim">Defects introduced</span><b class="${(m.introducedGate || 0) > 0 ? "up" : ""}">${m.introducedGate == null ? "–" : `${m.introducedGate} gate · ${m.introducedAdvisory} adv`}</b><span class="dim">${m.resolved == null ? "" : m.resolved + " resolved · now " + m.gate + " gate"}</span></div>`;
+    if (meta.nearDuplication) deltas += d("Near-dup pairs", x => (x.nearMisses || 0) + (x.fragments || 0), 0, true, (m.nearMisses || 0) + (m.fragments || 0));
+    deltas += `<div class="delta"><span class="dim">Changed lines</span><b>${sel ? fmt(m.changedLines) : "–"}</b><span class="dim">measured source</span></div>`;
+  } else if (m.error) deltas = `<p class="up">${esc(m.error)}</p>`;
+  else deltas = `<p class="dim">measuring…</p>`;
+  $("commit").innerHTML = `<div class="subject">${esc(c.subject)}</div>
+    <div class="dim"><span class="mono">${c.sha.slice(0, 12)}</span> · ${esc(c.author)} · ${esc(c.time.replace("T", " ").slice(0, 16))}${c.merge ? " · merge" : ""} · ${c.provenance.length} commit(s) in step</div>
+    <div class="chips">${chips.join("") || '<span class="chip dim">no provenance</span>'}<span class="chip dim">source: ${esc(sources)}</span></div>
+    <div class="deltas">${deltas}</div>`;
+}
+
+// ---------- provenance group table ----------
+function renderGroups() {
+  const g = {};
+  for (let i = 1; i < meta.commits.length; i++) {
+    const m = metrics[i], p = metrics[i - 1];
+    if (!m || !p || !m.done || !p.done || m.error || p.error) continue;
+    const k = stepKey(meta.commits[i]);
+    const a = g[k] || (g[k] = {steps: 0, lines: 0, debt: 0, up: 0, down: 0, gate: 0, adv: 0, res: 0, hot: 0, near: 0});
+    const dd = m.debt.total - p.debt.total;
+    a.steps++; a.lines += m.changedLines; a.debt += dd; a.hot += m.hotspots - p.hotspots;
+    if (dd > .005) a.up++; else if (dd < -.005) a.down++;
+    a.gate += m.introducedGate || 0; a.adv += m.introducedAdvisory || 0; a.res += m.resolved || 0;
+    a.near += ((m.nearMisses || 0) + (m.fragments || 0)) - ((p.nearMisses || 0) + (p.fragments || 0));
+  }
+  const rows = Object.entries(g).sort((x, y) => y[1].steps - x[1].steps);
+  if (!rows.length) { $("groups").innerHTML = `<p class="dim">Waiting for at least two measured commits.</p>`; return; }
+  $("groups").innerHTML = `<table><tr><th>Group</th><th>Steps</th><th>Changed lines</th><th>Debt Δ</th><th>Δ / changed kLOC</th><th>Steps ↑/↓</th><th>Hotspots Δ</th>${meta.defects ? "<th>Gate introduced</th><th>Advisory</th><th>Resolved</th>" : ""}${meta.nearDuplication ? "<th>Near-dup Δ</th>" : ""}</tr>`
+    + rows.map(([k, a]) => `<tr><td><span class="sw" style="background:${colorOfKey(k)};margin-left:0"></span>${esc(k)}</td><td>${a.steps}</td><td>${fmt(a.lines)}</td><td class="${a.debt > 0 ? "up" : a.debt < 0 ? "down" : ""}">${signed(a.debt, 1)}</td><td>${a.lines ? signed(a.debt * 1000 / a.lines, 1) : "–"}</td><td>${a.up}/${a.down}</td><td>${signed(a.hot)}</td>${meta.defects ? `<td>${a.gate}</td><td>${a.adv}</td><td>${a.res}</td>` : ""}${meta.nearDuplication ? `<td>${signed(a.near)}</td>` : ""}</tr>`).join("") + `</table>`;
+}
+
+// ---------- graph ----------
+const canvas = $("graph"), ctx = canvas.getContext("2d");
+const pos = {};            // id -> {x,y,vx,vy}, kept across commits so the layout is stable
+const graphs = {};         // sha -> data
+let nodes = [], links = [], view = {x: 0, y: 0, k: 1}, alpha = 1, hover = null, shownSha = null, prevDebt = {}, removed = 0;
+async function fetchGraph(sha) {
+  if (!graphs[sha]) graphs[sha] = fetch("api/graph?commit=" + sha).then(r => r.ok ? r.json() : Promise.reject(r.statusText));
+  return graphs[sha];
+}
+function density(v) { const t = Math.max(0, Math.min(1, (v || 0) / 150)); return t < .4 ? "#34d399" : t < .7 ? "#fbbf24" : "#f43f5e"; }
+async function showGraph(i) {
+  const c = meta.commits[i];
+  let d;
+  try { d = await fetchGraph(c.sha); } catch (e) { $("graphLegend").textContent = "graph unavailable: " + e; return; }
+  if (sel !== i) return;
+  // previous graph's debts, for change rings
+  const before = {};
+  for (const n of nodes) before[n.id] = n.debt;
+  const fromPrev = shownSha !== null;
+  const ids = new Set();
+  const mods = {};
+  const next = [];
+  for (const m of d.modules) {
+    if (m.debt.total <= 0 && m.lines < 150) continue;
+    const id = "m:" + m.id;
+    const n = {id, kind: "module", label: m.id.split(":").pop(), debt: m.debt.total, density: m.density, lines: m.lines, hot: m.hotspots};
+    mods[m.id] = n; next.push(n); ids.add(id);
+  }
+  for (const cl of d.callables) {
+    const mod = mods[cl.module];
+    if (!mod) continue;
+    const id = "c:" + cl.id;
+    next.push({id, kind: "callable", label: cl.name, debt: cl.debt + cl.cloneDebt, cc: cl.cc, mod, file: cl.file, line: cl.line});
+    ids.add(id);
+  }
+  removed = nodes.filter(n => !ids.has(n.id)).length;
+  for (const n of next) {
+    const p = pos[n.id] || (pos[n.id] = n.kind === "callable" && pos[n.mod.id]
+      ? {x: pos[n.mod.id].x + (Math.random() - .5) * 40, y: pos[n.mod.id].y + (Math.random() - .5) * 40, vx: 0, vy: 0}
+      : {x: (Math.random() - .5) * 500, y: (Math.random() - .5) * 400, vx: 0, vy: 0});
+    n.p = p;
+    n.state = !fromPrev ? "same" : !(n.id in before) ? "new" : n.debt > before[n.id] + .01 ? "up" : n.debt < before[n.id] - .01 ? "down" : "same";
+    n.prev = before[n.id];
+    n.r = n.kind === "module" ? 5 + Math.sqrt(Math.max(0, n.debt)) * .9 : 2.5 + Math.sqrt(Math.max(0, n.debt)) * .6;
+  }
+  const byId = Object.fromEntries(next.map(n => [n.id, n]));
+  links = [];
+  for (const n of next) if (n.kind === "callable") links.push({a: n, b: n.mod, kind: "member"});
+  for (const cg of d.clones) for (let k = 1; k < cg.members.length; k++) {
+    const a = byId["c:" + cg.members[0]], b = byId["c:" + cg.members[k]];
+    if (a && b) links.push({a, b, kind: "clone"});
+  }
+  for (const e of d.imports) {
+    const a = byId["m:" + e.from], b = byId["m:" + e.to];
+    if (a && b) links.push({a, b, kind: e.violation || e.cycle ? "bad" : "import"});
+  }
+  nodes = next; shownSha = c.sha; alpha = fromPrev ? .35 : 1;
+  const counts = {new: 0, up: 0, down: 0};
+  for (const n of nodes) if (n.state in counts) counts[n.state]++;
+  $("graphLegend").innerHTML = `${nodes.filter(n => n.kind === "module").length} modules, ${nodes.filter(n => n.kind === "callable").length} callables (largest debt) · fill = debt density`
+    + `<span class="sw" style="background:#34d399"></span>low<span class="sw" style="background:#fbbf24"></span>mid<span class="sw" style="background:#f43f5e"></span>high · ring vs previous step:`
+    + `<span class="sw" style="border:2px solid var(--up)"></span>${counts.up} more debt<span class="sw" style="border:2px solid var(--down)"></span>${counts.down} less<span class="sw" style="border:2px dashed var(--new)"></span>${counts.new} new · ${removed} gone`;
+  if (!fromPrev) fit();
+  // prefetch neighbours
+  for (const j of [i + 1, i - 1]) if (meta.commits[j]) fetchGraph(meta.commits[j].sha).catch(() => {});
+}
+function fit() {
+  if (!nodes.length) return;
+  const xs = nodes.map(n => n.p.x), ys = nodes.map(n => n.p.y);
+  const w = Math.max(...xs) - Math.min(...xs) + 120, h = Math.max(...ys) - Math.min(...ys) + 120;
+  view.x = (Math.max(...xs) + Math.min(...xs)) / 2; view.y = (Math.max(...ys) + Math.min(...ys)) / 2;
+  view.k = Math.min(canvas.clientWidth / w, canvas.clientHeight / h, 2);
+}
+function tick() {
+  if (alpha < .005) return;
+  for (const a of nodes) {
+    for (const b of nodes) {
+      if (a === b) continue;
+      const dx = a.p.x - b.p.x, dy = a.p.y - b.p.y, d2 = dx * dx + dy * dy + 30;
+      if (d2 > 90000) continue;
+      const f = (a.kind === "module" && b.kind === "module" ? 1400 : 260) / d2;
+      a.p.vx += dx * f * alpha; a.p.vy += dy * f * alpha;
+    }
+    a.p.vx -= a.p.x * .002 * alpha; a.p.vy -= a.p.y * .002 * alpha;
+  }
+  for (const l of links) {
+    const dx = l.b.p.x - l.a.p.x, dy = l.b.p.y - l.a.p.y, d = Math.hypot(dx, dy) || 1;
+    const want = l.kind === "member" ? 26 + l.b.r : l.kind === "clone" ? 60 : 140, k = l.kind === "member" ? .08 : .01;
+    const f = (d - want) / d * k * alpha;
+    l.a.p.vx += dx * f; l.a.p.vy += dy * f; l.b.p.vx -= dx * f; l.b.p.vy -= dy * f;
+  }
+  for (const n of nodes) {
+    const s = Math.hypot(n.p.vx, n.p.vy); if (s > 30) { n.p.vx *= 30 / s; n.p.vy *= 30 / s; }
+    n.p.x += n.p.vx; n.p.y += n.p.vy; n.p.vx *= .6; n.p.vy *= .6;
+  }
+  alpha *= .985;
+}
+function drawGraph() {
+  const W = canvas.clientWidth, H = canvas.clientHeight, dpr = devicePixelRatio || 1;
+  if (canvas.width !== W * dpr) { canvas.width = W * dpr; canvas.height = H * dpr; }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = cssVar("--bg"); ctx.fillRect(0, 0, W, H);
+  ctx.setTransform(dpr * view.k, 0, 0, dpr * view.k, dpr * (W / 2 - view.x * view.k), dpr * (H / 2 - view.y * view.k));
+  const line = cssVar("--line");
+  for (const l of links) {
+    ctx.globalAlpha = l.kind === "member" ? .35 : .7;
+    ctx.strokeStyle = l.kind === "clone" ? "#22d3ee" : l.kind === "bad" ? "#f43f5e" : line;
+    ctx.lineWidth = (l.kind === "clone" || l.kind === "bad" ? 1.5 : .7) / view.k;
+    ctx.beginPath(); ctx.moveTo(l.a.p.x, l.a.p.y); ctx.lineTo(l.b.p.x, l.b.p.y); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  const ring = {up: cssVar("--up"), down: cssVar("--down"), new: cssVar("--new")};
+  for (const n of nodes) {
+    ctx.fillStyle = n.kind === "module" ? density(n.density) : density(n.debt * 6);
+    ctx.globalAlpha = n.kind === "module" ? .95 : .8;
+    ctx.beginPath(); ctx.arc(n.p.x, n.p.y, n.r, 0, 2 * Math.PI); ctx.fill();
+    ctx.globalAlpha = 1;
+    if (n.state !== "same" || n === hover) {
+      ctx.strokeStyle = n === hover ? cssVar("--fg") : ring[n.state];
+      ctx.lineWidth = 2.2 / view.k;
+      ctx.setLineDash(n.state === "new" ? [3 / view.k, 2 / view.k] : []);
+      ctx.beginPath(); ctx.arc(n.p.x, n.p.y, n.r + 2.5 / view.k, 0, 2 * Math.PI); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+  ctx.fillStyle = cssVar("--fg"); ctx.textAlign = "center";
+  for (const n of nodes) {
+    if (n.kind !== "module" && n !== hover && !(n.state !== "same" && n.r * view.k > 5)) continue;
+    ctx.font = `${(n.kind === "module" ? 11 : 10) / view.k}px system-ui,sans-serif`;
+    ctx.globalAlpha = .9;
+    ctx.fillText(n.kind === "module" ? n.label.split("/").slice(-2).join("/") : n.label, n.p.x, n.p.y - n.r - 4 / view.k);
+  }
+  ctx.globalAlpha = 1;
+}
+function frame() { tick(); drawGraph(); requestAnimationFrame(frame); }
+const toWorld = (sx, sy) => ({x: (sx - canvas.clientWidth / 2) / view.k + view.x, y: (sy - canvas.clientHeight / 2) / view.k + view.y});
+let drag = null;
+canvas.onmousedown = e => { drag = {x: e.clientX, y: e.clientY, vx: view.x, vy: view.y}; canvas.style.cursor = "grabbing"; };
+addEventListener("mouseup", () => { drag = null; canvas.style.cursor = "grab"; });
+canvas.onmousemove = e => {
+  if (drag) { view.x = drag.vx - (e.clientX - drag.x) / view.k; view.y = drag.vy - (e.clientY - drag.y) / view.k; return; }
+  const r = canvas.getBoundingClientRect(), p = toWorld(e.clientX - r.left, e.clientY - r.top);
+  hover = null; let best = 1e9;
+  for (const n of nodes) { const d = Math.hypot(n.p.x - p.x, n.p.y - p.y); if (d < n.r + 4 / view.k && d < best) { best = d; hover = n; } }
+  if (!hover) return hideTip();
+  const n = hover, ch = n.prev == null ? (shownSha && n.state === "new" ? "new in this step" : "") : `Δ ${signed(n.debt - n.prev, 1)} vs previous`;
+  showTip(e, n.kind === "module"
+    ? `<b>${esc(n.label)}</b><br>debt ${fmt(n.debt, 1)} · ${fmt(n.density, 1)}/kLOC · ${fmt(n.lines)} lines · ${n.hot} hotspots<br>${ch}`
+    : `<b>${esc(n.label)}</b> <span class="dim">${esc(n.file)}:${n.line}</span><br>debt ${fmt(n.debt, 1)} · cc ${n.cc}<br>${ch}`);
+};
+canvas.onmouseleave = hideTip;
+canvas.onwheel = e => { e.preventDefault(); view.k *= Math.exp(-e.deltaY * .0015); view.k = Math.max(.1, Math.min(8, view.k)); };
+canvas.ondblclick = fit;
+
+// ---------- selection, stepping ----------
+function select(i) {
+  sel = Math.max(0, Math.min(meta.commits.length - 1, i));
+  $("slider").value = sel;
+  renderCharts(); renderCommit();
+  showGraph(sel);
+}
+$("slider").oninput = e => select(+e.target.value);
+$("prev").onclick = () => select(sel - 1);
+$("next").onclick = () => select(sel + 1);
+$("play").onclick = togglePlay;
+function togglePlay() {
+  if (playing) { clearInterval(playing); playing = null; $("play").textContent = "▶ Play"; return; }
+  if (sel >= meta.commits.length - 1) select(0);
+  $("play").textContent = "❚❚ Pause";
+  playing = setInterval(() => { if (sel >= meta.commits.length - 1) return togglePlay(); select(sel + 1); }, 1300);
+}
+addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT" && e.target.type !== "range") return;
+  if (e.key === "ArrowLeft") select(sel - 1);
+  else if (e.key === "ArrowRight") select(sel + 1);
+  else if (e.key === " ") { e.preventDefault(); togglePlay(); }
+});
+function showTip(e, html) { const t = $("tip"); t.innerHTML = html; t.style.display = "block"; t.style.left = Math.min(e.clientX + 14, innerWidth - 350) + "px"; t.style.top = (e.clientY + 14) + "px"; }
+function hideTip() { $("tip").style.display = "none"; }
+addEventListener("resize", () => renderCharts());
+
+load().then(() => { renderLegend(); requestAnimationFrame(frame); }).catch(e => { document.body.insertAdjacentHTML("afterbegin", `<p class="up" style="padding:16px">Failed to load: ${esc(e)}</p>`); });
+</script>
+</body>
+</html>
