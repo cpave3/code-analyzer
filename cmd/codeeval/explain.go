@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/cameron/code-evaluator/internal/scorev2"
 )
@@ -62,16 +63,12 @@ func checkCmd(args []string, stdout, stderr io.Writer) int {
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
-	if *budget < 0 {
-		fmt.Fprintln(stderr, "--debt-budget must not be negative")
-		return 2
-	}
 	if *base == "" || (*target == "") == !*worktree || fs.NArg() > 0 {
 		fmt.Fprintln(stderr, "check needs --base and exactly one of --target or --working-tree")
 		return 2
 	}
-	if !checkFailOn[*failOn] {
-		fmt.Fprintln(stderr, "--fail-on must be new-debt, net-debt, gates or none")
+	if msg := analyzeDebtArgs(*failOn, *budget, true); msg != "" {
+		fmt.Fprintln(stderr, strings.Replace(msg, "--debt-fail-on", "--fail-on", 1))
 		return 2
 	}
 	ev, cfg, code := c.open(stderr)
