@@ -23,6 +23,7 @@ evaluated code and makes no claim about correctness or design quality.
 | `codeeval graph --rev R --output g.html` | Interactive offline debt graph (POC) | v2 |
 | `codeeval defects --rev R` or `--base A --target B\|--working-tree` | Concrete defects (dead code, lost errors, dependency integrity, architecture policy, test-oracle defects), or those a change introduced. Exit 3 on introduced gate findings | `rules/v1` (no score) |
 | `codeeval rules` | The defect rules and which languages implement each, with per-language coverage notes | – |
+| `codeeval attribution --base A --target B --group-by agent,harness,workflow [--defects]` | Per-step v2 debt deltas (and defects) grouped by commit provenance: which agent, harness and workflow made each change | v2 (+ `rules/v1`) |
 | `codeeval languages` / `analyzers` / `version` | Adapters and their limits, analyzers, version | – |
 
 Languages: **Go** and **TypeScript** (Tree-sitter adapters). Other languages
@@ -309,6 +310,18 @@ JSON report).
   `from` units may depend only on matching units or on units matching
   `from` itself. Allow-lists are enforced by `defects` only; v1 and v2 still
   read only `to`.
+
+## Attribution by agent, harness and workflow
+
+Commits can declare what made them with git trailers. `Agent:` and
+`Agent-Harness:` are the standard fields; any `Agent-<Key>:` is free-form
+metadata, such as `Agent-Workflow: proposal-stack@2`. Commits that are
+already made can be annotated with notes in `refs/notes/agent-provenance`.
+`codeeval attribution` groups first-parent step deltas by those fields. The
+format, the `commit-msg` hook template and the reading rules are in
+[integrations/git/](integrations/git/README.md). The comparison is
+observational: groups differ in tasks, so differences are leads, not
+effects.
 
 ## Languages
 

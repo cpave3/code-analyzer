@@ -1,0 +1,28 @@
+#!/bin/sh
+# Agent provenance commit-msg hook (CodeEval template).
+#
+# Appends provenance trailers from the environment so `codeeval attribution`
+# can group quality deltas by agent, harness and workflow:
+#
+#   AGENT_ID=claude-opus-5-5          -> Agent: claude-opus-5-5          (standard)
+#   AGENT_HARNESS=claude-code/2.1     -> Agent-Harness: claude-code/2.1  (standard)
+#   AGENT_META_WORKFLOW=stack@2       -> Agent-Workflow: stack@2         (any key)
+#   AGENT_META_SESSION_ID=abc         -> Agent-Session-Id: abc
+#
+# Nothing is added when none of these are set (human commits stay as they are).
+# Existing identical trailers are not duplicated. Install per repository:
+#   cp integrations/git/commit-msg <repo>/.git/hooks/commit-msg && chmod +x <repo>/.git/hooks/commit-msg
+# or chain it from an existing hook manager.
+set -eu
+msg="$1"
+add() {
+	git interpret-trailers --in-place --if-exists addIfDifferent --trailer "$1: $2" "$msg"
+}
+[ -n "${AGENT_ID:-}" ] && add "Agent" "$AGENT_ID"
+[ -n "${AGENT_HARNESS:-}" ] && add "Agent-Harness" "$AGENT_HARNESS"
+env | grep '^AGENT_META_[A-Za-z0-9_]*=' | sort | while IFS='=' read -r name value; do
+	[ -n "$value" ] || continue
+	key=$(printf '%s' "${name#AGENT_META_}" | tr 'A-Z_' 'a-z-' | awk -F- '{for (i = 1; i <= NF; i++) $i = toupper(substr($i, 1, 1)) substr($i, 2); print}' OFS=-)
+	add "Agent-$key" "$value"
+done
+exit 0

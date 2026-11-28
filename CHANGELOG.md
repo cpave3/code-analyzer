@@ -2,6 +2,25 @@
 
 All versions are local proof-of-concept builds; there is no remote or release.
 
+## 0.4.0-poc
+
+- **Agent provenance:** `internal/provenance` reads it from commit-message
+  lines (`Agent:` and `Agent-Harness:` are standard, `Agent-<Key>:` is
+  arbitrary metadata), anywhere in the body except the subject, so it
+  survives squash merges. Notes in `refs/notes/agent-provenance` fill in
+  missing keys. Optionally (on by default), the agent is inferred from
+  `Co-Authored-By` lines naming a known coding agent; that source is always
+  labelled.
+- **`codeeval attribution`** (schema `codeeval.attribution/v1`): for each
+  first-parent step it reports the v2 debt delta, changed lines and
+  decision points, and with `--defects` the defects introduced and resolved.
+  Steps are grouped by `--group-by` provenance fields. Merge steps include
+  the merged commits; a merge commit without provenance is ignored for
+  grouping, and a step whose commits disagree is `(mixed)`. Observational
+  only.
+- **`integrations/git/commit-msg`:** a hook template that writes the
+  trailers from `AGENT_ID`, `AGENT_HARNESS` and `AGENT_META_<KEY>`.
+
 ## 0.3.0-poc
 
 - **`codeeval defects`** (`rules/v1`, schema `codeeval.defects/v1`): concrete
