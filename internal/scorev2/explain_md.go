@@ -108,7 +108,11 @@ func WriteCheckMarkdown(w io.Writer, r *CheckReport) {
 		scope = strings.Join(r.Scope.Paths, ", ")
 	}
 	fmt.Fprintf(w, "# codeeval check: %s (`%s` → `%s`, %s)\n\n", status, short(r.Base.Commit), short(r.Target.Commit), scope)
-	fmt.Fprintf(w, "- **Fail on:** `%s` · scoring `%s` (experimental, uncalibrated)\n", r.FailOn, r.Scoring)
+	budget := ""
+	if r.DebtBudget > 0 && (r.FailOn == "net-debt" || r.FailOn == "new-debt") {
+		budget = fmt.Sprintf(" (budget %g point(s): the change may add up to that much debt)", r.DebtBudget)
+	}
+	fmt.Fprintf(w, "- **Fail on:** `%s`%s · scoring `%s` (experimental, uncalibrated)\n", r.FailOn, budget, r.Scoring)
 	fmt.Fprintf(w, "- **Change:** %d measured source file(s), %d changed lines", r.Size.ChangedSupportedFiles, r.Size.ChangedSupportedLines)
 	if len(r.Size.UnsupportedChangedFiles) > 0 {
 		var un []string
