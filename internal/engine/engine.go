@@ -28,6 +28,8 @@ type Options struct {
 	Langs     *lang.Registry
 	Analyzers *analyzer.Registry
 	Timing    bool // include timing metadata (non-deterministic)
+	// Untracked includes untracked, non-ignored files in worktree mode.
+	Untracked bool
 }
 
 // Evaluator evaluates changes in one repository.
@@ -83,7 +85,7 @@ func (e *Evaluator) snapshot(commit string) (*index.Snapshot, error) {
 	var s *index.Snapshot
 	var err error
 	if commit == gitsrc.WorktreeRev {
-		s, err = e.builder.Worktree()
+		s, err = e.builder.Worktree(e.opts.Untracked)
 	} else {
 		s, err = e.builder.Commit(commit)
 	}
@@ -163,7 +165,7 @@ func (e *Evaluator) evaluateResolved(baseRef, baseSHA, targetRef, targetSHA stri
 		rep.Results = append(rep.Results, runAnalyzer(a, ctx))
 	}
 	rep.Dimensions = dimensions(rep.Results)
-	rep.Limitations = limitations(e.opts.Langs, rep.Mode)
+	rep.Limitations = limitations(e.opts.Langs, rep.Mode, e.opts.Untracked)
 	return rep, nil
 }
 
@@ -441,7 +443,7 @@ func diagnostics(cs *change.Set, base, target *index.Snapshot, extra []model.Dia
 	return out
 }
 
-func limitations(reg *lang.Registry, mode string) []string {
+func limitations(reg *lang.Registry, mode string, untracked bool) []string {
 	out := []string{
 		"POC: measurements of structure, not proof of design quality; lower metrics do not by themselves prove better architecture",
 		"scores are per analyzer and directional; there is deliberately no weighted overall score",
@@ -449,8 +451,10 @@ func limitations(reg *lang.Registry, mode string) []string {
 		"duplication, complexity and obsolete-code analyzers measure production source only; tests, generated, vendor and docs are counted in scope and coverage",
 		"structural/near-structural similarity marks candidates, not semantic equivalence or proven missed reuse",
 	}
-	if mode == "worktree" {
-		out = append(out, "worktree mode reads tracked files only; untracked files are never read")
+	if mode == "worktree" && untracked {
+		out = append(out, "worktree mode reads tracked files and untracked files that are not ignored (.gitignore, .git/info/exclude); ignored files are never read; --untracked=false reads tracked files only")
+	} else if mode == "worktree" {
+		out = append(out, "worktree mode reads tracked files only (--untracked=false); untracked files are never read")
 	}
 	for _, a := range reg.Adapters() {
 		for _, l := range a.Limits() {

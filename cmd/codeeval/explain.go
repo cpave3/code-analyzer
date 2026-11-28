@@ -54,7 +54,8 @@ func checkCmd(args []string, stdout, stderr io.Writer) int {
 	c.register(fs)
 	base := fs.String("base", "", "base revision (e.g. the merge base with main)")
 	target := fs.String("target", "", "target revision")
-	worktree := fs.Bool("working-tree", false, "check tracked working-tree changes against base")
+	var worktree = new(bool)
+	c.worktreeFlags(fs, worktree, "check working-tree changes against base")
 	failOn := fs.String("fail-on", "new-debt", "exit 3 when: new-debt (any factor introduced or worsened in scope), net-debt (debt in scope rises), gates (any advisory gate fails), none")
 	top := fs.Int("top", 0, "factors listed per section (0 = all)")
 	if err := fs.Parse(args); err != nil {

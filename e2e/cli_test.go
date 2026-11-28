@@ -590,12 +590,12 @@ func TestWorkingTreeMode(t *testing.T) {
 		t.Fatal(err)
 	}
 	before := repoState(t, dir)
-	r := cli(t, "evaluate", "--repo", dir, "--base", "base", "--working-tree", "--format", "json", "--no-cache")
+	r := cli(t, "evaluate", "--repo", dir, "--base", "base", "--working-tree", "--untracked=false", "--format", "json", "--no-cache")
 	if r.code != 0 {
 		t.Fatal(r.stderr)
 	}
 	if strings.Contains(r.stdout, "private-notes") || strings.Contains(r.stdout, "do-not-read-me") {
-		t.Fatal("untracked file leaked into the report")
+		t.Fatal("untracked file leaked into a --untracked=false report")
 	}
 	var rep report.Report
 	if err := json.Unmarshal([]byte(r.stdout), &rep); err != nil {
@@ -609,6 +609,47 @@ func TestWorkingTreeMode(t *testing.T) {
 	}
 	if *measurement(t, result(t, &rep, "complexity"), "callables_added", "").Value != 1 {
 		t.Error("worktree change should add Classify")
+	}
+	if after := repoState(t, dir); after != before {
+		t.Fatal("worktree evaluation modified the repository")
+	}
+}
+
+// Untracked files are read by default in worktree mode (not ignored ones);
+// --untracked=false restores tracked-only.
+func TestWorkingTreeUntracked(t *testing.T) {
+	dir := t.TempDir()
+	if _, err := scenarios["edge"].BuildRepo(dir); err != nil {
+		t.Fatal(err)
+	}
+	extra := "package util\n\nfunc UntrackedHelper(s string) string {\n\tif s == \"\" {\n\t\treturn \"x\"\n\t}\n\treturn s\n}\n"
+	os.WriteFile(filepath.Join(dir, "util/extra.go"), []byte(extra), 0o644)
+	os.WriteFile(filepath.Join(dir, "util/ignored.go"), []byte("package util\n\nfunc IgnoredSecretHelper() {}\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, ".git/info/exclude"), []byte("util/ignored.go\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "private-notes.txt"), []byte("do-not-read-me"), 0o600)
+	before := repoState(t, dir)
+	run := func(extraArgs ...string) string {
+		args := append([]string{"evaluate", "--repo", dir, "--base", "base", "--working-tree", "--format", "json", "--no-cache"}, extraArgs...)
+		r := cli(t, args...)
+		if r.code != 0 {
+			t.Fatal(r.stderr)
+		}
+		return r.stdout
+	}
+	def := run()
+	if !strings.Contains(def, "util/extra.go") || !strings.Contains(def, "untracked files that are not ignored") {
+		t.Error("untracked source file not analysed by default")
+	}
+	if strings.Contains(def, "IgnoredSecretHelper") || strings.Contains(def, "util/ignored.go") || strings.Contains(def, "do-not-read-me") {
+		t.Error("ignored file or private content leaked")
+	}
+	tracked := run("--untracked=false")
+	if strings.Contains(tracked, "util/extra.go") || !strings.Contains(tracked, "tracked files only") {
+		t.Error("--untracked=false still read untracked files")
+	}
+	d := cli(t, "defects", "--repo", dir, "--base", "base", "--working-tree", "--format", "json", "--no-cache")
+	if !strings.Contains(d.stdout, "util/extra.go") && d.code > 3 {
+		t.Errorf("defects worktree: %d %s", d.code, d.stderr)
 	}
 	if after := repoState(t, dir); after != before {
 		t.Fatal("worktree evaluation modified the repository")

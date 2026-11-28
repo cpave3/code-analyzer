@@ -31,8 +31,6 @@ out=$("$bin" "${args[@]}" 2>/dev/null); code=$?
 if [ "$code" -eq 3 ]; then
   {
     echo "codeeval analyze (base ${base:0:12} → working tree) failed: fix what this change introduced, or explain in your reply why it is justified."
-    untracked=$(git ls-files --others --exclude-standard | head -20)
-    [ -n "$untracked" ] && echo "Note: untracked files are not checked until added: $(echo $untracked)"
     echo
     printf '%s\n' "$out" | head -c 7000
   } >&2

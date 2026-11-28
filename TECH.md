@@ -29,7 +29,7 @@ resolve revs ─▶ index base snapshot ─┐
                                      ─▶ report (JSON schema codeeval.report/v1 + Markdown)
 ```
 
-- **Snapshot** (`internal/index`): every tracked file is classified by role
+- **Snapshot** (`internal/index`): every tracked file (in worktree mode also untracked, non-ignored files) is classified by role
   and language. Supported files are parsed through the cache, in parallel,
   and symbols get identity keys (`lang:unit|package|Container.Name`). Graphs
   are built per adapter. A snapshot is immutable, and the evaluator keeps a

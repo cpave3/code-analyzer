@@ -47,8 +47,8 @@ checked too.
 - **When it blocks:** on introduced gate defects (`CODEEVAL_DEFECTS_FAIL_ON`,
   default `gate`) or a debt rise (`CODEEVAL_DEBT_FAIL_ON`, default
   `net-debt`).
-- **Untracked files:** they are not read until they are added, and the block
-  message lists them.
+- **Untracked files:** they are checked by default (`--untracked`), except
+  those Git ignores.
 
 This repository uses both hooks on itself: see `.claude/settings.json` and
 `.claude/hooks/dogfood-stop.sh`. The dogfood script uses the existing

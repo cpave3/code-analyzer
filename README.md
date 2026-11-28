@@ -105,7 +105,8 @@ go build -o bin/codeeval ./cmd/codeeval
 bin/codeeval evaluate --repo ../some-repo --base main --target HEAD \
   --output /tmp/eval.json --summary /tmp/eval.md
 
-# Tracked working-tree changes against a base (untracked files are never read)
+# Working-tree changes against a base: tracked files plus untracked files that
+# are not ignored (since 0.5.0; --untracked=false reads tracked files only)
 bin/codeeval evaluate --repo ../some-repo --base HEAD --working-tree
 
 # Net change plus one report per first-parent commit or merge in a window
@@ -135,7 +136,12 @@ scripts or hooks. It also:
 - reads NUL-separated paths, so unusual filenames are handled verbatim;
 - refuses `--output`, `--summary` or `--cache-dir` paths inside the evaluated
   repository;
-- treats repository content, including commit subjects, as data.
+- treats repository content, including commit subjects, as data;
+- in `--working-tree` mode, reads tracked files and untracked files that Git
+  does not ignore (`.gitignore`, `.git/info/exclude`, `core.excludesFile`),
+  each up to 8 MB. Ignored files are never read. `--untracked=false` limits
+  it to tracked files. Contents are only parsed or searched and never
+  copied into reports; paths of untracked files can appear as added files.
 
 The e2e tests fingerprint refs, status, stash, worktrees and every file
 (content and mtime) before and after each run.

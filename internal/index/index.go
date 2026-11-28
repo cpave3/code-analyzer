@@ -93,9 +93,10 @@ func (b *Builder) Commit(sha string) (*Snapshot, error) {
 	return s, b.build(s, entries)
 }
 
-// Worktree indexes tracked files in the working tree.
-func (b *Builder) Worktree() (*Snapshot, error) {
-	entries, contents, err := b.Repo.ListWorktree()
+// Worktree indexes the working tree: tracked files, plus untracked files
+// that are not ignored when untracked is set.
+func (b *Builder) Worktree(untracked bool) (*Snapshot, error) {
+	entries, contents, err := b.Repo.ListWorktree(untracked)
 	if err != nil {
 		return nil, err
 	}

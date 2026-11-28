@@ -28,7 +28,7 @@ func (e *Evaluator) ResolveSnapshot(ref string) (string, *index.Snapshot, error)
 	return sha, s, nil
 }
 
-// WorktreeSnapshot indexes the tracked files of the working tree.
+// WorktreeSnapshot indexes the working tree (see Options.Untracked).
 func (e *Evaluator) WorktreeSnapshot() (*index.Snapshot, error) {
 	return e.snapshot(gitsrc.WorktreeRev)
 }

@@ -90,6 +90,9 @@ func Compute(repo *gitsrc.Repo, base, target *index.Snapshot) (*Set, []model.Dia
 	if err != nil {
 		return nil, nil, err
 	}
+	if target.Commit == gitsrc.WorktreeRev {
+		ns = withUntracked(ns, base, target)
+	}
 	var diags []model.Diagnostic
 	set := &Set{}
 	for _, n := range ns {
@@ -233,4 +236,20 @@ func mapSymbols(set *Set, base, target *index.Snapshot) []SymbolChange {
 		return out[i].Status < out[j].Status
 	})
 	return out
+}
+
+// withUntracked adds worktree files that git diff does not list (untracked
+// files read into the snapshot) as additions. Renames into untracked files
+// are not detected: they appear as a deletion and an addition.
+func withUntracked(ns []gitsrc.NameStatus, base, target *index.Snapshot) []gitsrc.NameStatus {
+	listed := map[string]bool{}
+	for _, n := range ns {
+		listed[n.NewPath] = true
+	}
+	for _, p := range target.Paths {
+		if !listed[p] && base.Files[p] == nil {
+			ns = append(ns, gitsrc.NameStatus{Status: "A", OldPath: p, NewPath: p})
+		}
+	}
+	return ns
 }

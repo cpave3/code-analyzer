@@ -210,21 +210,35 @@ func (r *Repo) ListTree(commit string) ([]Entry, error) {
 	return entries, nil
 }
 
+// MaxUntrackedBytes bounds untracked files read in worktree mode.
+const MaxUntrackedBytes = 8 << 20
+
 // ListWorktree lists tracked files present in the working tree with content
-// hashed like Git blobs. Untracked files are never read. Symlinks and
-// non-regular files are skipped.
-func (r *Repo) ListWorktree() ([]Entry, map[string][]byte, error) {
+// hashed like Git blobs. With untracked, files Git does not track but does
+// not ignore (.gitignore, .git/info/exclude, core.excludesFile) are included
+// too, up to MaxUntrackedBytes each; ignored files are never read. Symlinks
+// and non-regular files are skipped.
+func (r *Repo) ListWorktree(untracked bool) ([]Entry, map[string][]byte, error) {
 	out, err := r.run("ls-files", "-z", "--cached", "--full-name")
 	if err != nil {
 		return nil, nil, err
 	}
+	tracked := len(bytes.Split(out, []byte{0}))
+	if untracked {
+		more, err := r.run("ls-files", "-z", "--others", "--exclude-standard", "--full-name")
+		if err != nil {
+			return nil, nil, err
+		}
+		out = append(out, more...)
+	}
 	seen := map[string]bool{}
 	var entries []Entry
 	contents := map[string][]byte{}
-	for _, p := range bytes.Split(out, []byte{0}) {
+	for i, p := range bytes.Split(out, []byte{0}) {
 		if len(p) == 0 || seen[string(p)] {
 			continue
 		}
+		isUntracked := i >= tracked
 		rel := string(p)
 		seen[rel] = true
 		full := filepath.Join(r.Path, filepath.FromSlash(rel))
@@ -232,7 +246,7 @@ func (r *Repo) ListWorktree() ([]Entry, map[string][]byte, error) {
 		if errors.Is(err, fs.ErrNotExist) {
 			continue // deleted in worktree
 		}
-		if err != nil || !fi.Mode().IsRegular() {
+		if err != nil || !fi.Mode().IsRegular() || (isUntracked && fi.Size() > MaxUntrackedBytes) {
 			continue
 		}
 		data, err := os.ReadFile(full)

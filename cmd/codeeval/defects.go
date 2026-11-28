@@ -23,7 +23,8 @@ func defectsCmd(args []string, stdout, stderr io.Writer) int {
 	rev := fs.String("rev", "", "revision to check (snapshot mode)")
 	base := fs.String("base", "", "base revision (change mode)")
 	target := fs.String("target", "", "target revision (change mode)")
-	worktree := fs.Bool("working-tree", false, "change mode: check tracked working-tree changes against base")
+	var worktree = new(bool)
+	c.worktreeFlags(fs, worktree, "change mode: check working-tree changes against base")
 	var only pathList
 	fs.Var(&only, "rule", "rule ID or category to run (repeatable, comma-separated); default all")
 	failOn := fs.String("fail-on", "", "exit 3 when: gate (gate findings; in change mode introduced ones), any, none. Default: gate in change mode, none in snapshot mode")

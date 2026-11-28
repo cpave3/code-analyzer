@@ -38,6 +38,13 @@ func (p *pathList) Set(v string) error {
 type conn struct {
 	repo, cfgPath, cacheDir string
 	noCache, timing         bool
+	untracked               bool
+}
+
+// worktreeFlags registers --working-tree and --untracked.
+func (k *conn) worktreeFlags(fs *flag.FlagSet, worktree *bool, usage string) {
+	fs.BoolVar(worktree, "working-tree", false, usage)
+	fs.BoolVar(&k.untracked, "untracked", true, "with --working-tree: also read untracked files that are not ignored (false = tracked files only)")
 }
 
 func (k *conn) register(fs *flag.FlagSet) {
@@ -62,7 +69,7 @@ func (k *conn) open(stderr io.Writer, outputs ...string) (*engine.Evaluator, *co
 			dir = filepath.Join(ucd, "codeeval")
 		}
 	}
-	ev, err := engine.New(engine.Options{RepoPath: k.repo, Config: cfg, CacheDir: dir, Langs: languages.Default(), Analyzers: analyzers.Default(), Timing: k.timing})
+	ev, err := engine.New(engine.Options{RepoPath: k.repo, Config: cfg, CacheDir: dir, Langs: languages.Default(), Analyzers: analyzers.Default(), Timing: k.timing, Untracked: k.untracked})
 	if err != nil {
 		return nil, nil, fail(stderr, err)
 	}

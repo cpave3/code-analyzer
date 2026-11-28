@@ -2,6 +2,25 @@
 
 All versions are local proof-of-concept builds; there is no remote or release.
 
+## 0.5.0-poc
+
+- **`--working-tree` reads untracked files by default:** files Git does not
+  ignore are read, each up to 8 MB, and appear as added files in the change
+  set. `--untracked=false` restores the earlier tracked-only behaviour.
+  Ignored files are never read. This applies to `evaluate`, `check`,
+  `defects` and `analyze`, so their working-tree results differ from 0.4.0.
+  Commit-to-commit results are unchanged.
+- **Refactors guided by `codeeval analyze` on this repository.** Golden
+  outputs of every command on all fixtures and on this repository are
+  byte-identical before and after.
+  - Shared CLI plumbing (`cmd/codeeval/cli.go`): v2 debt −124.
+  - Shared Tree-sitter helpers for both adapters
+    (`internal/lang/sitterutil`): −18.
+- **Dogfooding:**
+  - an analyze Stop hook;
+  - a session-base SessionStart hook;
+  - provenance written as git notes (`integrations/git/post-commit`).
+
 ## 0.4.0-poc
 
 - **`codeeval analyze`** (schema `codeeval.analysis/v1`): one report holding

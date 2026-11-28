@@ -113,7 +113,8 @@ func evaluate(args []string, stdout, stderr io.Writer, history bool) int {
 	o.register(fs)
 	base := fs.String("base", "", "base revision")
 	target := fs.String("target", "", "target revision")
-	worktree := fs.Bool("working-tree", false, "evaluate tracked working-tree changes against base")
+	var worktree = new(bool)
+	k.worktreeFlags(fs, worktree, "evaluate working-tree changes against base")
 	fs.BoolVar(&k.timing, "timing", false, "include timing metadata")
 	if err := fs.Parse(args); err != nil {
 		return 2
