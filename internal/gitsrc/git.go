@@ -382,3 +382,60 @@ func (c *catFile) close() {
 	c.in.Close()
 	_ = c.cmd.Wait()
 }
+
+// CommitMessage is a commit's message and parents.
+type CommitMessage struct {
+	SHA     string
+	Parents []string
+	Message string // full message (untrusted data)
+	Note    string // note text from the requested notes ref, if any
+}
+
+// HasRef reports whether a fully qualified ref exists.
+func (r *Repo) HasRef(ref string) bool {
+	_, err := r.run("rev-parse", "--verify", "-q", "--end-of-options", ref)
+	return err == nil
+}
+
+// CommitsBetween lists commits reachable from target but not from base
+// (all parents, not only the first-parent path), newest first, with their
+// messages and, when notesRef exists, their notes.
+func (r *Repo) CommitsBetween(base, target, notesRef string) ([]CommitMessage, error) {
+	args := []string{"log", "--no-show-signature", "--format=%H%x1f%P%x1f%B%x1f%N%x1e"}
+	if notesRef != "" && r.HasRef(notesRef) {
+		args = append(args, "--notes="+notesRef)
+	} else {
+		args = append(args, "--no-notes")
+	}
+	args = append(args, "--end-of-options", base+".."+target)
+	out, err := r.run(args...)
+	if err != nil {
+		return nil, err
+	}
+	var cs []CommitMessage
+	for _, rec := range strings.Split(string(out), "\x1e") {
+		rec = strings.TrimLeft(rec, "\n")
+		if rec == "" {
+			continue
+		}
+		f := strings.SplitN(rec, "\x1f", 4)
+		if len(f) < 4 {
+			continue
+		}
+		cs = append(cs, CommitMessage{SHA: f[0], Parents: strings.Fields(f[1]), Message: f[2], Note: strings.TrimSpace(f[3])})
+	}
+	return cs, nil
+}
+
+// RevList lists commits reachable from target but not from base.
+func (r *Repo) RevList(base, target string) ([]string, error) {
+	spec := target
+	if base != "" {
+		spec = base + ".." + target
+	}
+	out, err := r.run("rev-list", "--end-of-options", spec)
+	if err != nil {
+		return nil, err
+	}
+	return strings.Fields(string(out)), nil
+}

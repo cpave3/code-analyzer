@@ -74,3 +74,14 @@ func (e *Evaluator) Config() *config.Config { return e.opts.Config }
 
 // Langs returns the language registry.
 func (e *Evaluator) Langs() *lang.Registry { return e.opts.Langs }
+
+// CommitsBetween lists commits in base..target (all parents) with messages
+// and notes from notesRef (untrusted text).
+func (e *Evaluator) CommitsBetween(base, target, notesRef string) ([]gitsrc.CommitMessage, error) {
+	return e.repo.CommitsBetween(base, target, notesRef)
+}
+
+// RevList lists commits reachable from target but not base.
+func (e *Evaluator) RevList(base, target string) ([]string, error) {
+	return e.repo.RevList(base, target)
+}

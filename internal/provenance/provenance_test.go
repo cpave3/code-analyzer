@@ -1,0 +1,44 @@
+package provenance
+
+import (
+	"reflect"
+	"testing"
+)
+
+func TestParse(t *testing.T) {
+	msg := "Agent: subject is not metadata\n\nBody text.\n\nAgent: claude-opus-5-5\nAgent-Harness: claude-code/2.1\nAgent-Workflow: proposal-stack@2\nagent-effort: high\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n"
+	r := Parse("c1", msg, "Agent-Workflow: from-note\nAgent-Session: s1", true)
+	want := Record{Commit: "c1", Agent: []string{"claude-opus-5-5"}, Harness: []string{"claude-code/2.1"},
+		Meta: map[string]string{"workflow": "proposal-stack@2", "effort": "high", "session": "s1"}, Source: SourceBoth}
+	if !reflect.DeepEqual(r, want) {
+		t.Fatalf("got %+v\nwant %+v", r, want)
+	}
+	if k := r.Key([]string{"agent", "workflow", "missing"}); k != "agent=claude-opus-5-5, workflow=proposal-stack@2, missing=(none)" {
+		t.Errorf("key %q", k)
+	}
+}
+
+func TestSquashedMessageAndNotesOnly(t *testing.T) {
+	squash := "Feature (#12)\n\n* first\n\nAgent: model-a\nAgent-Workflow: v1\n\n* second\n\nAgent: model-b\nAgent-Workflow: v1\n"
+	r := Parse("c", squash, "", true)
+	if r.Value("agent") != "model-a+model-b" || r.Value("workflow") != "v1" || r.Source != SourceMessage {
+		t.Errorf("squash: %+v", r)
+	}
+	n := Parse("c", "Fix\n", "Agent: model-c\nAgent-Harness: h", true)
+	if n.Value("agent") != "model-c" || n.Value("harness") != "h" || n.Source != SourceNote {
+		t.Errorf("note: %+v", n)
+	}
+}
+
+func TestInference(t *testing.T) {
+	msg := "Fix\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nCo-authored-by: Jane Doe <jane@example.com>\n"
+	if r := Parse("c", msg, "", true); r.Value("agent") != "claude-opus-5.5" || r.Source != SourceInferred || len(r.Harness) != 0 {
+		t.Errorf("inferred: %+v", r)
+	}
+	if r := Parse("c", msg, "", false); r.Source != SourceNone || len(r.Agent) != 0 {
+		t.Errorf("inference disabled: %+v", r)
+	}
+	if r := Parse("c", "Fix\n\nCo-authored-by: Jane Doe <jane@example.com>\n", "", true); r.Source != SourceNone {
+		t.Errorf("human co-author inferred as agent: %+v", r)
+	}
+}
