@@ -9,7 +9,13 @@ import (
 // The initial rule set must be implemented for every supported language.
 // A later rule may cover a subset; it then needs an entry here with the
 // reason, so a gap is a decision and not an accident.
-var knownGaps = map[string]map[string]string{}
+var knownGaps = map[string]map[string]string{
+	"dead-code/unused-import":            {"csharp": "a using imports a namespace; whether any of its types is used needs type resolution"},
+	"dead-code/unused-export":            {"csharp": "public C# members are largely consumed through DI, reflection and framework conventions; name-based results would be mostly noise"},
+	"dependencies/unresolved-import":     {"csharp": "external namespaces cannot be told from missing ones without .csproj PackageReference and package metadata"},
+	"dependencies/undeclared-dependency": {"csharp": "needs .csproj PackageReference and a namespace-to-package mapping"},
+	"dependencies/unused-dependency":     {"csharp": "needs .csproj PackageReference and a namespace-to-package mapping"},
+}
 
 func TestEveryRuleImplementedForEveryLanguage(t *testing.T) {
 	langs := languages.Default()

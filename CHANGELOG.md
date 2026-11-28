@@ -2,8 +2,37 @@
 
 All versions are local proof-of-concept builds; there is no remote or release.
 
-## Unreleased
+## 0.8.0-poc
 
+- **C# adapter** (`internal/lang/csharp`, tree-sitter-c-sharp v0.23.5, the
+  only new dependency):
+  - Symbols: types (nested as Outer.Inner) and callables (methods,
+    constructors, destructors, operators, properties and indexers with
+    bodies).
+  - Complexity: if, loops, switch sections, switch-expression arms (not `_`),
+    catch, ternary, `&&`, `||` and `??`. Lambdas and local functions count
+    toward their member.
+  - Fingerprints and name-based references.
+  - A directory graph from `using` directives resolved to the directories
+    that declare each namespace. Namespaces not declared in the repository
+    are external.
+  - Limits, stated in reports: no type resolution; implicit
+    enclosing-namespace access and fully qualified names are not followed;
+    `.csproj` is not read; top-level statements are not measured.
+  - On a 5,221-file C# repository, all but 40 files parse (34 of the 40 are
+    generated with `#if` branches), and C# plus TypeScript now cover 98% of
+    its source bytes.
+- **C# defect rules** (`internal/rules/csharp`): 8 of 13.
+  - Implemented: unused variable, unreachable code, unused private method
+    (name-based across the repository, for partial classes), empty catch,
+    catch returning a constant, tautological xUnit/NUnit/MSTest/
+    FluentAssertions assertions, un-awaited async assertions, and
+    architecture rules through the graph.
+  - Recorded gaps, with reasons: unused usings, unused public API, and the
+    three dependency rules.
+  - The defects fixture has C# in its clean base and bad variant.
+- Reports on repositories with C# are not comparable to 0.7 reports, which
+  counted C# as unsupported coverage.
 - **`codeeval hook install|uninstall --tool claude-code`:**
   - Installs the analyze Stop hook and session-base hook (embedded in the
     binary) into the git repository you run it from, and registers them in

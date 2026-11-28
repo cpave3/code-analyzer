@@ -46,7 +46,13 @@ func TestDefectsEveryRuleAndLanguageDetects(t *testing.T) {
 		seen[f.Rule+"|"+f.Language] = true
 	}
 	for _, rule := range catalog.Rules {
-		for _, l := range []string{"go", "typescript"} {
+		for _, l := range []string{"go", "typescript", "csharp"} {
+			if csharpGaps[rule.ID] && l == "csharp" {
+				if seen[rule.ID+"|"+l] {
+					t.Errorf("%s is a recorded C# gap but reported a C# finding", rule.ID)
+				}
+				continue
+			}
 			if !seen[rule.ID+"|"+l] {
 				t.Errorf("%s found nothing in %s", rule.ID, l)
 			}
@@ -113,12 +119,28 @@ func TestDefectsMarkdownAndRulesCommand(t *testing.T) {
 		t.Fatalf("markdown:\n%s", r.stdout)
 	}
 	list := cli(t, "rules")
-	if list.code != 0 || strings.Contains(list.stdout, "not implemented") {
-		t.Fatalf("rules:\n%s", list.stdout)
+	if list.code != 0 {
+		t.Fatalf("rules: %s", list.stderr)
+	}
+	// "not implemented" appears only for the recorded C# gaps.
+	rule := ""
+	for _, line := range strings.Split(list.stdout, "\n") {
+		if strings.Contains(line, "  [") && !strings.HasPrefix(line, " ") {
+			rule = strings.Fields(line)[0]
+		}
+		if strings.Contains(line, "not implemented") && !(strings.Contains(line, "csharp") && csharpGaps[rule]) {
+			t.Errorf("unexpected gap under %s: %s", rule, line)
+		}
 	}
 	for _, rule := range catalog.Rules {
 		if !strings.Contains(list.stdout, rule.ID+"  ["+string(rule.Severity)+"]") {
 			t.Errorf("rules output lacks %s", rule.ID)
 		}
 	}
+}
+
+// csharpGaps mirror knownGaps in internal/rules/all.
+var csharpGaps = map[string]bool{
+	"dead-code/unused-import": true, "dead-code/unused-export": true, "dependencies/unresolved-import": true,
+	"dependencies/undeclared-dependency": true, "dependencies/unused-dependency": true,
 }

@@ -2,8 +2,24 @@
   "configVersion": 1,
   "architecture": {
     "rules": [
-      { "name": "store-not-api", "from": "internal/store", "to": "internal/api" },
-      { "name": "lib-allow-list", "from": "web/src/lib/**", "to": "", "only": ["web/src/shared/**"] }
+      {
+        "name": "store-not-api",
+        "from": "internal/store",
+        "to": "internal/api"
+      },
+      {
+        "name": "lib-allow-list",
+        "from": "web/src/lib/**",
+        "to": "",
+        "only": [
+          "web/src/shared/**"
+        ]
+      },
+      {
+        "name": "cs-domain-not-api",
+        "from": "svc/Domain",
+        "to": "svc/Api"
+      }
     ]
   }
 }

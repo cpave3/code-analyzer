@@ -319,6 +319,16 @@ JSON report).
 | `test-oracle/tautological-assertion` | gate | An assertion comparing an expression with itself or two literals, or asserting a constant |
 | `test-oracle/lost-async-assertion` | gate | `expect(…).resolves/.rejects` neither awaited nor returned; `t.Fatal`/`FailNow`/`require.*` inside a goroutine |
 
+- **C#** implements 8 of the 13:
+  - unused variable, unreachable code, unused private method, empty catch,
+    and catch returning a constant;
+  - tautological and un-awaited async assertions (xUnit, NUnit, MSTest,
+    FluentAssertions);
+  - import policy.
+
+  Unused usings, unused public API and the dependency rules are recorded
+  gaps: they need type resolution or `.csproj` package data. `codeeval
+  rules` lists each gap with its reason.
 - **Change mode:** findings are matched across revisions by rule, file and a
   line-independent key, so pre-existing defects never fail a change. A
   finding in a moved file counts as resolved plus introduced.
@@ -438,7 +448,7 @@ effects.
 |---|---|
 | Go | Supported: Tree-sitter adapter with symbols, complexity, fingerprints, package import graph (via the nearest `go.mod`) and name-based references |
 | TypeScript (`.ts`, `.tsx`, `.mts`, `.cts`) | Supported (since 0.2.0): Tree-sitter adapter (TSX grammar with TypeScript fallback) with functions, classes/methods, interfaces/types/enums and top-level arrow-function components/hooks; complexity; fingerprints; a directory-level import graph resolved via relative specifiers, `tsconfig` `paths` and workspace package names; name-based references |
-| C# | Recognised and counted as unsupported coverage. Next adapter (see below) |
+| C# (`.cs`) | Supported (since 0.8.0): Tree-sitter adapter (tree-sitter-c-sharp v0.23.5) with classes/structs/records/interfaces/enums (nested as Outer.Inner); methods, constructors, destructors, operators and properties/indexers with bodies; complexity (if/loops/switch sections/switch-expression arms/catch/ternary/&&/\|\|/??; lambdas and local functions count toward the enclosing member); fingerprints; a directory graph from `using` directives resolved to the directories declaring each namespace; name-based references. Defect rules: 8 of 13 (see `codeeval rules`) |
 | JS, Kotlin, Rust, Python, Swift, Java, SQL, shell | Recognised and counted as unsupported coverage |
 
 The Go adapter does not type-check, resolve interface dispatch or build a call
@@ -461,7 +471,7 @@ each wired in one file. The registration contract is tested in
 `internal/engine/contract_test.go`: a toy language and a toy analyzer are
 added through the public registries without touching existing code.
 
-### Add a language (e.g. C#)
+### Add a language
 
 `internal/lang/typescript/` is the most complete reference adapter (two
 grammars, tsconfig/workspace resolution, callback-inclusive complexity).

@@ -6,6 +6,7 @@ import (
 	"github.com/cameron/code-evaluator/internal/lang"
 	"github.com/cameron/code-evaluator/internal/rules"
 	"github.com/cameron/code-evaluator/internal/rules/catalog"
+	"github.com/cameron/code-evaluator/internal/rules/csharp"
 	"github.com/cameron/code-evaluator/internal/rules/generic"
 	"github.com/cameron/code-evaluator/internal/rules/golang"
 	"github.com/cameron/code-evaluator/internal/rules/typescript"
@@ -17,6 +18,7 @@ func Default(langs *lang.Registry) *rules.Registry {
 	must(catalog.Define(r))
 	must(golang.Register(r))
 	must(typescript.Register(r))
+	must(csharp.Register(r))
 	must(generic.Register(r, langs))
 	return r
 }
