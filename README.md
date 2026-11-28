@@ -240,7 +240,7 @@ import-level rules; correctness is not measured.
 codeeval explain --repo PATH --rev REV [--path internal/service] [--path 'web/**/*.tsx'] [--top N] [--detailed N]
 # What did this change add? Exit 3 when the check fails.
 codeeval check --repo PATH --base REV (--target REV | --working-tree) [--path P] \
-  [--fail-on new-debt|net-debt|gates|none] [--top N]
+  [--fail-on new-debt|net-debt|gates|none] [--debt-budget N] [--top N]
 ```
 
 Every **factor** is one item of v2 debt in scope. It has a `kind`
@@ -255,8 +255,13 @@ target, steps, acceptance criteria and caution.
   For a worsened factor the target is relative to its pre-change value. It
   also lists what the change improved, the decision-point and base-point
   split, and the advisory gates.
+- **Renames:** a callable renamed or moved, or whose body moved to a new
+  name, is compared with its old self (structural similarity of the bodies),
+  so only what the change added to it counts.
 - **Fail modes:** `new-debt` (any new or worsened factor), `net-debt` (debt
-  in scope rises), `gates`, or `none`.
+  in scope rises), `gates`, or `none`. `--debt-budget N` lets a change add
+  up to N points before `net-debt` (the rise) or `new-debt` (the sum the
+  introduced and worsened factors added) fails; gates ignore it.
 
 JSON schemas are `codeeval.explain/v2` and `codeeval.check/v2`. Claude Code
 templates (a skill and a Stop hook) are in

@@ -2,6 +2,32 @@
 
 All versions are local proof-of-concept builds; there is no remote or release.
 
+## 0.9.1-poc
+
+Fixes from the hooks' first use in Legato (CE-4) and per-session hook state
+(CE-3).
+- **Renames keep their debt.** `check` (and `analyze`) compare a callable
+  with the one it came from, matched by structural similarity of the bodies,
+  when it is renamed, moved, or its body moves to a new name while the old
+  name becomes a wrapper. Only what the change added counts, reported as
+  *worsened*. Before, the Legato case (`verifyPaneCommand` becoming
+  `verifyPane` plus one condition) showed the whole callable as introduced
+  and the old one as removed. scoring/v1 is unchanged.
+- **`--debt-budget N`** on `check` and `analyze`: a change may add up to N
+  debt points before `net-debt` or `new-debt` fails. The default is 0.
+- **Stop hook:**
+  - blocks only on a rise of more than `CODEEVAL_DEBT_BUDGET` points
+    (default 10);
+  - keeps its state per Claude session in `.git/codeeval/<session_id>/`, so
+    another session in the same checkout no longer resets its base, block
+    budget or background check (CE-3);
+  - moves the session's base to `HEAD` at each stop that does not block, so
+    a long session is checked per turn, not from where it started;
+  - does not block once the branch's pull request is approved; it tells the
+    user instead (`CODEEVAL_HOOK_WHEN_APPROVED=block` to keep blocking).
+- **SessionStart** prints the quick check, with the hook's settings, for the
+  agent to run before it pushes or opens a pull request.
+
 ## 0.9.0-poc
 
 - **Dashboard rebuilt in Vite + React + TypeScript** (`codeeval serve`), to
