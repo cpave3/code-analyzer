@@ -51,8 +51,9 @@ checked too.
   message lists them.
 
 This repository uses both hooks on itself: see `.claude/settings.json` and
-`.claude/hooks/dogfood-stop.sh`. The dogfood script rebuilds the binary
-first and falls back to the last good build when the tree does not compile.
+`.claude/hooks/dogfood-stop.sh`. The dogfood script uses the existing
+`bin/codeeval` and does not rebuild it, so a change is never judged by its own
+evaluator code. Rebuild it on purpose to update it.
 
 ## CI / PR
 

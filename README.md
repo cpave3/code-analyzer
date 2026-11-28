@@ -549,8 +549,8 @@ Deferred:
 
 `.claude/settings.json` wires two Claude Code hooks:
 - **SessionStart:** records the session's base commit.
-- **Stop:** rebuilds `bin/codeeval` and runs `codeeval analyze` from the
-  session base to the working tree. It blocks the stop on new gate defects or
+- **Stop:** runs the existing `bin/codeeval analyze` (it does not rebuild)
+  from the session base to the working tree. It blocks the stop on new gate defects or
   a debt rise.
 
 The same file sets `AGENT_ID` and `AGENT_HARNESS`, and `.git/hooks/post-commit`
