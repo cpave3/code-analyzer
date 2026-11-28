@@ -11,7 +11,6 @@ package golang
 
 import (
 	"bytes"
-	"fmt"
 	"path"
 	"regexp"
 	"sort"
@@ -24,6 +23,7 @@ import (
 
 	"github.com/cameron/code-evaluator/internal/lang"
 	"github.com/cameron/code-evaluator/internal/lang/fingerprint"
+	"github.com/cameron/code-evaluator/internal/lang/sitterutil"
 	"github.com/cameron/code-evaluator/internal/model"
 )
 
@@ -68,14 +68,9 @@ var generatedRe = regexp.MustCompile(`(?m)^// Code generated .* DO NOT EDIT\.$`)
 
 // Parse parses Go source.
 func (a *Adapter) Parse(src []byte) (*model.ParsedFile, error) {
-	parser := sitter.NewParser()
-	defer parser.Close()
-	if err := parser.SetLanguage(a.language); err != nil {
+	tree, err := sitterutil.Parse(a.language, src)
+	if err != nil {
 		return nil, err
-	}
-	tree := parser.Parse(src, nil)
-	if tree == nil {
-		return nil, fmt.Errorf("tree-sitter returned no tree")
 	}
 	defer tree.Close()
 	root := tree.RootNode()
@@ -92,9 +87,10 @@ func (a *Adapter) Parse(src []byte) (*model.ParsedFile, error) {
 		pf.Generated = generatedRe.Match(head)
 	}
 
-	p := &fileParser{src: src, pf: pf}
+	p := &fileParser{src: src, pf: pf, errs: sitterutil.Errors{Language: "go"}}
 	if root.HasError() {
-		p.collectErrors(root)
+		p.errs.Collect(root)
+		pf.ParseErrors = p.errs.Diags
 	}
 	p.walkTop(root)
 	sort.SliceStable(pf.Symbols, func(i, j int) bool { return pf.Symbols[i].StartLine < pf.Symbols[j].StartLine })
@@ -102,47 +98,16 @@ func (a *Adapter) Parse(src []byte) (*model.ParsedFile, error) {
 }
 
 type fileParser struct {
-	src    []byte
-	pf     *model.ParsedFile
-	errors []int // lines with ERROR/MISSING nodes
+	src  []byte
+	pf   *model.ParsedFile
+	errs sitterutil.Errors
 }
 
-func line(n *sitter.Node) int    { return int(n.StartPosition().Row) + 1 }
-func endLine(n *sitter.Node) int { return int(n.EndPosition().Row) + 1 }
+var line, endLine = sitterutil.Line, sitterutil.EndLine
 
 func (p *fileParser) text(n *sitter.Node) string { return n.Utf8Text(p.src) }
 
-func (p *fileParser) collectErrors(n *sitter.Node) {
-	if len(p.pf.ParseErrors) >= 20 {
-		return
-	}
-	if n.IsError() || n.IsMissing() {
-		msg := "syntax error"
-		if n.IsMissing() {
-			msg = "missing " + n.Kind()
-		}
-		p.pf.ParseErrors = append(p.pf.ParseErrors, model.Diagnostic{
-			Severity: model.SevError, Code: "parse_error", Message: msg, Line: line(n), Language: "go",
-		})
-		p.errors = append(p.errors, line(n))
-		return
-	}
-	if !n.HasError() {
-		return
-	}
-	for i := uint(0); i < n.ChildCount(); i++ {
-		p.collectErrors(n.Child(i))
-	}
-}
-
-func (p *fileParser) inError(start, end int) bool {
-	for _, l := range p.errors {
-		if l >= start && l <= end {
-			return true
-		}
-	}
-	return false
-}
+func (p *fileParser) inError(start, end int) bool { return p.errs.In(start, end) }
 
 func (p *fileParser) walkTop(root *sitter.Node) {
 	for i := uint(0); i < root.ChildCount(); i++ {
@@ -340,38 +305,26 @@ var nestingKinds = map[string]bool{
 	"type_switch_statement": true, "select_statement": true, "func_literal": true,
 }
 
+var measureSpec = &sitterutil.MeasureSpec{
+	Decision: func(n *sitter.Node) bool {
+		switch n.Kind() {
+		case "if_statement", "for_statement", "expression_case", "type_case", "communication_case":
+			return true
+		}
+		return sitterutil.LogicalOp(n, "&&", "||")
+	},
+	Statement: func(kind string) bool {
+		return (strings.HasSuffix(kind, "_statement") && kind != "block") || kind == "short_var_declaration" || kind == "var_declaration" || kind == "const_declaration"
+	},
+	Nests: func(n *sitter.Node) bool {
+		// "else if" continues the chain rather than nesting deeper.
+		return nestingKinds[n.Kind()] && !(n.Kind() == "if_statement" && n.Parent() != nil && n.Parent().Kind() == "if_statement")
+	},
+}
+
 // measure walks a function body accumulating decisions, nesting and statements.
 func (p *fileParser) measure(n *sitter.Node, depth int, m *model.Metrics) {
-	kind := n.Kind()
-	switch kind {
-	case "if_statement", "for_statement", "expression_case", "type_case", "communication_case":
-		m.Decisions++
-	case "binary_expression":
-		if op := n.ChildByFieldName("operator"); op != nil {
-			if o := op.Kind(); o == "&&" || o == "||" {
-				m.Decisions++
-			}
-		}
-	}
-	if strings.HasSuffix(kind, "_statement") && kind != "block" {
-		m.Statements++
-	} else if kind == "short_var_declaration" || kind == "var_declaration" || kind == "const_declaration" {
-		m.Statements++
-	}
-	childDepth := depth
-	if nestingKinds[kind] {
-		// "else if" continues the chain rather than nesting deeper.
-		isElseIf := kind == "if_statement" && n.Parent() != nil && n.Parent().Kind() == "if_statement"
-		if !isElseIf {
-			childDepth = depth + 1
-			if childDepth > m.MaxNesting {
-				m.MaxNesting = childDepth
-			}
-		}
-	}
-	for i := uint(0); i < n.ChildCount(); i++ {
-		p.measure(n.Child(i), childDepth, m)
-	}
+	sitterutil.Measure(n, depth, m, measureSpec)
 }
 
 // refs records identifier uses, skipping declaration names.
@@ -526,14 +479,5 @@ func modulePath(gomod []byte) string {
 
 // ParseSyntax returns the Tree-sitter syntax tree (lang.SyntaxParser).
 func (a *Adapter) ParseSyntax(src []byte) (*sitter.Tree, error) {
-	parser := sitter.NewParser()
-	defer parser.Close()
-	if err := parser.SetLanguage(a.language); err != nil {
-		return nil, err
-	}
-	tree := parser.Parse(src, nil)
-	if tree == nil {
-		return nil, fmt.Errorf("tree-sitter returned no tree")
-	}
-	return tree, nil
+	return sitterutil.Parse(a.language, src)
 }
