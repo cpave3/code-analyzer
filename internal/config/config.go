@@ -32,6 +32,15 @@ type Config struct {
 	Complexity   Complexity   `json:"complexity"`
 	Architecture Architecture `json:"architecture"`
 	Scope        Scope        `json:"scope"`
+	// Defects configures `codeeval defects` (internal/rules). Omitted when
+	// empty so existing configuration hashes are unchanged.
+	Defects Defects `json:"defects,omitzero"`
+}
+
+// Defects configures the defect rules.
+type Defects struct {
+	// Disable rule IDs or category prefixes (e.g. "dead-code/unused-export").
+	Disable []string `json:"disable,omitempty"`
 }
 
 // Duplication thresholds.
@@ -58,11 +67,16 @@ type Architecture struct {
 	Rules []Rule `json:"rules"`
 }
 
-// Rule forbids dependencies from units matching From to units matching To.
+// Rule restricts dependencies of units matching From. With To, it forbids
+// dependencies on units matching To (enforced by v1, v2 and `codeeval
+// defects`). With Only, units matching From may depend only on units matching
+// one of the Only globs or From itself (an allow-list, enforced by `codeeval
+// defects` only).
 type Rule struct {
-	Name string `json:"name"`
-	From string `json:"from"`
-	To   string `json:"to"`
+	Name string   `json:"name"`
+	From string   `json:"from"`
+	To   string   `json:"to"`
+	Only []string `json:"only,omitempty"`
 }
 
 // Scope thresholds.
@@ -102,6 +116,11 @@ func Load(path string) (*Config, error) {
 	if c.ConfigVersion != Version {
 		return nil, fmt.Errorf("config %s: configVersion %d unsupported (want %d)", path, c.ConfigVersion, Version)
 	}
+	for _, r := range c.Architecture.Rules {
+		if r.From == "" || (r.To == "" && len(r.Only) == 0) {
+			return nil, fmt.Errorf("config %s: architecture rule %q needs from and either to or only", path, r.Name)
+		}
+	}
 	for _, g := range append(append([]string{}, c.Exclude...), ruleGlobs(c)...) {
 		if _, err := compile(g); err != nil {
 			return nil, fmt.Errorf("config %s: bad glob %q: %w", path, g, err)
@@ -114,6 +133,7 @@ func ruleGlobs(c *Config) []string {
 	var out []string
 	for _, r := range c.Architecture.Rules {
 		out = append(out, r.From, r.To)
+		out = append(out, r.Only...)
 	}
 	return out
 }
