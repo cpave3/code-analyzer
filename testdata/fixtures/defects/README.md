@@ -11,4 +11,5 @@ codeeval.json: store must not depend on api (forbid), web/src/lib may depend onl
 svc/Domain (C#) must not depend on svc/Api (forbid).
 C#: base is clean (using var, attributed test, awaited ThrowsAsync); bad fires every rule implemented for C#
 (unused variable, unreachable, unused private method, empty catch, catch returning null, tautological
-Assert.Equal, un-awaited Assert.ThrowsAsync, Domain -> Api import).
+Assert.Equal, un-awaited Assert.ThrowsAsync, Domain -> Api dependency: Order calls OrdersController.Notify;
+a bare unused `using Shop.Api;` would not count, since an unused using is not a dependency).

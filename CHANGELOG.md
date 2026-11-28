@@ -2,6 +2,27 @@
 
 All versions are local proof-of-concept builds; there is no remote or release.
 
+## 0.8.1-poc
+
+- **C# dependency graph fix.** The 0.8.0 graph linked a `using N` to every
+  directory declaring namespace `N`. On a real repository this produced an
+  impossible cycle across two projects, because one project declared
+  namespaces named after the other. It also turned unused usings into
+  edges. A `using` now links only to the following:
+  - directories of `N` that declare a type the file references (`[Foo]`
+    matches `FooAttribute`);
+  - failing that, directories declaring an extension method (first parameter
+    `this`) the file calls by name.
+
+  Edges are also limited to the project itself and to projects it
+  references (`.csproj` `ProjectReference`, transitively).
+
+  On the same repository: cross-project cycles went from 1 to 0, directories
+  in cycles from 142 to 128, and edges from 5,293 to 4,438. The 20 cycles
+  that remain each lie within one project, and the sample checked against
+  source is real. C# graphs, and the v2 architecture debt from them, differ
+  from 0.8.0.
+
 ## 0.8.0-poc
 
 - **C# adapter** (`internal/lang/csharp`, tree-sitter-c-sharp v0.23.5, the

@@ -110,22 +110,105 @@ func TestTestPathsAndGraph(t *testing.T) {
 			t.Errorf("IsTestPath(%s) = %v", p, !want)
 		}
 	}
-	file := func(path, ns string, imports ...string) lang.GraphFile {
-		pf := &model.ParsedFile{PackageName: ns}
+	file := func(path, ns, declares, uses string, imports ...string) lang.GraphFile {
+		pf := &model.ParsedFile{PackageName: ns, Refs: map[string]int{uses: 1}}
+		pf.Symbols = []model.Symbol{{Name: declares, Kind: model.KindType}}
 		for _, i := range imports {
 			pf.Imports = append(pf.Imports, model.Import{Path: i, Line: 1})
 		}
 		return lang.GraphFile{Path: path, Class: model.ClassSource, Parsed: pf}
 	}
 	g, _ := a.BuildGraph(lang.GraphInput{Files: []lang.GraphFile{
-		file("api/A.cs", "Shop.Api", "Shop.Domain", "System.Text"),
-		file("domain/D.cs", "Shop.Domain"),
-		file("domain/models/M.cs", "Shop.Domain.Models", "Shop.Api"),
+		file("api/A.cs", "Shop.Api", "Controller", "Order", "Shop.Domain", "System.Text"),
+		file("domain/D.cs", "Shop.Domain", "Order", ""),
+		file("domain/models/M.cs", "Shop.Domain.Models", "Line", "Controller", "Shop.Api"),
 	}})
 	if len(g.Edges["api"]["domain"]) != 1 || len(g.Edges["domain/models"]["api"]) != 1 {
 		t.Errorf("edges %+v", g.Edges)
 	}
 	if !g.External["api"]["System.Text"] {
 		t.Errorf("external %+v", g.External)
+	}
+}
+
+func TestGraphTypeResolvedAndProjectAware(t *testing.T) {
+	a := New()
+	file := func(path, ns string, types, refs []string, imports ...string) lang.GraphFile {
+		pf := &model.ParsedFile{PackageName: ns, Refs: map[string]int{}}
+		for _, ty := range types {
+			pf.Symbols = append(pf.Symbols, model.Symbol{Name: ty, Kind: model.KindType})
+		}
+		for _, r := range refs {
+			pf.Refs[r]++
+		}
+		for _, i := range imports {
+			pf.Imports = append(pf.Imports, model.Import{Path: i, Line: 1})
+		}
+		return lang.GraphFile{Path: path, Class: model.ClassSource, Parsed: pf}
+	}
+	csproj := map[string]string{
+		"Domain/Domain.csproj":   `<Project><ItemGroup></ItemGroup></Project>`,
+		"Core/Core.csproj":       `<Project></Project>`,
+		"Service/Service.csproj": `<Project><ItemGroup><ProjectReference Include="..\Domain\Domain.csproj" /></ItemGroup></Project>`,
+		"Api/Api.csproj":         `<Project><ItemGroup><ProjectReference Include="..\Service\Service.csproj" /></ItemGroup></Project>`,
+	}
+	read := func(p string) ([]byte, error) { return []byte(csproj[p]), nil }
+	files := []lang.GraphFile{
+		// Shop.Models is declared in two projects (the Agx.Rex case).
+		file("Service/Models/Dto.cs", "Shop.Models", []string{"Dto"}, nil),
+		file("Domain/Misplaced/Entity.cs", "Shop.Models", []string{"Entity", "AuditAttribute"}, nil),
+		// Domain uses Shop.Models but may only depend on itself: no edge into Service.
+		file("Domain/Logic/L.cs", "Shop.Logic", nil, []string{"Entity", "Dto"}, "Shop.Models"),
+		// Service uses only Dto: one edge, to Service/Models, not Domain/Misplaced.
+		file("Service/Handlers/H.cs", "Shop.Handlers", nil, []string{"Dto"}, "Shop.Models"),
+		// Api reaches Domain transitively through Service; [Audit] matches AuditAttribute.
+		file("Api/C.cs", "Shop.Api", nil, []string{"Audit"}, "Shop.Models"),
+		// An unused using of a multi-directory namespace adds no edge.
+		file("Service/Unused/U.cs", "Shop.Unused", nil, nil, "Shop.Models"),
+		// Core does not reference Domain: no edge even with a referenced type.
+		file("Core/X.cs", "Shop.Core", nil, []string{"Entity"}, "Shop.Models"),
+	}
+	g, _ := a.BuildGraph(lang.GraphInput{Files: files, AllPaths: []string{"Domain/Domain.csproj", "Core/Core.csproj", "Service/Service.csproj", "Api/Api.csproj"}, ReadFile: read})
+	want := map[string][]string{
+		"Domain/Logic":     {"Domain/Misplaced"},
+		"Service/Handlers": {"Service/Models"},
+		"Api":              {"Domain/Misplaced"},
+	}
+	for from, tos := range want {
+		if len(g.Edges[from]) != len(tos) {
+			t.Errorf("%s edges %v, want %v", from, g.Edges[from], tos)
+		}
+		for _, to := range tos {
+			if len(g.Edges[from][to]) == 0 {
+				t.Errorf("missing edge %s -> %s (have %v)", from, to, g.Edges[from])
+			}
+		}
+	}
+	for _, from := range []string{"Service/Unused", "Core"} {
+		if len(g.Edges[from]) != 0 {
+			t.Errorf("%s should have no edges: %v", from, g.Edges[from])
+		}
+	}
+}
+
+func TestExtensionMethodUsingLinks(t *testing.T) {
+	ext := &model.ParsedFile{PackageName: "Shop.Ext", Refs: map[string]int{}, Symbols: []model.Symbol{
+		{Name: "OrderExtensions", Kind: model.KindType},
+		{Name: "ToDto", Container: "OrderExtensions", Kind: model.KindMethod, Signature: "(this Order o)"},
+		{Name: "Get", Container: "OrderExtensions", Kind: model.KindMethod, Signature: "(int id)"},
+	}}
+	use := func(ref string) *model.ParsedFile {
+		return &model.ParsedFile{PackageName: "Shop.Api", Refs: map[string]int{ref: 1}, Imports: []model.Import{{Path: "Shop.Ext", Line: 1}}}
+	}
+	g, _ := New().BuildGraph(lang.GraphInput{Files: []lang.GraphFile{
+		{Path: "ext/E.cs", Class: model.ClassSource, Parsed: ext},
+		{Path: "api/A.cs", Class: model.ClassSource, Parsed: use("ToDto")},
+		{Path: "web/W.cs", Class: model.ClassSource, Parsed: use("Get")},
+	}})
+	if len(g.Edges["api"]["ext"]) != 1 {
+		t.Errorf("extension method use should link api -> ext: %v", g.Edges)
+	}
+	if len(g.Edges["web"]) != 0 {
+		t.Errorf("a non-extension method name must not link: %v", g.Edges["web"])
 	}
 }

@@ -45,7 +45,7 @@ func (a *Adapter) Capabilities() map[lang.Capability]string {
 		lang.CapSymbols:      "classes, structs, records, interfaces, enums (nested as Outer.Inner); methods, constructors, destructors, operators and properties/indexers with bodies",
 		lang.CapComplexity:   "cyclomatic = 1 + if/for/foreach/while/do/switch section/switch-expression arm (not `_`)/catch/ternary/&&/||/??; nesting counts if/loops/switch/catch/lambdas/local functions (inner lambdas and local functions count toward the enclosing callable); else-if not nested",
 		lang.CapFingerprints: "exact token text and structural kinds (identifiers/literals abstracted), comments ignored",
-		lang.CapDependencies: "directory-level graph from using directives resolved to the directories that declare each namespace; namespaces not declared in the repository are external; test files excluded",
+		lang.CapDependencies: "directory-level graph: a using directive links to the directories of that namespace that declare a type the file references (name-based), within the project or towards projects it references (.csproj ProjectReference, transitive); namespaces not declared in the repository are external; test files excluded",
 		lang.CapReferences:   "name-based identifier references; member access recorded as object.Name; no type resolution",
 	}
 }
@@ -54,7 +54,7 @@ func (a *Adapter) Limits() []string {
 	return []string{
 		"no type checking or overload resolution: references are matched by name",
 		"graph edges come from using directives only: implicit access to enclosing namespaces, fully qualified names and global usings in other files are not followed",
-		".csproj ProjectReference and PackageReference are not read; a namespace declared in several directories links to all of them",
+		"type resolution for edges is name-based (a type of that namespace's directory, or an extension method declared there, referenced in the file); an unused using adds no edge; Directory.Build.props references and PackageReference are not read",
 		"graph units are directories; directory cycles are legal in C# and indicate coupling, not build errors",
 		"lambdas and local functions are measured as part of their enclosing callable",
 		"top-level statements (Program.cs without a Main method) are not measured as a callable",
@@ -385,13 +385,22 @@ var declKinds = map[string]bool{
 	"local_function_statement": true, "namespace_declaration": true, "file_scoped_namespace_declaration": true,
 }
 
-// BuildGraph builds the directory graph: each using directive links the
-// file's directory to the directories that declare that namespace.
+// BuildGraph builds the directory graph. A `using N` in a file links its
+// directory to the directories declaring namespace N that declare a type the
+// file references (name-based; `[Foo]` matches FooAttribute). When no such
+// type is found, it links to the directories declaring an extension method
+// (first parameter `this`) the file references by name; a using whose
+// namespace contributes nothing the file references adds no edge. Edges are kept
+// only within a project or towards a project it references (.csproj
+// ProjectReference, transitively), so impossible cross-project edges never
+// appear.
 func (a *Adapter) BuildGraph(in lang.GraphInput) (*lang.Graph, []model.Diagnostic) {
 	g := lang.NewGraph()
-	g.Note = "C# directories linked by using directives to the directories declaring each namespace (non-test files); namespaces not declared in the repository are external"
+	g.Note = "C# directories linked by using directives to the directories declaring a referenced type of that namespace (name-based), within a project or towards projects it references (.csproj ProjectReference, transitive); namespaces not declared in the repository are external"
 	inGraph := func(f lang.GraphFile) bool { return f.Class == model.ClassSource || f.Class == model.ClassGenerated }
 	declared := map[string]map[string]bool{} // namespace -> directories
+	types := map[string]map[string]bool{}    // namespace|dir -> top-level type names
+	methods := map[string]map[string]bool{}  // namespace|dir -> extension method names (used by name)
 	for _, f := range in.Files {
 		if !inGraph(f) {
 			continue
@@ -406,6 +415,38 @@ func (a *Adapter) BuildGraph(in lang.GraphInput) (*lang.Graph, []model.Diagnosti
 			declared[ns] = map[string]bool{}
 		}
 		declared[ns][dir] = true
+		k := ns + "|" + dir
+		if types[k] == nil {
+			types[k] = map[string]bool{}
+		}
+		if methods[k] == nil {
+			methods[k] = map[string]bool{}
+		}
+		for _, sym := range f.Parsed.Symbols {
+			switch {
+			case sym.Kind == model.KindType && !strings.Contains(sym.Name, "."):
+				types[k][sym.Name] = true
+			case sym.Kind == model.KindMethod && strings.HasPrefix(sym.Signature, "(this "):
+				methods[k][sym.Name] = true // an extension method: used by name, needing only the using
+			}
+		}
+	}
+	projects, diags := readProjects(in)
+	referencedType := func(f *model.ParsedFile, k string) bool {
+		for t := range types[k] {
+			if f.Refs[t] > 0 || (strings.HasSuffix(t, "Attribute") && f.Refs[strings.TrimSuffix(t, "Attribute")] > 0) {
+				return true
+			}
+		}
+		return false
+	}
+	referencedMethod := func(f *model.ParsedFile, k string) bool {
+		for m := range methods[k] {
+			if f.Refs[m] > 0 {
+				return true
+			}
+		}
+		return false
 	}
 	for _, f := range in.Files {
 		if !inGraph(f) || f.Parsed == nil {
@@ -423,10 +464,88 @@ func (a *Adapter) BuildGraph(in lang.GraphInput) (*lang.Graph, []model.Diagnosti
 				ext[imp.Path] = true
 				continue
 			}
-			for to := range dirs {
+			var targets []string
+			for _, match := range []func(*model.ParsedFile, string) bool{referencedType, referencedMethod} {
+				for to := range dirs {
+					if projects.allows(from, to) && match(f.Parsed, imp.Path+"|"+to) {
+						targets = append(targets, to)
+					}
+				}
+				if len(targets) > 0 {
+					break // types first; methods (extension methods) only when no type matched
+				}
+			}
+			sort.Strings(targets)
+			for _, to := range targets {
 				g.AddEdge(from, to, model.Location{File: f.Path, Line: imp.Line})
 			}
 		}
 	}
-	return g, nil
+	return g, diags
+}
+
+// projectSet maps directories to .csproj projects and the projects each one
+// references, transitively.
+type projectSet struct {
+	dirs  []string                   // project directories, longest first
+	reach map[string]map[string]bool // project dir -> referenced project dirs (transitive)
+}
+
+var projectRefRe = regexp.MustCompile(`<ProjectReference\s+Include\s*=\s*"([^"]+)"`)
+
+func readProjects(in lang.GraphInput) (*projectSet, []model.Diagnostic) {
+	ps := &projectSet{reach: map[string]map[string]bool{}}
+	direct := map[string][]string{}
+	var diags []model.Diagnostic
+	for _, p := range in.AllPaths {
+		if path.Ext(p) != ".csproj" || strings.Contains(p, "/bin/") || strings.Contains(p, "/obj/") {
+			continue
+		}
+		dir := path.Dir(p)
+		ps.dirs = append(ps.dirs, dir)
+		if in.ReadFile == nil {
+			continue
+		}
+		data, err := in.ReadFile(p)
+		if err != nil {
+			diags = append(diags, model.Diagnostic{Severity: model.SevWarning, Code: "csproj_unreadable", Message: err.Error(), File: p, Language: "csharp"})
+			continue
+		}
+		for _, m := range projectRefRe.FindAllSubmatch(data, -1) {
+			ref := path.Clean(path.Join(dir, strings.ReplaceAll(string(m[1]), "\\", "/")))
+			direct[dir] = append(direct[dir], path.Dir(ref))
+		}
+	}
+	sort.Slice(ps.dirs, func(i, j int) bool { return len(ps.dirs[i]) > len(ps.dirs[j]) })
+	var walk func(root, p string)
+	walk = func(root, p string) {
+		for _, q := range direct[p] {
+			if !ps.reach[root][q] {
+				ps.reach[root][q] = true
+				walk(root, q)
+			}
+		}
+	}
+	for _, d := range ps.dirs {
+		ps.reach[d] = map[string]bool{}
+		walk(d, d)
+	}
+	return ps, diags
+}
+
+// project returns the project directory containing dir ("" when none).
+func (ps *projectSet) project(dir string) string {
+	for _, p := range ps.dirs {
+		if p == "." || dir == p || strings.HasPrefix(dir, p+"/") {
+			return p
+		}
+	}
+	return ""
+}
+
+// allows reports whether code in from may depend on code in to: same
+// project, a (transitively) referenced project, or either outside any project.
+func (ps *projectSet) allows(from, to string) bool {
+	a, b := ps.project(from), ps.project(to)
+	return a == "" || b == "" || a == b || ps.reach[a][b]
 }

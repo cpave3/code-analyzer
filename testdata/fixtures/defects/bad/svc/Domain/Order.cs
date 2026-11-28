@@ -20,5 +20,5 @@ public sealed class Order
 
     private static void LegacyRound(decimal value) { }
 
-    private static void Audit(decimal value) { }
+    private static void Audit(decimal value) => OrdersController.Notify(value);
 }
