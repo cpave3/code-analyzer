@@ -43,6 +43,20 @@ later. Neither v2's debt nor its score should be optimised on its own.
 
 Requires Go 1.26+, git and a C compiler (Tree-sitter uses cgo).
 
+With [Task](https://taskfile.dev) installed, `Taskfile.yml` sets the offline,
+pinned environment below (and `CGO_ENABLED=1`) for every task:
+
+```bash
+task build      # bin/codeeval (the binary the dogfood Stop hook runs)
+task install    # go install into $GOBIN / $GOPATH/bin
+task link       # build, then symlink $GOBIN/codeeval -> bin/codeeval
+task check      # build, gofmt check, vet, all tests
+task serve      # build and open the dashboard for this checkout (task serve -- PATH --max 100)
+task --list     # everything else: test:short, test:race, test:cover, analyze, fixtures:reports …
+```
+
+Builds are not fully static, because the Tree-sitter grammars are C.
+
 ### Build environment (where this POC was built and tested)
 
 | Tool | Location on the dev host | Notes |

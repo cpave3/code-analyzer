@@ -13,6 +13,10 @@ All versions are local proof-of-concept builds; there is no remote or release.
   - `attribution` and the dashboard group by model and harness by default.
     `agent` is still accepted as an alias of `model` in `--group-by`.
   - The hooks read `AGENT_MODEL`, with `AGENT_ID` still accepted.
+- **`Taskfile.yml`:** build, install, link, test (plus short, race and cover
+  variants), vet, fmt, check, run, serve, analyze and fixtures:reports. It
+  uses the offline pinned environment and `CGO_ENABLED=1`, because the
+  Tree-sitter grammars are C.
 - **`codeeval serve` defaults:**
   - `codeeval serve` (or `codeeval serve PATH`) shows the whole first-parent
     history of the checkout's HEAD. `--max` (now default 0 = all),
