@@ -115,7 +115,7 @@ func TestStopHookTiers(t *testing.T) {
 		return r
 	}
 	hook("codeeval-session-base.sh", `{"source":"startup"}`)
-	broad := filepath.Join(dir, ".git", "codeeval-broad")
+	broad := filepath.Join(dir, ".git", "codeeval", "default", "broad")
 
 	first := hook("codeeval-stop-analyze.sh", `{}`)
 	if first.code != 2 || !strings.Contains(first.stderr, "Quick check") || strings.Contains(first.stderr, "Background check") {

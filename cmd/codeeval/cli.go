@@ -216,11 +216,15 @@ func inside(repo, p string) bool {
 }
 
 // checkReport builds the v2 check report for a resolved change.
-func checkReport(ev *engine.Evaluator, cfg *config.Config, b, t side, scope scorev2.Scope, failOn string) (*scorev2.CheckReport, error) {
+func checkReport(ev *engine.Evaluator, cfg *config.Config, b, t side, scope scorev2.Scope, failOn string, budget float64) (*scorev2.CheckReport, error) {
 	w := scorev2.DefaultWeights()
 	cs, err := ev.ChangeSet(b.snap, t.snap)
 	if err != nil {
 		return nil, err
 	}
-	return scorev2.NewCheckReport(ev.RepoName(), cfg.Hash(), b.rev, t.rev, b.snap, t.snap, scorev2.Analyze(b.snap, cfg, w), scorev2.Analyze(t.snap, cfg, w), cs, scope, failOn), nil
+	r := scorev2.NewCheckReport(ev.RepoName(), cfg.Hash(), b.rev, t.rev, b.snap, t.snap, scorev2.Analyze(b.snap, cfg, w), scorev2.Analyze(t.snap, cfg, w), cs, scope, failOn)
+	r.Decide(budget)
+	return r, nil
 }
+
+const debtBudgetUsage = "debt points the change may add before net-debt or new-debt fails (default 0: any rise fails)"

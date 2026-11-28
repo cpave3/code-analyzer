@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/cameron/code-evaluator/internal/scorev2"
 )
@@ -58,6 +59,7 @@ func checkCmd(args []string, stdout, stderr io.Writer) int {
 	c.worktreeFlags(fs, worktree, "check working-tree changes against base")
 	failOn := fs.String("fail-on", "new-debt", "exit 3 when: new-debt (any factor introduced or worsened in scope), net-debt (debt in scope rises), gates (any advisory gate fails), none")
 	top := fs.Int("top", 0, "factors listed per section (0 = all)")
+	budget := fs.Float64("debt-budget", 0, debtBudgetUsage)
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -65,8 +67,8 @@ func checkCmd(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "check needs --base and exactly one of --target or --working-tree")
 		return 2
 	}
-	if !checkFailOn[*failOn] {
-		fmt.Fprintln(stderr, "--fail-on must be new-debt, net-debt, gates or none")
+	if msg := analyzeDebtArgs(*failOn, *budget, true); msg != "" {
+		fmt.Fprintln(stderr, strings.Replace(msg, "--debt-fail-on", "--fail-on", 1))
 		return 2
 	}
 	ev, cfg, code := c.open(stderr)
@@ -78,7 +80,7 @@ func checkCmd(args []string, stdout, stderr io.Writer) int {
 	if err != nil {
 		return fail(stderr, err)
 	}
-	r, err := checkReport(ev, cfg, b, t, scorev2.Scope{Paths: c.paths}, *failOn)
+	r, err := checkReport(ev, cfg, b, t, scorev2.Scope{Paths: c.paths}, *failOn, *budget)
 	if err != nil {
 		return fail(stderr, err)
 	}

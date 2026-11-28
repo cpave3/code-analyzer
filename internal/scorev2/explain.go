@@ -419,6 +419,7 @@ type CheckReport struct {
 	ScopeDebtAfter  float64          `json:"scopeDebtAfter"`
 	Failed          bool             `json:"failed"`
 	FailOn          string           `json:"failOn"`
+	DebtBudget      float64          `json:"debtBudget"` // debt points a change may add before net-debt or new-debt fails
 	Guidance        []string         `json:"guidance"`
 }
 
@@ -433,15 +434,17 @@ func NewCheckReport(repo, cfgHash string, baseRev, targetRev report.Revision, ba
 	r.Changed = changed(base, target, cs)
 	r.Gates = gates(r.Ledger, r.Changed)
 
-	// Map target symbol keys to base keys for callables the change touched.
-	baseKeyOf := map[string]string{}
+	// Each changed target callable's base predecessor, following renames and
+	// moved bodies.
+	pred := lineage(cs)
+	heir := map[string]string{} // base key → target key
+	for t, b := range pred {
+		heir[b.Key] = t
+	}
 	changedTarget := map[string]bool{}
 	for _, sc := range cs.Symbols {
 		if sc.Target != nil {
 			changedTarget[sc.Target.Key] = true
-			if sc.Base != nil {
-				baseKeyOf[sc.Target.Key] = sc.Base.Key
-			}
 		}
 	}
 	bf := map[string]CallableDebt{}
@@ -488,8 +491,8 @@ func NewCheckReport(repo, cfgHash string, baseRev, targetRev report.Revision, ba
 			}
 			prev := 0.0
 			var bc *CallableDebt
-			if bk, ok := baseKeyOf[c.Key]; ok {
-				if b, ok := bf[bk]; ok {
+			if p := pred[c.Key]; p != nil {
+				if b, ok := bf[p.Key]; ok {
 					bc = &b
 					if f.Kind == KindComplexity {
 						prev = b.CCDebt
@@ -539,9 +542,24 @@ func NewCheckReport(repo, cfgHash string, baseRev, targetRev report.Revision, ba
 			}
 		}
 	}
-	// Improvements: base factors that disappeared or shrank (by id).
+	// Improvements: base factors that disappeared or shrank (by id, or for a
+	// callable by its heir's id).
+	afterByKey := map[string]CallableDebt{}
+	for _, c := range after.Callables {
+		afterByKey[c.Key] = c
+	}
+	beforeCall := map[string]CallableDebt{}
+	for _, c := range before.Callables {
+		beforeCall[c.File+":"+c.Name] = c
+	}
 	for _, f := range bfs {
-		if t, ok := targetByID[f.ID]; !ok || t.Debt < f.Debt {
+		id := f.ID
+		if f.Kind == KindComplexity || f.Kind == KindNesting {
+			if h, ok := heir[beforeCall[f.Location.File+":"+f.Location.Symbol].Key]; ok {
+				id = strings.SplitN(f.ID, ":", 2)[0] + ":" + afterByKey[h].File + ":" + afterByKey[h].Name
+			}
+		}
+		if t, ok := targetByID[id]; !ok || t.Debt < f.Debt {
 			after := 0.0
 			if ok {
 				after = t.Debt
@@ -564,11 +582,26 @@ func NewCheckReport(repo, cfgHash string, baseRev, targetRev report.Revision, ba
 	if r.Improved == nil {
 		r.Improved = []Factor{}
 	}
-	switch failOn {
+	r.Decide(0)
+	return r
+}
+
+// Decide sets Failed under the report's fail-on mode, letting the change add
+// up to budget debt points: net-debt compares the rise in scope debt, and
+// new-debt the sum of what introduced and worsened factors added. A budget
+// never excuses a failed gate.
+func (r *CheckReport) Decide(budget float64) {
+	r.DebtBudget, r.Failed = budget, false
+	const eps = 0.001
+	switch r.FailOn {
 	case "new-debt":
-		r.Failed = len(r.Factors) > 0
+		added := 0.0
+		for _, f := range r.Factors {
+			added += f.DebtDelta
+		}
+		r.Failed = len(r.Factors) > 0 && added > budget+eps
 	case "net-debt":
-		r.Failed = r.ScopeDebtAfter > r.ScopeDebtBefore+0.001
+		r.Failed = r.ScopeDebtAfter > r.ScopeDebtBefore+budget+eps
 	case "gates":
 		for _, g := range r.Gates {
 			if !g.Passed {
@@ -576,7 +609,6 @@ func NewCheckReport(repo, cfgHash string, baseRev, targetRev report.Revision, ba
 			}
 		}
 	}
-	return r
 }
 
 // Limit keeps the first n introduced/worsened and improved factors (0 = all).

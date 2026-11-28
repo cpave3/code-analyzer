@@ -30,6 +30,7 @@ func analyzeCmd(args []string, stdout, stderr io.Writer) int {
 	var worktree = new(bool)
 	c.worktreeFlags(fs, worktree, "change mode: working-tree changes against base")
 	debtFail := fs.String("debt-fail-on", "none", "change mode: exit 3 when the v2 check fails: new-debt, net-debt, gates, none")
+	budget := fs.Float64("debt-budget", 0, "change mode: "+debtBudgetUsage)
 	defFail := fs.String("defects-fail-on", "", "exit 3 on defects: gate, any, none (default: gate in change mode, none in snapshot mode)")
 	files := fs.Int("files", 25, "rows in the per-file table (0 = all)")
 	top := fs.Int("top", 50, "debt factors and defect findings listed per section (0 = all)")
@@ -43,7 +44,7 @@ func analyzeCmd(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "analyze needs --rev R, or --base B with exactly one of --target T or --working-tree")
 		return 2
 	}
-	if msg := analyzeDebtArgs(*debtFail, change); msg != "" {
+	if msg := analyzeDebtArgs(*debtFail, *budget, change); msg != "" {
 		fmt.Fprintln(stderr, msg)
 		return 2
 	}
@@ -66,7 +67,7 @@ func analyzeCmd(args []string, stdout, stderr io.Writer) int {
 		return code
 	}
 	defer ev.Close()
-	a := analysis{ev: ev, cfg: cfg, langs: languages.Default(), scope: scorev2.Scope{Paths: c.paths}, defFail: *defFail, top: *top, checks: *checks}
+	a := analysis{ev: ev, cfg: cfg, langs: languages.Default(), scope: scorev2.Scope{Paths: c.paths}, defFail: *defFail, top: *top, checks: *checks, budget: *budget}
 	a.reg = all.Default(a.langs)
 	if !rulesKnown(a.reg, cfg, nil, stderr) {
 		return 2
@@ -93,10 +94,12 @@ func analyzeCmd(args []string, stdout, stderr io.Writer) int {
 	return 0
 }
 
-func analyzeDebtArgs(debtFail string, change bool) string {
+func analyzeDebtArgs(debtFail string, budget float64, change bool) string {
 	switch {
 	case !checkFailOn[debtFail]:
 		return "--debt-fail-on must be new-debt, net-debt, gates or none"
+	case budget < 0:
+		return "--debt-budget must not be negative"
 	case !change && debtFail != "none":
 		return "--debt-fail-on applies to change mode only"
 	}
@@ -112,6 +115,7 @@ type analysis struct {
 	defFail string
 	top     int
 	checks  string // all | quick | broad (change mode)
+	budget  float64
 }
 
 func (a analysis) opt() rules.Options { return rules.Options{InScope: a.scope.Match} }
@@ -172,7 +176,7 @@ func (a analysis) change(base, target string, worktree bool, debtFail string) (*
 	if err != nil {
 		return nil, err
 	}
-	ck, err := checkReport(a.ev, a.cfg, b, t, a.scope, debtFail)
+	ck, err := checkReport(a.ev, a.cfg, b, t, a.scope, debtFail, a.budget)
 	if err != nil {
 		return nil, err
 	}

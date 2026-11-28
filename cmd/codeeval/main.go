@@ -26,11 +26,11 @@ Usage:
   codeeval score    --repo PATH --rev REV [flags]                 (experimental scoring/v2: absolute snapshot)
   codeeval score    --repo PATH --base REV --target REV [--steps] [flags]   (scoring/v2 delta)
   codeeval explain  --repo PATH --rev REV [--path P ...] [--top N]                     (scoring/v2 debt factors for a scope)
-  codeeval check    --repo PATH --base REV (--target REV | --working-tree) [--path P ...] [--fail-on new-debt|net-debt|gates|none] [--top N]
+  codeeval check    --repo PATH --base REV (--target REV | --working-tree) [--path P ...] [--fail-on new-debt|net-debt|gates|none] [--debt-budget N] [--top N]
                                                                                     (PR check: factors introduced/worsened; exit 3 on failure)
   codeeval graph    --repo PATH --rev REV --output FILE.html [--json FILE] [--max-callables N] [--config FILE]   (POC debt graph view)
   codeeval defects  --repo PATH (--rev REV | --base REV (--target REV | --working-tree)) [--rule ID ...] [--path P ...] [--fail-on gate|any|none] [--top N]   (defect rules, rules/v1)
-  codeeval analyze  --repo PATH (--rev REV | --base REV (--target REV | --working-tree)) [--path P ...] [--debt-fail-on ...] [--defects-fail-on ...]   (v2 debt + defects in one report)
+  codeeval analyze  --repo PATH (--rev REV | --base REV (--target REV | --working-tree)) [--path P ...] [--debt-fail-on ...] [--debt-budget N] [--defects-fail-on ...]   (v2 debt + defects in one report)
   codeeval serve    [PATH] [--last N | --since DATE --until DATE] [--base REV] [--target REV] [--max N] [--addr 127.0.0.1:8765]   (web dashboard of the checkout's history: quality over time, graph per commit, provenance)
   codeeval hook     install|uninstall --tool claude-code [--bin PATH] [--config FILE] [--dry-run]   (add the analyze hooks to the project in the current directory)
   codeeval rules                                                          (defect rules × languages)

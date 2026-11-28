@@ -74,7 +74,7 @@ func hookCmd(args []string, stdout, stderr io.Writer) int {
 			runs = o.Bin
 		}
 		fmt.Fprintf(stdout, "\nInstalled the CodeEval hooks for Claude Code in %s (running %s).\n", root, runs)
-		fmt.Fprintln(stdout, "- SessionStart records the commit a session starts from; Stop runs `codeeval analyze` from there and blocks once on introduced gate defects or a debt rise.")
+		fmt.Fprintln(stdout, "- SessionStart records the commit a session starts from and prints the check to run before pushing; Stop runs `codeeval analyze` from there (or from its last passing stop) and blocks once on introduced gate defects or a debt rise of more than CODEEVAL_DEBT_BUDGET (default 10) points, unless the pull request is already approved.")
 		fmt.Fprintln(stdout, "- Escape hatches: CODEEVAL_HOOK=off, CODEEVAL_HOOK_MAX_BLOCKS (default 3), `codeeval-ignore <rule>: <reason>` comments.")
 		fmt.Fprintln(stdout, "- New Claude Code sessions pick it up; commit .claude/ to share it with the team, or run `codeeval hook uninstall --tool claude-code` to remove it.")
 	}

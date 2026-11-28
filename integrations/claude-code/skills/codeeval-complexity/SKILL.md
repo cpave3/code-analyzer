@@ -18,7 +18,13 @@ Run from the repository root (outputs must go outside the repository, e.g. `/tmp
 codeeval check --repo . --base "$(git merge-base HEAD origin/main)" --working-tree \
   --fail-on net-debt --top 15 --format md
 # (use --target <sha> instead of --working-tree for a committed range;
-#  --fail-on new-debt is stricter: any new or worsened factor fails)
+#  --fail-on new-debt is stricter: any new or worsened factor fails;
+#  --debt-budget N lets the change add up to N points, as the Stop hook does)
+
+# Before you push or open a PR: the Stop hook's quick check, so a finding
+# never arrives after review (the session's start prints it with its settings)
+codeeval analyze --base "$(git merge-base HEAD origin/main)" --working-tree \
+  --checks quick --debt-fail-on net-debt --debt-budget 10
 
 # Debt factors in a module, application folder, path or glob, largest first
 codeeval explain --repo . --rev HEAD --path internal/service --top 20 --format md

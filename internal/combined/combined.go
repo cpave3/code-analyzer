@@ -220,7 +220,11 @@ func Change(ck *scorev2.CheckReport, d *rules.Report) *Report {
 	r.FactorsWorse, r.FactorsBetter = len(ck.Factors), len(ck.Improved)
 	if ck.Failed {
 		r.Failed = true
-		r.Reasons = append(r.Reasons, "debt: check failed (fail-on "+ck.FailOn+")")
+		reason := "debt: check failed (fail-on " + ck.FailOn
+		if ck.DebtBudget > 0 && ck.FailOn != "gates" {
+			reason += fmt.Sprintf(", budget %g point(s)", ck.DebtBudget)
+		}
+		r.Reasons = append(r.Reasons, reason+")")
 	}
 	if d.Failed {
 		r.Failed = true
