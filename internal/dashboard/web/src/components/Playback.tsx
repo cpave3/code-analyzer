@@ -1,6 +1,7 @@
 // Stepping through the window: ← and → move one commit, space plays.
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { useMetrics, useSelection, useWindowFollowsSelection } from "../core/data";
+import { useMeta, useMetrics, useSelection, useSetWindow } from "../core/data";
+import { windowFor } from "../lib/history";
 
 interface PlaybackValue {
   playing: boolean;
@@ -47,3 +48,21 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
 }
 
 export const usePlayback = () => useContext(Ctx);
+
+// useWindowFollowsSelection moves the measured window when the URL selects a
+// commit outside it (a link to an older commit, or a window another tab
+// moved), as picking that commit from the header does.
+function useWindowFollowsSelection() {
+  const meta = useMeta().data;
+  const win = useMetrics().data?.window;
+  const { index } = useSelection();
+  const setWindow = useSetWindow();
+  const asked = useRef(-1);
+  useEffect(() => {
+    if (!meta || !win || setWindow.isPending || asked.current === index) return;
+    const w = windowFor(index, win, meta.commits.length);
+    if (!w) return;
+    asked.current = index;
+    setWindow.mutate({ from: w[0], to: w[1] });
+  }, [meta, win, index, setWindow]);
+}
