@@ -13,6 +13,15 @@ All versions are local proof-of-concept builds; there is no remote or release.
   - `attribution` and the dashboard group by model and harness by default.
     `agent` is still accepted as an alias of `model` in `--group-by`.
   - The hooks read `AGENT_MODEL`, with `AGENT_ID` still accepted.
+- **Dashboard graph:**
+  - It fills its card.
+  - A "How to read this graph" section explains nodes, sizes, colours, lines,
+    rings and the debt formula, using the configured thresholds.
+  - Colour scales are explicit and fixed.
+  - Clicking a node shows its detail (module debt by component; for a
+    function, where its points come from and its clone partners).
+  - A clickable list shows the biggest changes in each commit.
+  - Functions are matched across commits by file and name, not line.
 - **Provenance parsing:** message lines are read only from trailer-style
   paragraphs, in which every line is `Key: value`. Before, a prose line
   that wrapped to start with `Agent:` was parsed as the model; this

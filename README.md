@@ -365,7 +365,19 @@ and appear as they arrive.
   commits. The module graph keeps node positions between commits, and rings
   mark nodes whose debt rose (red) or fell (green), and new nodes (dashed).
   The panel also shows the commit's subject, author, provenance and deltas
-  against the previous commit.
+  against the previous commit. The graph fills its card and has:
+  - a "How to read this graph" section built from the configured thresholds;
+  - explicit colour scales: modules by debt per 1,000 lines (under 60,
+    60–105, 105 or more), functions by their own debt (under 5, 5–15, 15 or
+    more);
+  - a clickable list of the biggest changes in the commit;
+  - a detail panel for a clicked node. For a module it shows the debt by
+    component, size, density, hotspots and its costliest functions. For a
+    function it shows where its debt comes from (for example cc 17 ≥ 10
+    gives 8 points), plus its clone partners.
+
+  Functions keep their identity across commits by file and name, so a
+  function that only moved is not shown as removed and added.
 - **Group table:** step changes summed by provenance group (`--group-by` as
   checkboxes: model, harness and any `Agent-<Key>` metadata; model and harness by default). As with
   `attribution`, this is observational, not causal.

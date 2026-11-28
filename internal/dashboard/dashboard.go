@@ -226,6 +226,8 @@ func (s *Server) describe() map[string]any {
 	return map[string]any{
 		"repository": s.ev.RepoName(), "tool": report.ToolVersion, "scoring": scorev2.Version, "rules": rules.Version, "clones": clones.Version,
 		"defects": s.opts.Defects, "nearDuplication": s.opts.Clones, "groupFields": append(fields, extra...), "notes": notes,
+		"thresholds": map[string]int{"cyclomatic": s.cfg.Complexity.HotspotCyclomatic, "nesting": s.cfg.Complexity.HotspotNesting, "minCloneTokens": s.cfg.Duplication.MinTokens},
+		"weights":    scorev2.DefaultWeights(),
 		"commits": s.commits,
 	}
 }
