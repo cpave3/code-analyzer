@@ -41,7 +41,35 @@ Rules the reader applies (`internal/provenance`):
 - **Not verified:** all of it is self-reported text. It records what a commit
   claims, not what produced it.
 
-## Writing it: the `commit-msg` hook
+## Writing it without touching messages: the `post-commit` hook (notes)
+
+[`post-commit`](post-commit) reads the same variables (below) and attaches
+the lines as a note in `refs/notes/agent-provenance` to each new commit.
+Commit messages stay exactly as written, and the reader treats notes and
+trailers the same way.
+
+**Trade-offs** (these are why trailers are still offered):
+- **Rewrites:** notes are tied to the commit SHA. Set
+  `git config notes.rewriteRef refs/notes/agent-provenance` so amend and
+  rebase carry them over. A squash or rebase merge on a forge creates new
+  SHAs without notes, so the merged commit has no provenance unless
+  something copies it.
+- **Sharing:** notes are not pushed or fetched by default. Use
+  `git push origin refs/notes/agent-provenance` and add a fetch refspec
+  (`+refs/notes/agent-provenance:refs/notes/agent-provenance`).
+- **Visibility:** forges do not display them.
+
+Install it like the other hook. This repository dogfoods it: `.git/hooks/post-commit`
+links to the template, and `.claude/settings.json` sets `AGENT_ID` and
+`AGENT_HARNESS` for Claude Code sessions.
+
+Other carriers were considered and rejected:
+- extra commit-object headers: porcelain cannot write them, and rebase drops
+  them;
+- a ledger file in the repository: it adds churn and conflicts;
+- an external database keyed by SHA: it loses provenance on every rewrite.
+
+## Writing it: the `commit-msg` hook (trailers)
 
 [`commit-msg`](commit-msg) appends trailers from environment variables, so a
 harness or wrapper sets them once and every commit carries them:

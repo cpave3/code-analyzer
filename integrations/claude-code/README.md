@@ -36,6 +36,24 @@ Configure it with environment variables: `CODEEVAL_BIN`, `CODEEVAL_BASE`,
 `CODEEVAL_CONFIG`, `CODEEVAL_FAIL_ON` (`new-debt`, `net-debt`, `gates` or
 `none`), `CODEEVAL_PATHS` and `CODEEVAL_TOP`.
 
+## Analyze Stop hook (session-wide)
+
+`hooks/codeeval-stop-analyze.sh` runs `codeeval analyze` instead of `check`.
+That covers v2 debt, the defect rules and near-duplication. It compares the
+working tree with the commit the session started from, which
+`hooks/codeeval-session-base.sh` records at `SessionStart` in
+`.git/codeeval-session-base`, so work the session already committed is
+checked too.
+- **When it blocks:** on introduced gate defects (`CODEEVAL_DEFECTS_FAIL_ON`,
+  default `gate`) or a debt rise (`CODEEVAL_DEBT_FAIL_ON`, default
+  `net-debt`).
+- **Untracked files:** they are not read until they are added, and the block
+  message lists them.
+
+This repository uses both hooks on itself: see `.claude/settings.json` and
+`.claude/hooks/dogfood-stop.sh`. The dogfood script rebuilds the binary
+first and falls back to the last good build when the tree does not compile.
+
 ## CI / PR
 
 The same check works in CI:

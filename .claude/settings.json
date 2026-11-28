@@ -1,0 +1,14 @@
+{
+  "env": {
+    "AGENT_ID": "claude-opus-5-5",
+    "AGENT_HARNESS": "claude-code"
+  },
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/integrations/claude-code/hooks/codeeval-session-base.sh", "timeout": 10 } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/dogfood-stop.sh", "timeout": 180 } ] }
+    ]
+  }
+}

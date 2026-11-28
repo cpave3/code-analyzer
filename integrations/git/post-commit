@@ -1,0 +1,31 @@
+#!/bin/sh
+# Agent provenance post-commit hook (CodeEval template): records provenance
+# as a git note instead of message trailers, so commit messages stay as
+# written.
+#
+#   AGENT_ID=claude-opus-5-5         -> Agent: claude-opus-5-5
+#   AGENT_HARNESS=claude-code        -> Agent-Harness: claude-code
+#   AGENT_META_WORKFLOW=stack@2      -> Agent-Workflow: stack@2   (any key)
+#
+# The note goes to refs/notes/agent-provenance on the new commit. Nothing is
+# written when none of the variables are set (human commits).
+# Keep notes with rewritten commits (amend, rebase):
+#   git config notes.rewriteRef refs/notes/agent-provenance
+# Share them (they are not pushed by default):
+#   git push origin refs/notes/agent-provenance
+set -eu
+[ -n "${AGENT_ID:-}${AGENT_HARNESS:-}" ] || env | grep -q '^AGENT_META_' || exit 0
+note=""
+[ -n "${AGENT_ID:-}" ] && note="${note}Agent: ${AGENT_ID}
+"
+[ -n "${AGENT_HARNESS:-}" ] && note="${note}Agent-Harness: ${AGENT_HARNESS}
+"
+meta=$(env | grep '^AGENT_META_[A-Za-z0-9_]*=' | sort | while IFS='=' read -r name value; do
+	[ -n "$value" ] || continue
+	key=$(printf '%s' "${name#AGENT_META_}" | tr 'A-Z_' 'a-z-' | awk -F- '{for (i = 1; i <= NF; i++) $i = toupper(substr($i, 1, 1)) substr($i, 2); print}' OFS=-)
+	printf 'Agent-%s: %s\n' "$key" "$value"
+done)
+[ -n "$meta" ] && note="${note}${meta}
+"
+git notes --ref=agent-provenance add -f -m "$note" HEAD >/dev/null 2>&1 || true
+exit 0

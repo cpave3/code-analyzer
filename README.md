@@ -545,6 +545,18 @@ Deferred:
 - a correctness signal from independently run tests
 - calibrating any score against human review
 
+## Dogfooding in this repository
+
+`.claude/settings.json` wires two Claude Code hooks:
+- **SessionStart:** records the session's base commit.
+- **Stop:** rebuilds `bin/codeeval` and runs `codeeval analyze` from the
+  session base to the working tree. It blocks the stop on new gate defects or
+  a debt rise.
+
+The same file sets `AGENT_ID` and `AGENT_HARNESS`, and `.git/hooks/post-commit`
+(a link to `integrations/git/post-commit`, local and not tracked) records
+them as provenance notes. Run `codeeval attribution` to read them.
+
 ## For agents working on this repository
 
 `main` is the integration branch (the POC was built on
