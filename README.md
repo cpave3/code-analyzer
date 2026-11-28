@@ -392,18 +392,21 @@ Charts, the stepper and the group table cover the window. Measuring runs
 in two phases:
 - **Fast phase:** v2 metrics and step sizes for the whole window. On
   Legato (3,248 files) a 20-commit window has its charts in about 10 s.
-- **Detail phase:** defect rules and near-duplication. This phase shares a
-  content cache, so a file unchanged since an earlier commit is not
-  re-checked. The first commit takes about 40 s, and later ones about 5 s
-  (previously about 36 s each).
+- **Detail phase** (opt-in: `--defects`, `--near-duplication`): defect
+  rules and near-duplication for every commit in the window. This phase
+  shares a content cache, so a file unchanged since an earlier commit is
+  not re-checked. The first commit takes about 40 s, and later ones about
+  5 s. Without these flags, defects are checked **on demand**, one commit
+  at a time (below).
 
 Graph requests are answered in under half a second even while the detail
 phase runs. Metrics are computed in the background, **newest commit first**, so the recent end of a long history is
 ready first. That takes about 4 s per commit on this repository. A commit's
 step changes (changed lines, defects introduced and resolved) appear once
 its parent has been measured.
-- **Charts:** v2 debt by component, score, debt/kLOC, hotspots and size,
-  defect findings and near-duplication pairs, per commit. Points are
+- **Charts:** v2 debt by component, score, debt/kLOC, hotspots and size
+  (plus defect findings and near-duplication pairs with the flags above),
+  per commit. Points are
   coloured by the provenance group chosen above them.
 - **Stepper:** ◀ ▶, a slider, ▶ Play and the arrow keys step through
   commits.
@@ -416,6 +419,23 @@ its parent has been measured.
     cycle-closing imports in red.
   - Outlines mark modules whose debt rose (red) or fell (green), and new
     ones (dashed).
+- **Folder reports:** clicking a folder's header in the Structure view (or
+  a module tile) opens a report drawer. It holds the same analysis as
+  `codeeval explain --rev SHA --path DIR --top 0`:
+  - the folder's debt, debt per 1,000 lines against the repository's, score,
+    size, hotspots and how concentrated the debt is;
+  - a stacked bar of debt by component and a bar per subfolder (click one
+    to open its report);
+  - every factor, grouped by severity band (critical, high, medium, low;
+    the two worst open) with its metrics, related code and remediation steps
+    collapsed underneath;
+  - the folder's defect findings, grouped by rule with gate rules first.
+- **On-demand defects:** without `--defects`, the commit panel and each
+  folder report offer *Check defects for this commit*. The rules run once
+  for the whole commit (cross-file rules need it): about 30 s the first time
+  on a large repository, under a second on this one. Every folder report of
+  that commit then filters the kept result instantly, and the commit panel
+  shows the gate and advisory totals. The last 16 checked commits are kept.
 - **Dependencies view:** who uses what.
   - **Groups:** modules are grouped by project or package (`.csproj`,
     `package.json`, `go.mod`; otherwise the top folder).
@@ -446,8 +466,8 @@ its parent has been measured.
   checkboxes: model, harness and any `Agent-<Key>` metadata; model and harness by default). As with
   `attribution`, this is observational, not causal.
 
-`--defects=false` and `--near-duplication=false` skip the slower per-commit
-checks.
+`--defects` and `--near-duplication` chart those checks for every commit in
+the window. Both are off by default because they are slow per commit.
 
 ## Attribution by model, harness and workflow
 

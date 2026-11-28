@@ -106,15 +106,18 @@ type Server struct {
 	metrics  []Metrics
 	findings map[int][]rules.Finding // measured commits' defect findings, for step comparison
 	cache    *memo.Cache             // per-file results by content, shared across commits
-	lo, hi   int                     // measured window (inclusive indexes)
-	graphs   map[string][]byte
-	order    []string
+	// defectRuns keeps whole-commit rule results checked on demand.
+	defectRuns  map[string]*rules.Result
+	defectOrder []string
+	lo, hi      int // measured window (inclusive indexes)
+	graphs      map[string][]byte
+	order       []string
 }
 
 // New lists the history and its provenance (cheap: a few git calls); call
 // Run to measure the window.
 func New(ev *engine.Evaluator, cfg *config.Config, langs *lang.Registry, reg *rules.Registry, opts Options) (*Server, error) {
-	s := &Server{opts: opts, ev: ev, cfg: cfg, langs: langs, reg: reg, graphs: map[string][]byte{}, findings: map[int][]rules.Finding{}, cache: memo.New()}
+	s := &Server{opts: opts, ev: ev, cfg: cfg, langs: langs, reg: reg, graphs: map[string][]byte{}, findings: map[int][]rules.Finding{}, cache: memo.New(), defectRuns: map[string]*rules.Result{}}
 	s.work = sync.NewCond(&s.mu)
 	log, err := s.history()
 	if err != nil {

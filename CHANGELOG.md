@@ -2,6 +2,23 @@
 
 All versions are local proof-of-concept builds; there is no remote or release.
 
+## 0.8.4-poc
+
+- **Dashboard folder reports:** clicking a folder in the Structure view
+  opens a drawer with that folder's `codeeval explain --path` analysis:
+  - totals, density against the repository, score and hotspots;
+  - debt by component and by subfolder (subfolders are clickable);
+  - every factor ranked into severity bands, with collapsed metrics,
+    related code and remediation;
+  - the folder's defect findings, grouped by rule.
+  New endpoints: `GET /api/explain` and `GET /api/defects` (`cached=1`
+  answers 204 when the commit has not been checked).
+- **Defects on demand:** `serve` no longer runs defect rules or
+  near-duplication for every commit by default (`--defects` and
+  `--near-duplication` turn them back on). The commit panel and folder
+  reports offer a one-commit check instead; its result is kept (last 16
+  commits) and shared by every folder report of that commit.
+
 ## 0.8.3-poc
 
 - **Dashboard Dependencies view** (alongside Structure and Network):

@@ -19,7 +19,7 @@ func TestServeDashboard(t *testing.T) {
 		t.Errorf("PATH together with --repo accepted: %d", r.code)
 	}
 	// The repository as a positional PATH; --base/--target narrow the history.
-	cmd := exec.Command(binary, "serve", repos["defects"], "--config", scenarios["defects"].Config, "--base", "base", "--target", "bad", "--addr", "127.0.0.1:0", "--no-cache")
+	cmd := exec.Command(binary, "serve", repos["defects"], "--config", scenarios["defects"].Config, "--base", "base", "--target", "bad", "--addr", "127.0.0.1:0", "--no-cache", "--defects", "--near-duplication")
 	out, err := cmd.StdoutPipe()
 	if err != nil {
 		t.Fatal(err)
@@ -133,5 +133,38 @@ func TestServeDashboard(t *testing.T) {
 	}
 	if code, _ := get("api/graph?commit=0000000"); code != 404 {
 		t.Errorf("unknown commit: %d", code)
+	}
+
+	// Folder report: explain for a path, as `codeeval explain --path`.
+	badSHA := meta.Commits[1].SHA
+	var ex struct {
+		Scope   any   `json:"scope"`
+		Factors []any `json:"factors"`
+	}
+	if code, b := get("api/explain?commit=" + badSHA + "&path="); code != 200 || json.Unmarshal(b, &ex) != nil {
+		t.Fatalf("explain: %d %s", code, b)
+	}
+	// Defects run only on demand: cached=1 answers 204 until a check ran.
+	if code, _ := get("api/defects?commit=" + badSHA + "&path=&cached=1"); code != 204 {
+		t.Errorf("defects before a check: %d, want 204", code)
+	}
+	type defects struct {
+		Findings []struct {
+			File string `json:"file"`
+		} `json:"findings"`
+		Totals struct{ Gate, Advisory int } `json:"totals"`
+	}
+	var all, none defects
+	if code, b := get("api/defects?commit=" + badSHA + "&path="); code != 200 || json.Unmarshal(b, &all) != nil || all.Totals.Gate == 0 {
+		t.Fatalf("defects: %d %s", code, b)
+	}
+	if code, b := get("api/defects?commit=" + badSHA + "&path=&cached=1"); code != 200 || json.Unmarshal(b, &all) != nil {
+		t.Errorf("defects after a check: %d", code)
+	}
+	if code, b := get("api/defects?commit=" + badSHA + "&path=no/such/dir&cached=1"); code != 200 || json.Unmarshal(b, &none) != nil || len(none.Findings) != 0 {
+		t.Errorf("defects outside the path should be filtered out: %d %s", code, b)
+	}
+	if code, _ := get("api/defects?commit=0000000&cached=1"); code != 404 {
+		t.Errorf("defects, unknown commit: %d", code)
 	}
 }

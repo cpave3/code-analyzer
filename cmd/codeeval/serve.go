@@ -32,8 +32,8 @@ func serveCmd(args []string, stdout, stderr io.Writer) int {
 	last := fs.Int("last", 50, "measure the newest N commits at start (the page can move the window)")
 	since := fs.String("since", "", "measure commits from this date at start (YYYY-MM-DD or RFC 3339); with --until, overrides --last")
 	until := fs.String("until", "", "measure commits up to this date at start")
-	defects := fs.Bool("defects", true, "run the defect rules on every commit")
-	near := fs.Bool("near-duplication", true, "run near-miss and fragment clone detection on every commit")
+	defects := fs.Bool("defects", false, "also chart defect findings for every commit in the window (slow; by default defects are checked on demand per commit)")
+	near := fs.Bool("near-duplication", false, "also chart near-miss and fragment clones for every commit in the window (slow)")
 	infer := fs.Bool("infer-co-authors", true, "infer agents from Co-Authored-By lines when a commit has no provenance")
 	notesRef := fs.String("notes-ref", provenance.NotesRef, "notes ref with provenance notes")
 	// PATH may come before the flags (`serve ../repo --max 50`): Go's flag

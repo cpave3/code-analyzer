@@ -44,6 +44,30 @@ details.how li{margin:2px 0}
 #nodeDetail h3{margin:0 0 4px;font-size:14px;word-break:break-word}
 #nodeDetail table{margin:4px 0}
 a.link{color:var(--accent);cursor:pointer;text-decoration:none}
+#drawer{position:fixed;top:0;right:0;bottom:0;width:min(640px,100vw);background:var(--panel);border-left:1px solid var(--line);box-shadow:-8px 0 24px rgba(0,0,0,.35);overflow:auto;z-index:8;transform:translateX(105%);transition:transform .18s;padding:14px 16px 40px}
+#drawer.open{transform:none}
+#drawer .close{float:right;cursor:pointer;font-size:18px;color:var(--dim);border:0}
+#drawer h2{font-size:16px;margin:0 0 2px;text-transform:none;letter-spacing:0;color:var(--fg);word-break:break-all}
+#drawer h3{font-size:13px;margin:16px 0 6px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.crumbs{font-size:12px;margin:2px 0 8px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:6px}
+.kpi{border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.kpi b{display:block;font-size:17px;font-variant-numeric:tabular-nums}
+.stack{display:flex;height:22px;border-radius:6px;overflow:hidden;margin:4px 0}
+.stack div{height:100%}
+.bars .row{display:grid;grid-template-columns:minmax(0,190px) 1fr 70px;gap:8px;align-items:center;font-size:12px;margin:3px 0}
+.bars .track{background:var(--line);border-radius:4px;height:12px;overflow:hidden}
+.bars .fill{height:100%;border-radius:4px}
+.bars .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sev{display:inline-block;min-width:62px;text-align:center;border-radius:999px;padding:0 6px;font-size:11px;font-weight:600;color:#111;margin-right:6px}
+.sev.critical{background:#f43f5e}.sev.high{background:#fb923c}.sev.medium{background:#fbbf24}.sev.low{background:#9ca3af}.sev.gate{background:#f43f5e}.sev.advisory{background:#9ca3af}
+details.item{border:1px solid var(--line);border-radius:8px;margin:5px 0;padding:5px 8px}
+details.item summary{cursor:pointer;font-size:12px;list-style:none}
+details.item summary::-webkit-details-marker{display:none}
+details.item[open]{background:rgba(127,127,127,.06)}
+details.item .body{font-size:12px;margin-top:6px}
+details.item ol,details.item ul{margin:4px 0;padding-left:18px}
+details.section > summary{cursor:pointer;font-weight:600;font-size:13px;margin:12px 0 6px}
 #graph{width:100%;height:100%;display:block;border-radius:8px;cursor:grab}
 #graphLegend{font-size:12px;margin-top:6px}
 .sw{display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 4px 0 10px;vertical-align:-1px}
@@ -124,6 +148,7 @@ th{color:var(--dim);font-weight:500}
     <ul class="notes" id="notes"></ul>
   </section>
 </main>
+<aside id="drawer" aria-label="folder report"><button class="close" id="drawerClose" title="close (Esc)">✕</button><div id="drawerBody"></div></aside>
 <div id="tip"></div>
 <script>
 "use strict";
@@ -369,6 +394,13 @@ function renderCommit() {
     deltas = d("Debt", x => x.debt.total, 1, true, m.debt.total) + d("Score", x => x.score, 1, false, m.score) + d("Hotspots", x => x.hotspots, 0, true, m.hotspots)
       + d("Decision points", x => x.decisionPoints, 0, true, m.decisionPoints) + d("Source lines", x => x.lines, 0, null, m.lines);
     if (meta.defects) deltas += `<div class="delta"><span class="dim">Defects introduced</span><b class="${(m.introducedGate || 0) > 0 ? "up" : ""}">${m.introducedGate == null ? (m.detailStep ? "–" : "…") : `${m.introducedGate} gate · ${m.introducedAdvisory} adv`}</b><span class="dim">${m.resolved == null ? (m.detailStep ? "" : "checking…") : m.resolved + " resolved · now " + m.gate + " gate"}</span></div>`;
+    if (!meta.defects) {
+      const t = checkedDefects.get(c.sha);
+      if (!t) probeDefects(c.sha);
+      deltas += `<div class="delta"><span class="dim">Defect findings</span>${t
+        ? `<b class="${t.gate ? "up" : ""}">${t.gate} gate · ${t.advisory} adv</b><span class="dim"><a class="link" id="openRepoReport">open report</a></span>`
+        : `<button id="checkCommitDefects" style="margin-top:4px">Check this commit</button><span class="dim">on demand</span>`}</div>`;
+    }
     if (meta.nearDuplication) deltas += m.detail ? d("Near-dup pairs", x => x.detail ? (x.nearMisses || 0) + (x.fragments || 0) : null, 0, true, (m.nearMisses || 0) + (m.fragments || 0))
       : `<div class="delta"><span class="dim">Near-dup pairs</span><b>…</b><span class="dim">checking…</span></div>`;
     deltas += `<div class="delta"><span class="dim">Changed lines</span><b>${!sel ? "–" : m.stepDone ? fmt(m.changedLines) : "…"}</b><span class="dim">measured source</span></div>`;
@@ -378,6 +410,17 @@ function renderCommit() {
     <div class="dim"><span class="mono">${c.sha.slice(0, 12)}</span> · ${esc(c.author)} · ${esc(c.time.replace("T", " ").slice(0, 16))}${c.merge ? " · merge" : ""} · ${c.provenance.length} commit(s) in step</div>
     <div class="chips">${chips.join("") || '<span class="chip dim">no provenance</span>'}<span class="chip dim">source: ${esc(sources)}</span></div>
     <div class="deltas">${deltas}</div>`;
+  const b = $("checkCommitDefects"), o = $("openRepoReport");
+  if (b) b.onclick = async () => {
+    b.textContent = "Checking…"; b.disabled = true;
+    try {
+      const res = await fetch(`api/defects?commit=${c.sha}&path=`);
+      if (!res.ok) throw new Error(await res.text());
+      checkedDefects.set(c.sha, (await res.json()).totals);
+    } catch (e) { b.textContent = "Failed: " + e; return; }
+    renderCommit();
+  };
+  if (o) o.onclick = () => openReport("");
 }
 
 // ---------- provenance group table ----------
@@ -424,6 +467,7 @@ function renderHow() {
     "<b>Outlines compare with the previous commit:</b> <span class='up'>red</span> = more debt, <span class='down'>green</span> = less, <span style='color:var(--new)'>dashed amber</span> = new module.",
     "<b>Dependencies view:</b> who uses what. Modules are grouped by their project or package (.csproj, package.json, go.mod; else their top folder); an arrow from A to B means code in A imports code in B, thicker for more imports. Groups are layered so a group sits above everything it uses: downward arrows are normal, and groups in an import cycle share a row with <span style='color:" + RED + "'>red</span> arrows between them. Click a group for what it uses and what uses it (with sample import lines); double-click or <i>Expand</i> to open it into subfolders.",
     "<b>Network view:</b> a force layout of modules with debt (or ≥ 150 lines) and the 120 functions with the most debt, pulled together by imports and clone links; positions are kept between commits.",
+    "<b>Folder reports:</b> in the structure view, click a folder's name bar (or a module tile) to open its report on the right: debt and score against the repository, what contributes (by kind and by subfolder), every debt item ranked by severity with collapsible explanations and fixes, and the folder's defect findings. The same analysis as <span class='mono'>codeeval explain --path</span> and <span class='mono'>codeeval defects --path</span>.",
     "<b>Use it:</b> hover for a summary, click for the breakdown below, drag to pan, scroll to zoom, double-click to reset. The list under the graph names the biggest changes in this commit.",
   ];
   $("howList").innerHTML = items.map(x => `<li>${x}</li>`).join("");
@@ -639,9 +683,10 @@ function squarify(items, x, y, w, h) {
   }
   if (row.length) flush();
 }
-function placeFolder(t, x, y, w, h, depth) {
+function placeFolder(t, x, y, w, h, depth, prefix = "") {
+  const fullPath = t.name ? (prefix ? prefix + "/" + t.name : t.name) : "";
   if (t.name) {
-    folders.push({name: t.name, x, y, w, h, depth});
+    folders.push({name: t.name, path: fullPath, x, y, w, h, depth, head: w > 50 && h > 30});
     const head = w > 50 && h > 30 ? 15 : 0, pad = Math.min(3, w / 8, h / 8);
     x += pad; y += pad + head; w -= 2 * pad; h -= 2 * pad + head;
   }
@@ -653,7 +698,7 @@ function placeFolder(t, x, y, w, h, depth) {
   squarify(items, x, y, Math.max(0, w), Math.max(0, h));
   for (const it of items) {
     if (it.n) { it.n.rect = it.r; it.n.tileName = it.name; }
-    else placeFolder(it.t, it.r.x, it.r.y, it.r.w, it.r.h, depth + 1);
+    else placeFolder(it.t, it.r.x, it.r.y, it.r.w, it.r.h, depth + 1, fullPath);
   }
 }
 function layoutTreemap() {
@@ -922,6 +967,142 @@ function renderDepDetail() {
 }
 $("depsReset").onclick = () => { expanded.clear(); depPick = null; buildDeps(); fitDeps(); };
 
+// ---------- folder report drawer (codeeval explain --path, plus defects) ----------
+let hoverFolder = null, reportPath = null, reportSeq = 0;
+const checkedDefects = new Map(); // commit sha -> whole-commit totals, once checked
+const probed = new Set();
+// probeDefects asks (without running anything) whether the server already
+// checked a commit, e.g. from a folder report or before a page reload.
+async function probeDefects(sha, force = false) {
+  if (checkedDefects.has(sha) || (probed.has(sha) && !force)) return;
+  probed.add(sha);
+  try {
+    const res = await fetch(`api/defects?commit=${sha}&path=&cached=1`);
+    if (res.status !== 200) return;
+    checkedDefects.set(sha, (await res.json()).totals);
+    if (meta.commits[sel].sha === sha) renderCommit();
+  } catch (e) { /* the button stays */ }
+}
+const COMP_COLORS = {complexity: "#f59e0b", nesting: "#a78bfa", duplication: "#22d3ee", architecture: "#f43f5e"};
+// Severity bands group v2 debt points per item; they are a reading aid, not calibrated.
+function band(debt) { return debt >= 25 ? "critical" : debt >= 10 ? "high" : debt >= 4 ? "medium" : "low"; }
+const KIND_NAMES = {complexity: "complexity", nesting: "nesting", duplication: "duplication", rule_violation: "rule violation", cycle: "import cycle"};
+$("drawerClose").onclick = () => $("drawer").classList.remove("open");
+addEventListener("keydown", e => { if (e.key === "Escape") $("drawer").classList.remove("open"); });
+async function openReport(path) {
+  const c = meta.commits[sel], seq = ++reportSeq;
+  reportPath = path;
+  $("drawer").classList.add("open");
+  $("drawerBody").innerHTML = `<h2>${esc(path || "(whole repository)")}</h2><p class="dim">Analysing…</p>`;
+  let r;
+  try {
+    const res = await fetch(`api/explain?commit=${c.sha}&path=${encodeURIComponent(path)}`);
+    if (!res.ok) throw new Error(await res.text());
+    r = await res.json();
+  } catch (e) { $("drawerBody").innerHTML += `<p class="up">Failed: ${esc(e)}</p>`; return; }
+  if (seq !== reportSeq) return;
+  renderReport(path, c, r);
+  loadDefects(path, c, seq);
+}
+function crumbs(path) {
+  const parts = path ? path.split("/") : [];
+  let acc = "", out = [`<a class="link" data-path="">repository</a>`];
+  for (const p of parts) { acc = acc ? acc + "/" + p : p; out.push(`<a class="link" data-path="${esc(acc)}">${esc(p)}</a>`); }
+  return out.join(" / ");
+}
+function renderReport(path, c, r) {
+  const t = r.totals, d = t.debt, m = metrics[sel] || {}, fs = r.factors || [];
+  const repoDensity = m.debtPerKLOC;
+  const comp = ["complexity", "nesting", "duplication", "architecture"].map(k => ({k, v: d[k] || 0}));
+  const stack = d.total > 0 ? comp.filter(x => x.v > 0).map(x => `<div title="${x.k}: ${fmt(x.v, 1)}" style="width:${100 * x.v / d.total}%;background:${COMP_COLORS[x.k]}"></div>`).join("") : "";
+  // where in the folder: debt by next path segment below the scope
+  const sub = new Map();
+  for (const f of fs) {
+    const file = f.location.file || f.module;
+    let rest = path ? file.slice(path.length + 1) : file;
+    const seg = rest.includes("/") ? rest.split("/")[0] + "/" : "(files directly here)";
+    sub.set(seg, (sub.get(seg) || 0) + f.debt);
+  }
+  const subs = [...sub.entries()].sort((a, b) => b[1] - a[1]);
+  const maxSub = subs.length ? subs[0][1] : 1;
+  const bars = subs.slice(0, 12).map(([name, v]) => `<div class="row"><span class="name" title="${esc(name)}">${name.endsWith("/") ? `<a class="link" data-path="${esc((path ? path + "/" : "") + name.slice(0, -1))}">${esc(name)}</a>` : esc(name)}</span>
+    <span class="track"><span class="fill" style="display:block;width:${100 * v / maxSub}%;background:${density(v * 1000 / Math.max(1, t.sourceLines))}"></span></span><span style="text-align:right">${fmt(v, 1)}</span></div>`).join("");
+  // severity-ranked factors
+  const groups = {critical: [], high: [], medium: [], low: []};
+  for (const f of fs) groups[band(f.debt)].push(f);
+  const item = f => {
+    const loc = f.location, where = `${loc.file}${loc.startLine ? ":" + loc.startLine : ""}`, rem = f.remediation || {};
+    const metricsText = Object.entries(f.metrics || {}).map(([k, v]) => `${esc(k)} ${v}`).join(" · ");
+    return `<details class="item"><summary><span class="sev ${band(f.debt)}">${band(f.debt)}</span><b>${esc(loc.symbol || f.module)}</b>
+      <span class="dim">· ${KIND_NAMES[f.kind] || esc(f.kind)} · ${fmt(f.debt, 1)} debt (${fmt(100 * f.shareOfScopeDebt, 1)}%)</span></summary>
+      <div class="body"><div class="mono">${esc(where)}</div>${metricsText ? `<div class="dim">${metricsText}</div>` : ""}
+      <p>${esc(f.explanation)}</p>
+      ${f.related && f.related.length ? `<div><b>Related:</b> ${f.related.map(x => `<span class="mono">${esc(x.file)}:${x.startLine}${x.symbol ? " " + esc(x.symbol) : ""}</span>`).join(" · ")}</div>` : ""}
+      ${rem.strategy ? `<p><b>Fix:</b> ${esc(rem.strategy)}${rem.target ? ` <span class="dim">— ${esc(rem.target)}</span>` : ""}</p>` : ""}
+      ${rem.steps && rem.steps.length ? `<ol>${rem.steps.map(x => `<li>${esc(x)}</li>`).join("")}</ol>` : ""}
+      ${rem.acceptance && rem.acceptance.length ? `<div><b>Done when:</b><ul>${rem.acceptance.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
+      ${rem.caution ? `<p class="dim"><b>Caution:</b> ${esc(rem.caution)}</p>` : ""}</div></details>`;
+  };
+  const sevSection = Object.entries(groups).filter(([, xs]) => xs.length).map(([sev, xs]) =>
+    `<details class="section" ${sev === "critical" || sev === "high" ? "open" : ""}><summary><span class="sev ${sev}">${sev}</span>${xs.length} item${xs.length === 1 ? "" : "s"} · ${fmt(xs.reduce((a, f) => a + f.debt, 0), 1)} debt</summary>
+      ${xs.slice(0, 60).map(item).join("")}${xs.length > 60 ? `<p class="dim">${xs.length - 60} more (see codeeval explain --path ${esc(path)})</p>` : ""}</details>`).join("");
+  const conc = r.concentration || {};
+  const vs = repoDensity && t.debtPerKLOC != null ? (t.debtPerKLOC > repoDensity ? `<span class="up">${fmt(t.debtPerKLOC / repoDensity, 1)}× the repository's ${fmt(repoDensity, 1)}</span>` : `<span class="down">below the repository's ${fmt(repoDensity, 1)}</span>`) : "";
+  $("drawerBody").innerHTML = `<h2>${esc(path || "(whole repository)")}</h2>
+    <div class="crumbs">${crumbs(path)}</div>
+    <div class="dim">commit <span class="mono">${c.sha.slice(0, 10)}</span> · ${esc(c.subject)}</div>
+    <h3>Summary</h3>
+    <div class="kpis">
+      <div class="kpi"><span class="dim">Debt</span><b>${fmt(d.total, 1)}</b></div>
+      <div class="kpi"><span class="dim">Per 1,000 lines</span><b style="color:${density(t.debtPerKLOC)}">${fmt(t.debtPerKLOC, 1)}</b><span class="dim">${vs}</span></div>
+      <div class="kpi"><span class="dim">Score (0–100)</span><b>${fmt(t.score, 1)}</b></div>
+      <div class="kpi"><span class="dim">Source</span><b>${fmt(t.sourceLines)}</b><span class="dim">lines in ${fmt(t.sourceFiles)} files</span></div>
+      <div class="kpi"><span class="dim">Hotspots</span><b>${fmt(t.hotspots)}</b><span class="dim">of ${fmt(t.callables)} callables</span></div>
+      <div class="kpi"><span class="dim">Debt items</span><b>${fmt(fs.length)}</b><span class="dim">${conc.factorsFor50Percent ? `${conc.factorsFor50Percent} make up half` : ""}</span></div>
+    </div>
+    <h3>What contributes</h3>
+    ${d.total > 0 ? `<div class="stack">${stack}</div>
+      <div class="chips">${comp.filter(x => x.v > 0).map(x => `<span class="chip"><span class="sw" style="background:${COMP_COLORS[x.k]};margin-left:0"></span>${x.k} <b>${fmt(x.v, 1)}</b> (${fmt(100 * x.v / d.total, 0)}%)</span>`).join("")}</div>` : `<p class="dim">No debt in this folder.</p>`}
+    ${subs.length > 1 ? `<div class="dim" style="margin-top:8px">Where in this folder (debt by subfolder; click to open):</div><div class="bars">${bars}</div>` : ""}
+    ${conc.factors ? `<p class="dim">Concentration: ${conc.factorsFor50Percent} of ${conc.factors} items make up 50% of the debt, ${conc.factorsFor80Percent} make up 80%. Fixing the top items moves this folder most.</p>` : ""}
+    <h3>Debt items by severity</h3>
+    ${sevSection || `<p class="dim">None.</p>`}
+    <p class="dim">Severity bands group each item's v2 debt points (critical ≥ 25, high ≥ 10, medium ≥ 4, low below); they are a reading aid, not calibrated.</p>
+    <div id="defectsSection"><h3>Defect findings</h3><p class="dim">Checking…</p></div>
+    <details class="section"><summary>How to fix well</summary><ul>${(r.guidance || []).map(g => `<li>${esc(g)}</li>`).join("")}</ul></details>
+    <details class="section"><summary>Limits</summary><ul>${(r.notes || []).map(g => `<li>${esc(g)}</li>`).join("")}</ul></details>`;
+  wireLinks();
+}
+function wireLinks() { $("drawerBody").querySelectorAll("[data-path]").forEach(a => a.onclick = () => openReport(a.dataset.path)); }
+// Defect rules run on demand, once per commit (whole repository); folder
+// reports filter that result. Without a run, the drawer offers the check.
+async function loadDefects(path, c, seq, run = false) {
+  let r;
+  try {
+    const res = await fetch(`api/defects?commit=${c.sha}&path=${encodeURIComponent(path)}${run ? "" : "&cached=1"}`);
+    if (res.status === 204) {
+      if (seq === reportSeq) {
+        $("defectsSection").innerHTML = `<h3>Defect findings</h3><p class="dim">Not checked for this commit yet. The rules run once for the whole commit (about 30 s on a large repository the first time, seconds after); every folder report then reuses the result.</p><button id="runDefects">Check defects for this commit</button>`;
+        $("runDefects").onclick = () => { $("defectsSection").innerHTML = `<h3>Defect findings</h3><p class="dim">Checking this commit…</p>`; loadDefects(path, c, seq, true).then(() => probeDefects(c.sha, true)); };
+      }
+      return;
+    }
+    if (!res.ok) throw new Error(await res.text());
+    r = await res.json();
+  } catch (e) { if (seq === reportSeq) $("defectsSection").innerHTML = `<h3>Defect findings</h3><p class="up">Failed: ${esc(e)}</p>`; return; }
+  if (!path) checkedDefects.set(c.sha, r.totals);
+  if (seq !== reportSeq) return;
+  const fs = r.findings || [], byRule = new Map();
+  for (const f of fs) { const k = f.severity + "|" + f.rule; byRule.set(k, [...(byRule.get(k) || []), f]); }
+  const rank = xs => (xs[0].severity === "gate" ? 0 : 1);
+  const sections = [...byRule.values()].sort((a, b) => rank(a) - rank(b) || b.length - a.length)
+    .map(xs => `<details class="item"><summary><span class="sev ${xs[0].severity}">${xs[0].severity}</span><b>${esc(xs[0].rule)}</b> <span class="dim">· ${xs.length}</span></summary>
+      <div class="body"><ul>${xs.slice(0, 40).map(f => `<li><span class="mono">${esc(f.file)}:${f.line}</span>${f.symbol ? " (" + esc(f.symbol) + ")" : ""} — ${esc(f.message)}</li>`).join("")}</ul>${xs.length > 40 ? `<p class="dim">${xs.length - 40} more</p>` : ""}</div></details>`).join("");
+  $("defectsSection").innerHTML = `<h3>Defect findings</h3>
+    <p>${r.totals.gate ? `<span class="up"><b>${r.totals.gate}</b> gate</span>` : "0 gate"} · ${r.totals.advisory} advisory${(r.suppressed || []).length ? ` · ${r.suppressed.length} suppressed` : ""} <span class="dim">(rules/v1; gate = provable from syntax, advisory = needs a human decision)</span></p>
+    ${sections || `<p class="dim">No findings in this folder.</p>`}`;
+}
+
 function frame() { tick(); drawGraph(); requestAnimationFrame(frame); }
 const toWorld = (sx, sy) => ({x: (sx - canvas.clientWidth / 2) / view.k + view.x, y: (sy - canvas.clientHeight / 2) / view.k + view.y});
 let drag = null;
@@ -929,7 +1110,9 @@ canvas.onmousedown = e => { drag = {x: e.clientX, y: e.clientY, vx: view.x, vy: 
 canvas.onclick = e => {
   if (lastDragMoved) return;
   if (mode === "deps") { depPick = hover; renderDepDetail(); return; }
+  if (mode === "structure" && hoverFolder) { openReport(hoverFolder.path); return; }
   pick(hover);
+  if (mode === "structure" && hover && hover.kind === "module") openReport(hover.label);
 };
 let lastDragMoved = false;
 addEventListener("mouseup", () => { lastDragMoved = !!(drag && drag.moved); drag = null; canvas.style.cursor = "grab"; });
@@ -945,6 +1128,10 @@ canvas.onmousemove = e => {
     return showTip(e, `<b>${esc(hover.key)}</b><br>${fmt(hover.lines)} lines · debt ${fmt(hover.debt, 1)} (${fmt(hover.density, 1)}/kLOC) · ${hover.mods.length} module(s)<br>uses ${hover.out.size} group(s) through ${o} import(s); used by ${hover.in.size} through ${i}${hover.expandable ? "<br><i>double-click to expand</i>" : ""}`);
   }
   if (mode === "structure") {
+    hoverFolder = null;
+    for (const f of folders) if (f.head && p.x >= f.x && p.x <= f.x + f.w && p.y >= f.y && p.y <= f.y + 15) hoverFolder = f;
+    if (hoverFolder) { hover = null; canvas.style.cursor = "pointer"; return showTip(e, `<b>${esc(hoverFolder.path)}</b><br>click for this folder's report`); }
+    canvas.style.cursor = "grab";
     for (const n of nodes) { const r = n.rect; if (r && p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h) hover = n; }
   } else {
     for (const n of netNodes) { const d = Math.hypot(n.p.x - p.x, n.p.y - p.y); if (d < n.r + 4 / view.k && d < best) { best = d; hover = n; } }
@@ -1026,6 +1213,7 @@ function select(i) {
   $("slider").value = sel;
   renderStrip(); renderCharts(); renderCommit();
   showGraph(sel);
+  if (reportPath !== null && $("drawer").classList.contains("open")) openReport(reportPath); // follow the stepper
 }
 $("slider").oninput = e => select(+e.target.value);
 $("prev").onclick = () => select(sel - 1);
