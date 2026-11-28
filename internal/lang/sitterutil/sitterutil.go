@@ -115,3 +115,13 @@ func LogicalOp(n *sitter.Node, ops ...string) bool {
 	}
 	return false
 }
+
+// Walk visits n and its descendants; returning false skips a node's children.
+func Walk(n *sitter.Node, visit func(*sitter.Node) bool) {
+	if n == nil || !visit(n) {
+		return
+	}
+	for i := uint(0); i < n.ChildCount(); i++ {
+		Walk(n.Child(i), visit)
+	}
+}

@@ -4,6 +4,7 @@ package languages
 
 import (
 	"github.com/cameron/code-evaluator/internal/lang"
+	"github.com/cameron/code-evaluator/internal/lang/csharp"
 	"github.com/cameron/code-evaluator/internal/lang/golang"
 	"github.com/cameron/code-evaluator/internal/lang/typescript"
 )
@@ -15,10 +16,7 @@ func Default() *lang.Registry {
 	r := lang.NewRegistry()
 	must(r.Register(golang.New()))
 	must(r.Register(typescript.New()))
-
-	// Planned next adapter (a Tree-sitter grammar exists). Declared only:
-	// files are reported as unsupported, never scored.
-	r.Declare(lang.Declared{ID: "csharp", Extensions: []string{".cs"}, Note: "planned adapter: tree-sitter-c-sharp; graph from using/namespace + .csproj ProjectReference"})
+	must(r.Register(csharp.New()))
 
 	// Other recognised languages, reported as unsupported coverage.
 	r.Declare(lang.Declared{ID: "javascript", Extensions: []string{".js", ".jsx", ".mjs", ".cjs"}, Note: "no adapter"})

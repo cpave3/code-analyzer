@@ -70,6 +70,9 @@ var literalKinds = map[string]bool{
 	"string": true, "template_string": true, "number": true, "regex": true, "jsx_text": true, "true": true, "false": true,
 	"null": true, "undefined": true, "nil": true, "int_literal": true, "float_literal": true, "imaginary_literal": true,
 	"interpreted_string_literal": true, "raw_string_literal": true, "rune_literal": true,
+	// C#
+	"integer_literal": true, "real_literal": true, "verbatim_string_literal": true, "interpolated_string_expression": true,
+	"character_literal": true, "boolean_literal": true, "null_literal": true, "string_literal": true,
 }
 
 // Extract abstracts the callables of one file from its syntax tree.
