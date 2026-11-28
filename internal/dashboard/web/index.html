@@ -168,10 +168,13 @@ async function poll() {
   win = r.window;
   for (const [k, m] of Object.entries(r.metrics)) metrics[+k] = m;
   $("slider").min = win.from; $("slider").max = win.to;
-  const busy = r.done < r.total || r.stepsDone < r.total;
-  $("progress").firstElementChild.style.width = (100 * r.done / Math.max(1, r.total)) + "%";
-  $("progressText").textContent = r.done < r.total ? `measuring ${r.done}/${r.total} commits in the window, newest first…`
-    : r.stepsDone < r.total ? `${r.total} commits measured, comparing steps…` : `${r.total} commits in the window measured`;
+  const busy = r.done < r.total || r.stepsDone < r.total || r.detailDone < r.total || r.detailStepsDone < r.total;
+  const pct = (r.done + r.stepsDone + r.detailDone + r.detailStepsDone) / Math.max(1, 4 * r.total);
+  $("progress").firstElementChild.style.width = (100 * pct) + "%";
+  $("progressText").textContent = r.done < r.total ? `measuring debt: ${r.done}/${r.total} commits, newest first…`
+    : r.stepsDone < r.total ? `comparing steps: ${r.stepsDone}/${r.total}…`
+    : r.detailDone < r.total ? `checking defects and near-duplicates: ${r.detailDone}/${r.total} (later commits reuse unchanged files)…`
+    : r.detailStepsDone < r.total ? `comparing defects: ${r.detailStepsDone}/${r.total}…` : `${r.total} commits in the window measured`;
   $("windowInfo").textContent = `window: commits ${win.from + 1}–${win.to + 1} of ${meta.commits.length} (${meta.commits[win.from].time.slice(0, 10)} → ${meta.commits[win.to].time.slice(0, 10)}) · ${r.measuredOverall} measured so far this session`;
   if (moved && (sel < win.from || sel > win.to)) select(win.to);
   renderStrip(); renderCharts(); renderCommit(); renderGroups();
@@ -355,8 +358,9 @@ function renderCommit() {
   if (m.done && !m.error) {
     deltas = d("Debt", x => x.debt.total, 1, true, m.debt.total) + d("Score", x => x.score, 1, false, m.score) + d("Hotspots", x => x.hotspots, 0, true, m.hotspots)
       + d("Decision points", x => x.decisionPoints, 0, true, m.decisionPoints) + d("Source lines", x => x.lines, 0, null, m.lines);
-    if (meta.defects) deltas += `<div class="delta"><span class="dim">Defects introduced</span><b class="${(m.introducedGate || 0) > 0 ? "up" : ""}">${m.introducedGate == null ? (m.stepDone ? "–" : "…") : `${m.introducedGate} gate · ${m.introducedAdvisory} adv`}</b><span class="dim">${m.resolved == null ? (m.stepDone ? "" : "waiting for the parent commit") : m.resolved + " resolved · now " + m.gate + " gate"}</span></div>`;
-    if (meta.nearDuplication) deltas += d("Near-dup pairs", x => (x.nearMisses || 0) + (x.fragments || 0), 0, true, (m.nearMisses || 0) + (m.fragments || 0));
+    if (meta.defects) deltas += `<div class="delta"><span class="dim">Defects introduced</span><b class="${(m.introducedGate || 0) > 0 ? "up" : ""}">${m.introducedGate == null ? (m.detailStep ? "–" : "…") : `${m.introducedGate} gate · ${m.introducedAdvisory} adv`}</b><span class="dim">${m.resolved == null ? (m.detailStep ? "" : "checking…") : m.resolved + " resolved · now " + m.gate + " gate"}</span></div>`;
+    if (meta.nearDuplication) deltas += m.detail ? d("Near-dup pairs", x => x.detail ? (x.nearMisses || 0) + (x.fragments || 0) : null, 0, true, (m.nearMisses || 0) + (m.fragments || 0))
+      : `<div class="delta"><span class="dim">Near-dup pairs</span><b>…</b><span class="dim">checking…</span></div>`;
     deltas += `<div class="delta"><span class="dim">Changed lines</span><b>${!sel ? "–" : m.stepDone ? fmt(m.changedLines) : "…"}</b><span class="dim">measured source</span></div>`;
   } else if (m.error) deltas = `<p class="up">${esc(m.error)}</p>`;
   else deltas = `<p class="dim">measuring…</p>`;
@@ -378,7 +382,7 @@ function renderGroups() {
     a.steps++; a.lines += m.changedLines; a.debt += dd; a.hot += m.hotspots - p.hotspots;
     if (dd > .005) a.up++; else if (dd < -.005) a.down++;
     a.gate += m.introducedGate || 0; a.adv += m.introducedAdvisory || 0; a.res += m.resolved || 0;
-    a.near += ((m.nearMisses || 0) + (m.fragments || 0)) - ((p.nearMisses || 0) + (p.fragments || 0));
+    if (m.detail && p.detail) a.near += ((m.nearMisses || 0) + (m.fragments || 0)) - ((p.nearMisses || 0) + (p.fragments || 0));
   }
   const rows = Object.entries(g).sort((x, y) => y[1].steps - x[1].steps);
   if (!rows.length) { $("groups").innerHTML = `<p class="dim">Waiting for at least two measured commits.</p>`; return; }

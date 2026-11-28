@@ -35,15 +35,20 @@ func (s *Server) windowMetrics() map[string]any {
 	defer s.mu.Unlock()
 	from := max(0, s.lo-1)
 	ms := map[string]Metrics{}
-	done, steps := 0, 0
+	done, steps, detail, detailSteps := 0, 0, 0, 0
 	for i := from; i <= s.hi; i++ {
 		m := s.metrics[i]
 		ms[strconv.Itoa(i)] = m
-		if i >= s.lo && m.Done {
-			done++
+		if i < s.lo {
+			continue
 		}
-		if i >= s.lo && m.StepDone {
-			steps++
+		for _, x := range []struct {
+			ok bool
+			n  *int
+		}{{m.Done, &done}, {m.StepDone, &steps}, {m.Detail, &detail}, {m.DetailStep, &detailSteps}} {
+			if x.ok {
+				*x.n++
+			}
 		}
 	}
 	measured := 0
@@ -52,7 +57,13 @@ func (s *Server) windowMetrics() map[string]any {
 			measured++
 		}
 	}
+	slow := s.opts.Defects || s.opts.Clones
+	if !slow {
+		detail, detailSteps = s.hi-s.lo+1, s.hi-s.lo+1
+	}
+	entries, hits, misses := s.cache.Stats()
 	return map[string]any{"window": map[string]int{"from": s.lo, "to": s.hi}, "done": done, "stepsDone": steps,
+		"detailDone": detail, "detailStepsDone": detailSteps, "cache": map[string]int{"entries": entries, "hits": hits, "misses": misses},
 		"total": s.hi - s.lo + 1, "measuredOverall": measured, "metrics": ms}
 }
 

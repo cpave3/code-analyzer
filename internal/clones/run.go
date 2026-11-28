@@ -1,11 +1,14 @@
 package clones
 
 import (
+	"fmt"
+
 	"sort"
 
 	"github.com/cameron/code-evaluator/internal/config"
 	"github.com/cameron/code-evaluator/internal/index"
 	"github.com/cameron/code-evaluator/internal/lang"
+	"github.com/cameron/code-evaluator/internal/memo"
 	"github.com/cameron/code-evaluator/internal/model"
 )
 
@@ -31,6 +34,12 @@ func Notes() []string {
 // Analyze runs both detectors on a snapshot's source callables. inScope
 // keeps pairs with at least one side in scope (nil = all).
 func Analyze(snap *index.Snapshot, cfg *config.Config, langs *lang.Registry, inScope func(string) bool) *Result {
+	return AnalyzeCached(snap, cfg, langs, inScope, nil)
+}
+
+// AnalyzeCached is Analyze with per-file extraction cached by content, so
+// a series of commits only re-extracts the files each commit changed.
+func AnalyzeCached(snap *index.Snapshot, cfg *config.Config, langs *lang.Registry, inScope func(string) bool, cache *memo.Cache) *Result {
 	opt := DefaultOptions(cfg.Duplication.MinTokens, cfg.Duplication.NearThreshold)
 	r := &Result{Version: Version, Options: opt, Callables: map[string]int{}, NearMisses: []Pair{}, Fragments: []Pair{}, Notes: Notes()}
 	var all []Callable
@@ -48,16 +57,23 @@ func Analyze(snap *index.Snapshot, cfg *config.Config, langs *lang.Registry, inS
 			if f.Class != model.ClassSource && !(cfg.Duplication.IncludeTests && f.Class == model.ClassTest) {
 				continue
 			}
-			src, err := snap.Content(p)
-			if err != nil {
-				continue
+			key := fmt.Sprintf("clones:%s:%s:%s:%d", Version, ad.ID(), f.Blob, opt.MinTokens)
+			extracted := cache.Get(key, func() any {
+				src, err := snap.Content(p)
+				if err != nil {
+					return []Callable(nil)
+				}
+				tree, err := sp.ParseSyntax(src)
+				if err != nil {
+					return []Callable(nil)
+				}
+				defer tree.Close()
+				return Extract(p, ad.ID(), src, tree.RootNode(), snap.SymbolsIn(p), opt.MinTokens)
+			}).([]Callable)
+			for _, c := range extracted {
+				c.File = p // the same content may sit at another path
+				cs = append(cs, c)
 			}
-			tree, err := sp.ParseSyntax(src)
-			if err != nil {
-				continue
-			}
-			cs = append(cs, Extract(p, ad.ID(), src, tree.RootNode(), snap.SymbolsIn(p), opt.MinTokens)...)
-			tree.Close()
 		}
 		r.Callables[ad.ID()] = len(cs)
 		all = append(all, cs...)

@@ -17,6 +17,23 @@ All versions are local proof-of-concept builds; there is no remote or release.
   variants), vet, fmt, check, run, serve, analyze and fixtures:reports. It
   uses the offline pinned environment and `CGO_ENABLED=1`, because the
   Tree-sitter grammars are C.
+- **Incremental defect rules** (`internal/memo`, `rules.Options.Cache`,
+  `Impl.FileLocal`, `Registry.Prepare`):
+  - Files load lazily, and their syntax trees are freed after the file's
+    checks.
+  - Single-file rules run file by file, with findings cached by content
+    (blob id).
+  - Cross-file rules read cached per-file facts (identifiers, declarations,
+    imports) instead of syntax trees.
+  - Clone extraction is cached by content the same way
+    (`clones.AnalyzeCached`).
+  - Results are byte-identical: the golden outputs and Legato defect reports
+    match. On Legato, one run's peak memory went from 909 MB to 224 MB.
+  - Across commits, `serve`'s detail phase went from about 36 s to about 5 s
+    per commit after the first.
+- **Dashboard in two phases:** charts and graphs first (v2 metrics, about
+  0.4 s per commit), then defects and near-duplication. The detail phase
+  does not hold the evaluator lock, so graph requests no longer wait on it.
 - **Dashboard measured window:**
   - The whole first-parent history is listed from a few batched git calls,
     and only a window is measured: `--last 50` by default, or

@@ -18,15 +18,32 @@ var ignoreRe = regexp.MustCompile(`codeeval-ignore\s+([a-z0-9/_-]+(?:\s*,\s*[a-z
 // Suppression reports whether a finding of rule at line is suppressed by a
 // codeeval-ignore comment on that line or the line above, with its reason.
 func Suppression(src []byte, line int, rule string) (string, bool) {
-	if len(src) == 0 || line <= 0 || !bytes.Contains(src, []byte("codeeval-ignore")) {
-		return "", false
+	return suppressionAt(ignoreLines(src), line, rule)
+}
+
+// ignoreLines maps 1-based line numbers to the codeeval-ignore comments on
+// them (nil when the file has none).
+func ignoreLines(src []byte) map[int][][]byte {
+	if !bytes.Contains(src, []byte("codeeval-ignore")) {
+		return nil
 	}
-	lines := bytes.Split(src, []byte{'\n'})
-	for _, l := range []int{line - 1, line - 2} {
-		if l < 0 || l >= len(lines) {
-			continue
+	out := map[int][][]byte{}
+	for i, l := range bytes.Split(src, []byte{'\n'}) {
+		if m := ignoreRe.FindSubmatch(l); m != nil {
+			out[i+1] = m
 		}
-		m := ignoreRe.FindSubmatch(lines[l])
+	}
+	return out
+}
+
+// suppressionLines returns a file's ignore comments, cached by content.
+func suppressionLines(f *File) map[int][][]byte {
+	return f.Memo("codeeval-ignore", func() any { return ignoreLines(f.Source()) }).(map[int][][]byte)
+}
+
+func suppressionAt(lines map[int][][]byte, line int, rule string) (string, bool) {
+	for _, l := range []int{line, line - 1} {
+		m := lines[l]
 		if m == nil {
 			continue
 		}

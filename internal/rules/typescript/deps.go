@@ -25,79 +25,100 @@ type importIndex struct {
 	names    map[string]map[string]bool // file -> imported export names
 }
 
+// importFact is one import, re-export or dynamic import of a file.
+type importFact struct {
+	spec     string
+	names    []string // imported or re-exported names ("default" for a default import)
+	wildcard bool     // namespace import, export *, or dynamic import(): any export may be used
+}
+
+// fileImports lists a file's import facts, cached by content.
+func fileImports(f *rules.File) []importFact {
+	return f.Memo("ts:imports", func() any {
+		var out []importFact
+		rules.Walk(f.Root(), func(n *sitter.Node) bool {
+			switch n.Kind() {
+			case "import_statement", "export_statement":
+				src := n.ChildByFieldName("source")
+				if src == nil {
+					return n.Kind() == "export_statement" // export declarations may contain dynamic imports
+				}
+				fact := importFact{spec: strings.Trim(f.Text(src), "\"'`")}
+				if n.Kind() == "export_statement" && !rules.Contains(n, "export_clause") {
+					fact.wildcard = true // export * from
+				}
+				rules.Walk(n, func(x *sitter.Node) bool {
+					switch x.Kind() {
+					case "namespace_import", "namespace_export":
+						fact.wildcard = true
+					case "import_specifier", "export_specifier":
+						fact.names = append(fact.names, f.Text(x.ChildByFieldName("name")))
+						return false
+					case "import_clause":
+						for _, ch := range rules.Named(x) {
+							if ch.Kind() == "identifier" {
+								fact.names = append(fact.names, "default")
+							}
+						}
+					}
+					return true
+				})
+				out = append(out, fact)
+				return false
+			case "call_expression":
+				fn, args := n.ChildByFieldName("function"), rules.Named(n.ChildByFieldName("arguments"))
+				if fn != nil && len(args) > 0 && args[0].Kind() == "string" && (fn.Kind() == "import" || f.Text(fn) == "require") {
+					out = append(out, importFact{spec: strings.Trim(f.Text(args[0]), "\"'`"), wildcard: true})
+				}
+			}
+			return true
+		})
+		return out
+	}).([]importFact)
+}
+
 func buildImportIndex(c *rules.Context) *importIndex {
 	return c.Memo("ts:importIndex", func() any {
 		r := resolver(c)
 		ix := &importIndex{imported: map[string]bool{}, wildcard: map[string]bool{}, names: map[string]map[string]bool{}}
-		target := func(f *rules.File, src *sitter.Node) string {
-			if src == nil {
-				return ""
-			}
-			t := r.Resolve(f.Path, strings.Trim(f.Text(src), "\"'`")).Target
-			if t == f.Path {
-				return ""
-			}
-			return t
-		}
-		name := func(t, n string) {
-			ix.imported[t] = true
-			if ix.names[t] == nil {
-				ix.names[t] = map[string]bool{}
-			}
-			ix.names[t][n] = true
-		}
 		for _, f := range c.Files {
-			rules.Walk(f.Root(), func(n *sitter.Node) bool {
-				switch n.Kind() {
-				case "import_statement", "export_statement":
-					t := target(f, n.ChildByFieldName("source"))
-					if t == "" {
-						return n.Kind() == "export_statement" // export declarations may contain dynamic imports
-					}
-					ix.imported[t] = true
-					if n.Kind() == "export_statement" && !rules.Contains(n, "export_clause") {
-						ix.wildcard[t] = true // export * from
-					}
-					rules.Walk(n, func(x *sitter.Node) bool {
-						switch x.Kind() {
-						case "namespace_import", "namespace_export":
-							ix.wildcard[t] = true
-						case "import_specifier", "export_specifier":
-							name(t, f.Text(x.ChildByFieldName("name")))
-							return false
-						case "import_clause":
-							for _, ch := range rules.Named(x) {
-								if ch.Kind() == "identifier" {
-									name(t, "default")
-								}
-							}
-						}
-						return true
-					})
-					return false
-				case "call_expression":
-					fn, args := n.ChildByFieldName("function"), rules.Named(n.ChildByFieldName("arguments"))
-					if fn != nil && len(args) > 0 && args[0].Kind() == "string" && (fn.Kind() == "import" || f.Text(fn) == "require") {
-						if t := target(f, args[0]); t != "" {
-							ix.imported[t], ix.wildcard[t] = true, true
-						}
-					}
+			for _, fact := range fileImports(f) {
+				t := r.Resolve(f.Path, fact.spec).Target
+				if t == "" || t == f.Path {
+					continue
 				}
-				return true
-			})
+				ix.imported[t] = true
+				if fact.wildcard {
+					ix.wildcard[t] = true
+				}
+				if len(fact.names) > 0 && ix.names[t] == nil {
+					ix.names[t] = map[string]bool{}
+				}
+				for _, n := range fact.names {
+					ix.names[t][n] = true
+				}
+			}
 		}
 		return ix
 	}).(*importIndex)
 }
 
-func unusedExport(c *rules.Context) {
-	ix := buildImportIndex(c)
-	for _, f := range c.Files {
-		if f.Test() || isDeclarationFile(f.Path) || !ix.imported[f.Path] || ix.wildcard[f.Path] {
-			continue
+type exportFact struct {
+	name string
+	line int
+	uses int // identifier occurrences of the name in the module (the declaration is one)
+}
+
+// fileExports lists a module's named function exports, cached by content.
+func fileExports(f *rules.File) []exportFact {
+	return f.Memo("ts:exports", func() any {
+		var out []exportFact
+		root := f.Root()
+		if root == nil {
+			return out
 		}
-		uses := countIdents(f, f.Root(), useKinds)
-		for _, st := range rules.Named(f.Root()) {
+		uses := countIdents(f, root, useKinds)
+		for _, st := range rules.Named(root) {
 			if st.Kind() != "export_statement" {
 				continue
 			}
@@ -117,16 +138,46 @@ func unusedExport(c *rules.Context) {
 				}
 			}
 			for _, nm := range names {
-				if nm == nil || nm.Kind() != "identifier" {
-					continue
+				if nm != nil && nm.Kind() == "identifier" {
+					out = append(out, exportFact{f.Text(nm), rules.Line(nm), uses[f.Text(nm)]})
 				}
-				name := f.Text(nm)
-				if ix.names[f.Path][name] || uses[name] > 1 {
-					continue
-				}
-				c.Report(rules.Finding{File: f.Path, Line: rules.Line(nm), Symbol: name, Key: "export:" + name,
-					Message: "exported function " + name + " is imported by no other file and unused in its module (other files import this module by name)"})
 			}
+		}
+		return out
+	}).([]exportFact)
+}
+
+// fileAmbient lists `declare module "x"` names, cached by content.
+func fileAmbient(f *rules.File) []string {
+	return f.Memo("ts:ambient", func() any {
+		var out []string
+		rules.Walk(f.Root(), func(n *sitter.Node) bool {
+			if n.Kind() == "module" {
+				if nm := n.ChildByFieldName("name"); nm != nil && nm.Kind() == "string" {
+					out = append(out, strings.Trim(f.Text(nm), "\"'"))
+				}
+			}
+			return n.Kind() == "program" || n.Kind() == "ambient_declaration" || n.Kind() == "export_statement" || n.Kind() == "statement_block"
+		})
+		return out
+	}).([]string)
+}
+
+// prepare warms the per-file facts the cross-file rules read.
+func prepare(f *rules.File) { fileImports(f); fileExports(f); fileAmbient(f) }
+
+func unusedExport(c *rules.Context) {
+	ix := buildImportIndex(c)
+	for _, f := range c.Files {
+		if f.Test() || isDeclarationFile(f.Path) || !ix.imported[f.Path] || ix.wildcard[f.Path] {
+			continue
+		}
+		for _, e := range fileExports(f) {
+			if ix.names[f.Path][e.name] || e.uses > 1 {
+				continue
+			}
+			c.Report(rules.Finding{File: f.Path, Line: e.line, Symbol: e.name, Key: "export:" + e.name,
+				Message: "exported function " + e.name + " is imported by no other file and unused in its module (other files import this module by name)"})
 		}
 	}
 }
@@ -234,14 +285,9 @@ func loadManifests(c *rules.Context) *manifests {
 			ms.list = append(ms.list, m)
 		}
 		for _, f := range c.Files {
-			rules.Walk(f.Root(), func(n *sitter.Node) bool {
-				if n.Kind() == "module" {
-					if nm := n.ChildByFieldName("name"); nm != nil && nm.Kind() == "string" {
-						ms.ambient[strings.Trim(f.Text(nm), "\"'")] = true
-					}
-				}
-				return n.Kind() == "program" || n.Kind() == "ambient_declaration" || n.Kind() == "export_statement" || n.Kind() == "statement_block"
-			})
+			for _, name := range fileAmbient(f) {
+				ms.ambient[name] = true
+			}
 		}
 		return ms
 	}).(*manifests)

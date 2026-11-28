@@ -27,6 +27,7 @@ import (
 
 	"github.com/cameron/code-evaluator/internal/config"
 	"github.com/cameron/code-evaluator/internal/lang"
+	"github.com/cameron/code-evaluator/internal/memo"
 	"github.com/cameron/code-evaluator/internal/model"
 )
 
@@ -70,8 +71,12 @@ type Impl struct {
 	Language string
 	// Note states what this implementation covers and misses, in words that
 	// go into reports.
-	Note  string
-	Check func(*Context)
+	Note string
+	// FileLocal marks a check whose findings for a file depend only on that
+	// file's content. Such checks run file by file and their findings are
+	// cached by content, so unchanged files are not re-checked.
+	FileLocal bool
+	Check     func(*Context)
 }
 
 // Registry holds rule definitions and their language implementations.
@@ -79,6 +84,18 @@ type Registry struct {
 	rules []Rule
 	byID  map[string]int
 	impls map[string]map[string]Impl // rule -> language -> impl
+	prep  map[string][]func(*File)   // language -> per-file fact builders
+}
+
+// Prepare registers a per-file step for a language that warms the cached
+// facts its cross-file rules read (identifier counts, declarations,
+// imports ...). Run calls it once per file, in the same pass as the
+// file-local checks, so a file is parsed at most once per run.
+func (r *Registry) Prepare(language string, fn func(*File)) {
+	if r.prep == nil {
+		r.prep = map[string][]func(*File){}
+	}
+	r.prep[language] = append(r.prep[language], fn)
 }
 
 // NewRegistry returns an empty registry.
@@ -174,17 +191,78 @@ type Finding struct {
 	Change string `json:"change,omitempty"`
 }
 
-// File is a source or test file given to a rule, with its syntax tree.
+// File is a source or test file given to a rule. Its content and syntax
+// tree are loaded on first use and released after the file's checks, so a
+// run holds about one tree at a time.
 type File struct {
-	Path   string
-	Class  model.FileClass
-	Parsed *model.ParsedFile
-	Src    []byte
-	Tree   *sitter.Tree
+	Path     string
+	Blob     string // content id; keys cached per-file results ("" = no caching)
+	Class    model.FileClass
+	Parsed   *model.ParsedFile
+	Language string
+
+	src    []byte
+	tree   *sitter.Tree
+	loaded bool
+	load   func() ([]byte, *sitter.Tree, error)
+	cache  *memo.Cache
+	local  map[string]any
 }
 
-// Root returns the root syntax node.
-func (f *File) Root() *sitter.Node { return f.Tree.RootNode() }
+// NewFile returns a file with content and tree already loaded (tests and
+// tools that check files outside a snapshot).
+func NewFile(path string, class model.FileClass, parsed *model.ParsedFile, src []byte, tree *sitter.Tree) *File {
+	return &File{Path: path, Class: class, Parsed: parsed, src: src, tree: tree, loaded: true}
+}
+
+func (f *File) ensure() {
+	if f.loaded {
+		return
+	}
+	f.loaded = true
+	if f.load != nil {
+		f.src, f.tree, _ = f.load()
+	}
+}
+
+// Source returns the file's content.
+func (f *File) Source() []byte { f.ensure(); return f.src }
+
+// Root returns the root syntax node (nil when the file could not be parsed).
+func (f *File) Root() *sitter.Node {
+	f.ensure()
+	if f.tree == nil {
+		return nil
+	}
+	return f.tree.RootNode()
+}
+
+// release frees the syntax tree; the next use reloads it.
+func (f *File) release() {
+	if f.tree != nil {
+		f.tree.Close()
+	}
+	f.src, f.tree, f.loaded = nil, nil, f.load == nil
+}
+
+// Memo returns build()'s value for this file's content, computed once and
+// shared across runs through the cache (consecutive commits share most
+// files). key must name everything the value depends on besides the
+// content (the language is added).
+func (f *File) Memo(key string, build func() any) any {
+	if f.Blob != "" && f.cache != nil {
+		return f.cache.Get(f.Language+"\x00"+f.Blob+"\x00"+key, build)
+	}
+	if v, ok := f.local[key]; ok {
+		return v
+	}
+	v := build()
+	if f.local == nil {
+		f.local = map[string]any{}
+	}
+	f.local[key] = v
+	return v
+}
 
 // Test reports whether the file is a test file.
 func (f *File) Test() bool { return f.Class == model.ClassTest }
@@ -194,7 +272,7 @@ func (f *File) Text(n *sitter.Node) string {
 	if n == nil {
 		return ""
 	}
-	return n.Utf8Text(f.Src)
+	return n.Utf8Text(f.Source())
 }
 
 // Context is what a rule implementation sees: the files of one language in a

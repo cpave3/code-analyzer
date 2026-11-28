@@ -377,8 +377,17 @@ lists every commit, which is cheap even for thousands. Only a **window** is
 measured: the newest 50 by default (`--last`, `--since`/`--until`). You can
 move it from the page by dragging across the strip, or with the "last N" and
 date controls. Measured commits are cached, so moving back costs nothing.
-Charts, the stepper and the group table cover the window. Metrics are
-computed in the background, **newest commit first**, so the recent end of a long history is
+Charts, the stepper and the group table cover the window. Measuring runs
+in two phases:
+- **Fast phase:** v2 metrics and step sizes for the whole window. On
+  Legato (3,248 files) a 20-commit window has its charts in about 10 s.
+- **Detail phase:** defect rules and near-duplication. This phase shares a
+  content cache, so a file unchanged since an earlier commit is not
+  re-checked. The first commit takes about 40 s, and later ones about 5 s
+  (previously about 36 s each).
+
+Graph requests are answered in under half a second even while the detail
+phase runs. Metrics are computed in the background, **newest commit first**, so the recent end of a long history is
 ready first. That takes about 4 s per commit on this repository. A commit's
 step changes (changed lines, defects introduced and resolved) appear once
 its parent has been measured.

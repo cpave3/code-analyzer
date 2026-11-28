@@ -20,6 +20,7 @@ import (
 	"github.com/cameron/code-evaluator/internal/engine"
 	"github.com/cameron/code-evaluator/internal/gitsrc"
 	"github.com/cameron/code-evaluator/internal/lang"
+	"github.com/cameron/code-evaluator/internal/memo"
 	"github.com/cameron/code-evaluator/internal/provenance"
 	"github.com/cameron/code-evaluator/internal/report"
 	"github.com/cameron/code-evaluator/internal/rules"
@@ -74,7 +75,11 @@ type Metrics struct {
 	ChangedLines int          `json:"changedLines"` // vs previous commit
 	// StepDone is set once the changes against the previous commit
 	// (changed lines, defects introduced/resolved) are known.
-	StepDone   bool `json:"stepDone"`
+	StepDone bool `json:"stepDone"`
+	// Detail is set once defects and near-duplication are measured (the
+	// slower phase); DetailStep once defects introduced/resolved are known.
+	Detail     bool `json:"detail"`
+	DetailStep bool `json:"detailStep"`
 	Gate       *int `json:"gate,omitempty"`
 	Advisory   *int `json:"advisory,omitempty"`
 	IntroGate  *int `json:"introducedGate,omitempty"`
@@ -100,6 +105,7 @@ type Server struct {
 	work     *sync.Cond
 	metrics  []Metrics
 	findings map[int][]rules.Finding // measured commits' defect findings, for step comparison
+	cache    *memo.Cache             // per-file results by content, shared across commits
 	lo, hi   int                     // measured window (inclusive indexes)
 	graphs   map[string][]byte
 	order    []string
@@ -108,7 +114,7 @@ type Server struct {
 // New lists the history and its provenance (cheap: a few git calls); call
 // Run to measure the window.
 func New(ev *engine.Evaluator, cfg *config.Config, langs *lang.Registry, reg *rules.Registry, opts Options) (*Server, error) {
-	s := &Server{opts: opts, ev: ev, cfg: cfg, langs: langs, reg: reg, graphs: map[string][]byte{}, findings: map[int][]rules.Finding{}}
+	s := &Server{opts: opts, ev: ev, cfg: cfg, langs: langs, reg: reg, graphs: map[string][]byte{}, findings: map[int][]rules.Finding{}, cache: memo.New()}
 	s.work = sync.NewCond(&s.mu)
 	log, err := s.history()
 	if err != nil {

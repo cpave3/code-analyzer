@@ -20,19 +20,19 @@ const Language = "go"
 // Register adds the Go implementations.
 func Register(r *rules.Registry) error {
 	impls := []rules.Impl{
-		{Rule: catalog.UnusedImport, Check: unusedImport,
+		{Rule: catalog.UnusedImport, FileLocal: true, Check: unusedImport,
 			Note: "named imports are checked exactly; for unnamed imports the package name is inferred from the path (findings for non-standard-library paths are advisory)"},
-		{Rule: catalog.UnusedVariable, Check: unusedVariable,
+		{Rule: catalog.UnusedVariable, FileLocal: true, Check: unusedVariable,
 			Note: ":= and var declarations inside function and method bodies; the Go compiler rejects these, so a finding means the code does not build"},
-		{Rule: catalog.UnreachableCode, Check: unreachable,
+		{Rule: catalog.UnreachableCode, FileLocal: true, Check: unreachable,
 			Note: "statements after return, panic(), goto, break, continue in the same statement list; labelled statements are treated as reachable"},
 		{Rule: catalog.UnusedPrivateFunction, Check: unusedPrivateFunction,
 			Note: "unexported top-level functions (not methods) with no identifier of the same name in their package directory, tests and generated files included; //go:linkname and cgo //export are honoured"},
 		{Rule: catalog.UnusedExport, Check: unusedExport,
 			Note: "exported top-level functions in packages under an internal/ directory only (only the module can import those), never referenced by name anywhere"},
-		{Rule: catalog.EmptyHandler, Check: emptyHandler,
+		{Rule: catalog.EmptyHandler, FileLocal: true, Check: emptyHandler,
 			Note: "empty `if err != nil {}` branches, recover() results discarded, and `_ = err` (advisory)"},
-		{Rule: catalog.ErrorToSuccess, Check: errorToSuccess,
+		{Rule: catalog.ErrorToSuccess, FileLocal: true, Check: errorToSuccess,
 			Note: "in functions whose last result is error: an `if err != nil` branch whose only statement returns nil as the error"},
 		{Rule: catalog.UnresolvedImport, Check: unresolvedImport,
 			Note: "imports inside a module present in the snapshot must name a directory with non-test .go files"},
@@ -40,9 +40,9 @@ func Register(r *rules.Registry) error {
 			Note: "non-standard-library imports must be covered by a require of the nearest go.mod or be a module in the snapshot"},
 		{Rule: catalog.UnusedDependency, Check: unusedDependency,
 			Note: "direct (non-// indirect) requires that no .go file of the module imports and no tool directive names"},
-		{Rule: catalog.TautologicalAssertion, Check: tautological,
+		{Rule: catalog.TautologicalAssertion, FileLocal: true, Check: tautological,
 			Note: "testify assert/require comparisons (and method forms) and reflect.DeepEqual with identical call-free operands or two literals; True(true), False(false), Nil(nil)"},
-		{Rule: catalog.LostAsyncAssertion, Check: lostAsync,
+		{Rule: catalog.LostAsyncAssertion, FileLocal: true, Check: lostAsync,
 			Note: "t.Fatal*/FailNow/Skip* on the test's *testing.T/B/TB and require.* called inside a go statement (FailNow must run on the test goroutine)"},
 	}
 	for _, impl := range impls {
@@ -51,6 +51,7 @@ func Register(r *rules.Registry) error {
 			return err
 		}
 	}
+	r.Prepare(Language, func(f *rules.File) { fileIdents(f); fileNames(f); fileFuncs(f); fileDirectives(f) })
 	return nil
 }
 
@@ -285,6 +286,48 @@ func unreachable(c *rules.Context) {
 	}
 }
 
+// Per-file facts, cached by content (see rules.File.Memo).
+
+func fileIdents(f *rules.File) map[string]int {
+	return f.Memo("go:idents", func() any { return idents(f, f.Root(), valueIdents) }).(map[string]int)
+}
+
+func fileNames(f *rules.File) map[string]int {
+	return f.Memo("go:names", func() any {
+		return idents(f, f.Root(), map[string]bool{"identifier": true, "field_identifier": true})
+	}).(map[string]int)
+}
+
+type goFunc struct {
+	name string
+	line int
+}
+
+// fileFuncs lists top-level function declarations (not methods).
+func fileFuncs(f *rules.File) []goFunc {
+	return f.Memo("go:funcs", func() any {
+		var out []goFunc
+		for _, fn := range rules.Named(f.Root()) {
+			if fn.Kind() == "function_declaration" {
+				out = append(out, goFunc{f.Text(fn.ChildByFieldName("name")), rules.Line(fn)})
+			}
+		}
+		return out
+	}).([]goFunc)
+}
+
+// fileDirectives returns the file's source when it has //go:linkname or cgo
+// //export directives, else "".
+func fileDirectives(f *rules.File) string {
+	return f.Memo("go:directives", func() any {
+		src := f.Source()
+		if strings.Contains(string(src), "go:linkname") || strings.Contains(string(src), "//export ") {
+			return string(src)
+		}
+		return ""
+	}).(string)
+}
+
 // dirIdents counts identifiers per package directory across all files.
 func dirIdents(c *rules.Context) map[string]map[string]int {
 	return c.Memo("go:dirIdents", func() any {
@@ -294,7 +337,7 @@ func dirIdents(c *rules.Context) map[string]map[string]int {
 			if out[d] == nil {
 				out[d] = map[string]int{}
 			}
-			for k, v := range idents(f, f.Root(), valueIdents) {
+			for k, v := range fileIdents(f) {
 				out[d][k] += v
 			}
 		}
@@ -307,7 +350,7 @@ func allNames(c *rules.Context) map[string]int {
 	return c.Memo("go:allNames", func() any {
 		out := map[string]int{}
 		for _, f := range c.Files {
-			for k, v := range idents(f, f.Root(), map[string]bool{"identifier": true, "field_identifier": true}) {
+			for k, v := range fileNames(f) {
 				out[k] += v
 			}
 		}
@@ -318,8 +361,8 @@ func allNames(c *rules.Context) map[string]int {
 func directives(c *rules.Context, dir string) string {
 	var b strings.Builder
 	for _, f := range c.Files {
-		if path.Dir(f.Path) == dir && (strings.Contains(string(f.Src), "go:linkname") || strings.Contains(string(f.Src), "//export ")) {
-			b.Write(f.Src)
+		if path.Dir(f.Path) == dir {
+			b.WriteString(fileDirectives(f))
 		}
 	}
 	return b.String()
@@ -330,11 +373,8 @@ func unusedPrivateFunction(c *rules.Context) {
 	dirDirectives := map[string]string{}
 	for _, f := range c.Files {
 		dir := path.Dir(f.Path)
-		for _, fn := range rules.Named(f.Root()) {
-			if fn.Kind() != "function_declaration" {
-				continue
-			}
-			name := f.Text(fn.ChildByFieldName("name"))
+		for _, fn := range fileFuncs(f) {
+			name := fn.name
 			if name == "" || isExported(name) || name == "init" || name == "main" || name == "_" {
 				continue
 			}
@@ -347,7 +387,7 @@ func unusedPrivateFunction(c *rules.Context) {
 			if d := dirDirectives[dir]; strings.Contains(d, "go:linkname "+name) || strings.Contains(d, "//export "+name) {
 				continue
 			}
-			c.Report(rules.Finding{File: f.Path, Line: rules.Line(fn), Symbol: name, Key: "func:" + name,
+			c.Report(rules.Finding{File: f.Path, Line: fn.line, Symbol: name, Key: "func:" + name,
 				Message: "unexported function " + name + " is never referenced in package " + dir})
 		}
 	}
@@ -368,16 +408,12 @@ func unusedExport(c *rules.Context) {
 		if f.Test() || !underInternal(f.Path) || (f.Parsed != nil && f.Parsed.PackageName == "main") {
 			continue
 		}
-		for _, fn := range rules.Named(f.Root()) {
-			if fn.Kind() != "function_declaration" {
+		for _, fn := range fileFuncs(f) {
+			if !isExported(fn.name) || names[fn.name] > 1 {
 				continue
 			}
-			name := f.Text(fn.ChildByFieldName("name"))
-			if !isExported(name) || names[name] > 1 {
-				continue
-			}
-			c.Report(rules.Finding{File: f.Path, Line: rules.Line(fn), Symbol: name, Key: "func:" + name,
-				Message: "exported function " + name + " is not referenced anywhere in the repository (name-based)"})
+			c.Report(rules.Finding{File: f.Path, Line: fn.line, Symbol: fn.name, Key: "func:" + fn.name,
+				Message: "exported function " + fn.name + " is not referenced anywhere in the repository (name-based)"})
 		}
 	}
 }
@@ -513,7 +549,7 @@ func tautological(c *rules.Context) {
 			}
 			a, b, why := assertion(f, n)
 			if a != nil {
-				why = rules.Tautology(a, b, f.Src, func(x *sitter.Node) bool { return goLiterals[x.Kind()] }, "call_expression")
+				why = rules.Tautology(a, b, f.Source(), func(x *sitter.Node) bool { return goLiterals[x.Kind()] }, "call_expression")
 			}
 			if why != "" {
 				text := rules.Norm(f.Text(n))

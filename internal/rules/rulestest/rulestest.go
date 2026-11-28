@@ -73,7 +73,7 @@ func Run(t *testing.T, ad Adapter, register func(*rules.Registry) error, ruleID 
 		if ad.IsTestPath(p) {
 			class = model.ClassTest
 		}
-		rf = append(rf, &rules.File{Path: p, Class: class, Parsed: pf, Src: src, Tree: tree})
+		rf = append(rf, rules.NewFile(p, class, pf, src, tree))
 	}
 	read := func(p string) ([]byte, error) {
 		if s, ok := files[p]; ok {

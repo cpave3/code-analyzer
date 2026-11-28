@@ -72,6 +72,7 @@ func TestServeDashboard(t *testing.T) {
 	var series struct {
 		Done      int               `json:"done"`
 		StepsDone int               `json:"stepsDone"`
+		DetailSD  int               `json:"detailStepsDone"`
 		Total     int               `json:"total"`
 		Window    map[string]int    `json:"window"`
 		Metrics   map[string]metric `json:"metrics"`
@@ -82,7 +83,7 @@ func TestServeDashboard(t *testing.T) {
 		if err := json.Unmarshal(b, &series); err != nil {
 			t.Fatal(err)
 		}
-		if (series.Done == series.Total && series.StepsDone == series.Total) || time.Now().After(deadline) {
+		if (series.Done == series.Total && series.StepsDone == series.Total && series.DetailSD == series.Total) || time.Now().After(deadline) {
 			break
 		}
 		time.Sleep(200 * time.Millisecond)

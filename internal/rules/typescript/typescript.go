@@ -18,19 +18,19 @@ const Language = "typescript"
 // Register adds the TypeScript implementations.
 func Register(r *rules.Registry) error {
 	impls := []rules.Impl{
-		{Rule: catalog.UnusedImport, Check: unusedImport,
+		{Rule: catalog.UnusedImport, FileLocal: true, Check: unusedImport,
 			Note: "default, namespace and named import bindings (type-only included) never referenced in the file; a default React import counts as used when the file contains JSX"},
-		{Rule: catalog.UnusedVariable, Check: unusedVariable,
+		{Rule: catalog.UnusedVariable, FileLocal: true, Check: unusedVariable,
 			Note: "const/let/var bindings with a plain identifier name inside functions, and non-exported module-level bindings in module files; destructuring and loop variables are skipped"},
-		{Rule: catalog.UnreachableCode, Check: unreachable,
+		{Rule: catalog.UnreachableCode, FileLocal: true, Check: unreachable,
 			Note: "statements after return, throw, break or continue in the same block or case; hoisted function declarations and type-only declarations are ignored"},
-		{Rule: catalog.UnusedPrivateFunction, Check: unusedPrivateFunction,
+		{Rule: catalog.UnusedPrivateFunction, FileLocal: true, Check: unusedPrivateFunction,
 			Note: "non-exported module-level functions (declarations and const arrow/function expressions) unused in their module, and private/#private class methods unused in their class"},
 		{Rule: catalog.UnusedExport, Check: unusedExport,
 			Note: "exported functions of a module that other files import only by name (no namespace, wildcard re-export or dynamic import), where no file imports that name and the module does not use it itself"},
-		{Rule: catalog.EmptyHandler, Check: emptyHandler,
+		{Rule: catalog.EmptyHandler, FileLocal: true, Check: emptyHandler,
 			Note: "empty catch blocks and empty .catch()/.then(_, onRejected) callbacks"},
-		{Rule: catalog.ErrorToSuccess, Check: errorToSuccess,
+		{Rule: catalog.ErrorToSuccess, FileLocal: true, Check: errorToSuccess,
 			Note: "catch blocks whose only statement returns a constant (null, undefined, [], {}, a literal) and .catch(() => constant) callbacks"},
 		{Rule: catalog.UnresolvedImport, Check: unresolvedImport,
 			Note: "relative imports must resolve to a file in the snapshot (TypeScript, JavaScript, JSON or the named asset); unresolved tsconfig-alias and workspace imports are advisory"},
@@ -38,9 +38,9 @@ func Register(r *rules.Registry) error {
 			Note: "bare imports must be declared (dependencies, devDependencies, peer or optional, or an @types package) in a package.json between the file and the repository root; node builtins, virtual modules and ambient `declare module` names are exempt"},
 		{Rule: catalog.UnusedDependency, Check: unusedDependency,
 			Note: "package.json \"dependencies\" (not @types) that no file under the package imports or names in quotes (TypeScript imports, JS/CSS/HTML/config text, package scripts)"},
-		{Rule: catalog.TautologicalAssertion, Check: tautological,
+		{Rule: catalog.TautologicalAssertion, FileLocal: true, Check: tautological,
 			Note: "expect(A).toBe/toEqual/toStrictEqual(A) and chai equal/eql forms, node:assert equal/deepEqual families, and constant truthiness assertions; .not chains are skipped"},
-		{Rule: catalog.LostAsyncAssertion, Check: lostAsync,
+		{Rule: catalog.LostAsyncAssertion, FileLocal: true, Check: lostAsync,
 			Note: "expect(...).resolves/.rejects chains used as a bare statement (neither awaited nor returned)"},
 	}
 	for _, impl := range impls {
@@ -49,6 +49,7 @@ func Register(r *rules.Registry) error {
 			return err
 		}
 	}
+	r.Prepare(Language, prepare)
 	return nil
 }
 
@@ -543,7 +544,7 @@ func tautological(c *rules.Context) {
 			}
 			a, b, why := assertion(f, n)
 			if a != nil {
-				why = rules.Tautology(a, b, f.Src, func(x *sitter.Node) bool { return isLiteral(f, x) }, "call_expression", "new_expression", "await_expression")
+				why = rules.Tautology(a, b, f.Source(), func(x *sitter.Node) bool { return isLiteral(f, x) }, "call_expression", "new_expression", "await_expression")
 			}
 			if why == "" {
 				return true
