@@ -31,6 +31,7 @@ function readMode(): Mode {
   try {
     const v = localStorage.getItem("codeeval.theme");
     return v === "light" || v === "dark" ? v : "system";
+    // codeeval-ignore lost-errors/error-to-success: storage can be blocked (private window); the system theme is the right fallback
   } catch {
     return "system";
   }
@@ -86,6 +87,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setMode(next);
         try {
           localStorage.setItem("codeeval.theme", next);
+          // codeeval-ignore lost-errors/empty-handler: storage can be blocked (private window); the choice then lasts for this page only
         } catch {
           /* private window: the choice lasts for this page only */
         }
