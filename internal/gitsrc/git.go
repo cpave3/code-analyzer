@@ -478,10 +478,14 @@ func (r *Repo) Info(commit string) (CommitInfo, error) {
 	return CommitInfo{Author: f[0], Time: f[1], Parents: strings.Fields(f[2]), Subject: f[3]}, nil
 }
 
-// LastFirstParents lists up to n commits on target's first-parent chain,
-// oldest first, ending with target.
+// LastFirstParents lists up to n commits (n <= 0: all) on target's
+// first-parent chain, oldest first, ending with target.
 func (r *Repo) LastFirstParents(target string, n int) ([]string, error) {
-	out, err := r.run("rev-list", "--first-parent", "-n", strconv.Itoa(n), "--end-of-options", target)
+	args := []string{"rev-list", "--first-parent"}
+	if n > 0 {
+		args = append(args, "-n", strconv.Itoa(n))
+	}
+	out, err := r.run(append(args, "--end-of-options", target)...)
 	if err != nil {
 		return nil, err
 	}

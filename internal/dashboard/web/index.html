@@ -152,7 +152,7 @@ async function poll() {
   const r = await (await fetch("api/metrics")).json();
   metrics = r.metrics;
   $("progress").firstElementChild.style.width = (100 * r.done / Math.max(1, r.total)) + "%";
-  $("progressText").textContent = r.done < r.total ? `measuring ${r.done}/${r.total} commits…` : `${r.total} commits measured`;
+  $("progressText").textContent = r.done < r.total ? `measuring ${r.done}/${r.total} commits, newest first…` : `${r.total} commits measured`;
   renderCharts(); renderCommit(); renderGroups();
   if (r.done < r.total) setTimeout(poll, 1500);
 }
@@ -275,9 +275,9 @@ function renderCommit() {
   if (m.done && !m.error) {
     deltas = d("Debt", x => x.debt.total, 1, true, m.debt.total) + d("Score", x => x.score, 1, false, m.score) + d("Hotspots", x => x.hotspots, 0, true, m.hotspots)
       + d("Decision points", x => x.decisionPoints, 0, true, m.decisionPoints) + d("Source lines", x => x.lines, 0, null, m.lines);
-    if (meta.defects) deltas += `<div class="delta"><span class="dim">Defects introduced</span><b class="${(m.introducedGate || 0) > 0 ? "up" : ""}">${m.introducedGate == null ? "–" : `${m.introducedGate} gate · ${m.introducedAdvisory} adv`}</b><span class="dim">${m.resolved == null ? "" : m.resolved + " resolved · now " + m.gate + " gate"}</span></div>`;
+    if (meta.defects) deltas += `<div class="delta"><span class="dim">Defects introduced</span><b class="${(m.introducedGate || 0) > 0 ? "up" : ""}">${m.introducedGate == null ? (m.stepDone ? "–" : "…") : `${m.introducedGate} gate · ${m.introducedAdvisory} adv`}</b><span class="dim">${m.resolved == null ? (m.stepDone ? "" : "waiting for the parent commit") : m.resolved + " resolved · now " + m.gate + " gate"}</span></div>`;
     if (meta.nearDuplication) deltas += d("Near-dup pairs", x => (x.nearMisses || 0) + (x.fragments || 0), 0, true, (m.nearMisses || 0) + (m.fragments || 0));
-    deltas += `<div class="delta"><span class="dim">Changed lines</span><b>${sel ? fmt(m.changedLines) : "–"}</b><span class="dim">measured source</span></div>`;
+    deltas += `<div class="delta"><span class="dim">Changed lines</span><b>${!sel ? "–" : m.stepDone ? fmt(m.changedLines) : "…"}</b><span class="dim">measured source</span></div>`;
   } else if (m.error) deltas = `<p class="up">${esc(m.error)}</p>`;
   else deltas = `<p class="dim">measuring…</p>`;
   $("commit").innerHTML = `<div class="subject">${esc(c.subject)}</div>
@@ -291,7 +291,7 @@ function renderGroups() {
   const g = {};
   for (let i = 1; i < meta.commits.length; i++) {
     const m = metrics[i], p = metrics[i - 1];
-    if (!m || !p || !m.done || !p.done || m.error || p.error) continue;
+    if (!m || !p || !m.done || !p.done || !m.stepDone || m.error || p.error) continue;
     const k = stepKey(meta.commits[i]);
     const a = g[k] || (g[k] = {steps: 0, lines: 0, debt: 0, up: 0, down: 0, gate: 0, adv: 0, res: 0, hot: 0, near: 0});
     const dd = m.debt.total - p.debt.total;

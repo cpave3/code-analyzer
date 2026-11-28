@@ -13,6 +13,12 @@ All versions are local proof-of-concept builds; there is no remote or release.
   - `attribution` and the dashboard group by model and harness by default.
     `agent` is still accepted as an alias of `model` in `--group-by`.
   - The hooks read `AGENT_MODEL`, with `AGENT_ID` still accepted.
+- **`codeeval serve` defaults:**
+  - `codeeval serve` (or `codeeval serve PATH`) shows the whole first-parent
+    history of the checkout's HEAD. `--max` (now default 0 = all),
+    `--target` and `--base` narrow it.
+  - Metrics are computed newest-first.
+  - Step changes are filled in when the parent is measured (`stepDone`).
 - **Dashboard graph:**
   - It fills its card.
   - A "How to read this graph" section explains nodes, sizes, colours, lines,

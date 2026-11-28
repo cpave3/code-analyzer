@@ -15,7 +15,11 @@ func TestServeDashboard(t *testing.T) {
 	if r := cli(t, "serve", "--repo", repos["defects"], "--addr", "0.0.0.0:0"); r.code != 2 || !strings.Contains(r.stderr, "loopback") {
 		t.Fatalf("non-loopback address accepted: %d %s", r.code, r.stderr)
 	}
-	cmd := exec.Command(binary, "serve", "--repo", repos["defects"], "--config", scenarios["defects"].Config, "--base", "base", "--target", "bad", "--addr", "127.0.0.1:0", "--no-cache")
+	if r := cli(t, "serve", repos["defects"], "--repo", repos["defects"]); r.code != 2 {
+		t.Errorf("PATH together with --repo accepted: %d", r.code)
+	}
+	// The repository as a positional PATH; --base/--target narrow the history.
+	cmd := exec.Command(binary, "serve", repos["defects"], "--config", scenarios["defects"].Config, "--base", "base", "--target", "bad", "--addr", "127.0.0.1:0", "--no-cache")
 	out, err := cmd.StdoutPipe()
 	if err != nil {
 		t.Fatal(err)
@@ -60,6 +64,7 @@ func TestServeDashboard(t *testing.T) {
 		Done, Total int
 		Metrics     []struct {
 			Done      bool     `json:"done"`
+			StepDone  bool     `json:"stepDone"`
 			Error     string   `json:"error"`
 			Gate      *int     `json:"gate"`
 			IntroGate *int     `json:"introducedGate"`
@@ -73,7 +78,11 @@ func TestServeDashboard(t *testing.T) {
 		if err := json.Unmarshal(b, &series); err != nil {
 			t.Fatal(err)
 		}
-		if series.Done == series.Total || time.Now().After(deadline) {
+		all := series.Done == series.Total
+		for _, m := range series.Metrics {
+			all = all && m.StepDone
+		}
+		if all || time.Now().After(deadline) {
 			break
 		}
 		time.Sleep(200 * time.Millisecond)

@@ -37,7 +37,7 @@ var web embed.FS
 type Options struct {
 	Base     string // exclusive start; "" = the last Max first-parent commits
 	Target   string
-	Max      int
+	Max      int // most commits (0 = the whole first-parent history)
 	Defects  bool
 	Clones   bool
 	NotesRef string
@@ -73,13 +73,16 @@ type Metrics struct {
 	Violations   int          `json:"ruleViolations"`
 	CycleUnits   int          `json:"cycleUnits"`
 	ChangedLines int          `json:"changedLines"` // vs previous commit in the series
-	Gate         *int         `json:"gate,omitempty"`
-	Advisory     *int         `json:"advisory,omitempty"`
-	IntroGate    *int         `json:"introducedGate,omitempty"` // vs previous commit
-	IntroAdv     *int         `json:"introducedAdvisory,omitempty"`
-	Resolved     *int         `json:"resolved,omitempty"`
-	NearMisses   *int         `json:"nearMisses,omitempty"`
-	Fragments    *int         `json:"fragments,omitempty"`
+	// StepDone is set once the changes against the previous commit
+	// (changed lines, defects introduced/resolved) are known.
+	StepDone   bool `json:"stepDone"`
+	Gate       *int `json:"gate,omitempty"`
+	Advisory   *int `json:"advisory,omitempty"`
+	IntroGate  *int `json:"introducedGate,omitempty"` // vs previous commit
+	IntroAdv   *int `json:"introducedAdvisory,omitempty"`
+	Resolved   *int `json:"resolved,omitempty"`
+	NearMisses *int `json:"nearMisses,omitempty"`
+	Fragments  *int `json:"fragments,omitempty"`
 }
 
 // Server holds the evaluator and the computed series.
@@ -228,26 +231,41 @@ func (s *Server) describe() map[string]any {
 		"defects": s.opts.Defects, "nearDuplication": s.opts.Clones, "groupFields": append(fields, extra...), "notes": notes,
 		"thresholds": map[string]int{"cyclomatic": s.cfg.Complexity.HotspotCyclomatic, "nesting": s.cfg.Complexity.HotspotNesting, "minCloneTokens": s.cfg.Duplication.MinTokens},
 		"weights":    scorev2.DefaultWeights(),
-		"commits": s.commits,
+		"commits":    s.commits,
 	}
 }
 
-// Run computes every commit's metrics, oldest first.
+// Run computes every commit's metrics, newest first, so the recent end of a
+// long history appears first. A commit's step changes (changed lines,
+// defects introduced and resolved) are filled in once its parent, the next
+// commit measured, is done.
 func (s *Server) Run() {
-	var prevSnap *index.Snapshot
-	var prevRules *rules.Result
-	for i := range s.commits {
-		m, snap, res := s.measure(s.commits[i].SHA, prevSnap, prevRules)
+	type measured struct {
+		i    int
+		snap *index.Snapshot
+		res  *rules.Result
+	}
+	var newer *measured
+	for i := len(s.commits) - 1; i >= 0; i-- {
+		m, snap, res := s.measure(s.commits[i].SHA)
 		s.mu.Lock()
 		s.metrics[i] = m
+		if i == 0 {
+			s.metrics[i].StepDone = true // no parent in the series
+		}
 		s.mu.Unlock()
+		if newer != nil && m.Error == "" {
+			s.fillStep(newer.i, snap, res, newer.snap, newer.res)
+		}
+		newer = nil
 		if m.Error == "" {
-			prevSnap, prevRules = snap, res
+			newer = &measured{i, snap, res}
 		}
 	}
 }
 
-func (s *Server) measure(sha string, prev *index.Snapshot, prevRules *rules.Result) (m Metrics, snap *index.Snapshot, res *rules.Result) {
+// measure computes one commit's absolute metrics.
+func (s *Server) measure(sha string) (m Metrics, snap *index.Snapshot, res *rules.Result) {
 	s.evMu.Lock()
 	defer s.evMu.Unlock()
 	m.Done = true
@@ -261,15 +279,6 @@ func (s *Server) measure(sha string, prev *index.Snapshot, prevRules *rules.Resu
 	m.Debt, m.DebtPerKLOC, m.Score = a.Codebase.Debt, a.Codebase.DebtPerKLOC, a.Codebase.Score
 	m.Lines, m.Files, m.Callables, m.Hotspots, m.Decisions = c.SourceLines, c.SourceFiles, c.Callables, c.Hotspots, c.DecisionPoints
 	m.Cloned, m.Violations, m.CycleUnits = c.ClonedCallables, c.RuleViolations, c.CycleUnits
-	if prev != nil {
-		if cs, err := s.ev.ChangeSet(prev, snap); err == nil {
-			for _, f := range cs.Files {
-				if f.Supported {
-					m.ChangedLines += f.Added + f.Deleted
-				}
-			}
-		}
-	}
 	if s.opts.Defects {
 		res = rules.Run(s.reg, snap, s.cfg, s.langs, rules.Options{})
 		gate, adv := 0, 0
@@ -281,18 +290,6 @@ func (s *Server) measure(sha string, prev *index.Snapshot, prevRules *rules.Resu
 			}
 		}
 		m.Gate, m.Advisory = &gate, &adv
-		if prevRules != nil {
-			in, out, _ := rules.Compare(prevRules.Findings, res.Findings)
-			ig, ia, r := 0, 0, len(out)
-			for _, f := range in {
-				if f.Severity == rules.Gate {
-					ig++
-				} else {
-					ia++
-				}
-			}
-			m.IntroGate, m.IntroAdv, m.Resolved = &ig, &ia, &r
-		}
 	}
 	if s.opts.Clones {
 		cr := clones.Analyze(snap, s.cfg, s.langs, nil)
@@ -300,6 +297,37 @@ func (s *Server) measure(sha string, prev *index.Snapshot, prevRules *rules.Resu
 		m.NearMisses, m.Fragments = &n, &f
 	}
 	return m, snap, res
+}
+
+// fillStep records commit i's changes against its parent (older).
+func (s *Server) fillStep(i int, older *index.Snapshot, olderRes *rules.Result, newer *index.Snapshot, newerRes *rules.Result) {
+	s.evMu.Lock()
+	changed := 0
+	if cs, err := s.ev.ChangeSet(older, newer); err == nil {
+		for _, f := range cs.Files {
+			if f.Supported {
+				changed += f.Added + f.Deleted
+			}
+		}
+	}
+	s.evMu.Unlock()
+	var ig, ia, r *int
+	if olderRes != nil && newerRes != nil {
+		in, out, _ := rules.Compare(olderRes.Findings, newerRes.Findings)
+		g, a, n := 0, 0, len(out)
+		for _, f := range in {
+			if f.Severity == rules.Gate {
+				g++
+			} else {
+				a++
+			}
+		}
+		ig, ia, r = &g, &a, &n
+	}
+	s.mu.Lock()
+	m := &s.metrics[i]
+	m.ChangedLines, m.IntroGate, m.IntroAdv, m.Resolved, m.StepDone = changed, ig, ia, r, true
+	s.mu.Unlock()
 }
 
 // graph builds (and caches) one commit's module graph.
@@ -392,3 +420,6 @@ func securityHeaders(h http.Handler) http.Handler {
 		h.ServeHTTP(w, r)
 	})
 }
+
+// Commits is the number of commits in the series.
+func (s *Server) Commits() int { return len(s.commits) }
