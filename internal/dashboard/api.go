@@ -13,7 +13,7 @@ import (
 	"github.com/cameron/code-evaluator/internal/viz"
 )
 
-// Handler serves the page and the JSON API:
+// Handler serves the page (and its routes, see static) and the JSON API:
 //
 //	GET  /api/meta     every commit (metadata, provenance) and settings
 //	GET  /api/metrics  the window and the metrics of its commits (+ the
@@ -25,8 +25,8 @@ import (
 //	GET  /api/defects  ?commit=SHA&path=DIR: defect findings for a path
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
-	page, _ := fs.Sub(web, "web")
-	mux.Handle("GET /", http.FileServerFS(page))
+	page, _ := fs.Sub(web, "web/dist")
+	mux.Handle("GET /", static(page))
 	mux.HandleFunc("GET /api/meta", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, s.meta) })
 	mux.HandleFunc("GET /api/metrics", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, s.windowMetrics()) })
 	mux.HandleFunc("POST /api/window", s.handleWindow)

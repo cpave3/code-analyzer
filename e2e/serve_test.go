@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os/exec"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -46,8 +47,26 @@ func TestServeDashboard(t *testing.T) {
 		b, _ := io.ReadAll(resp.Body)
 		return resp.StatusCode, b
 	}
-	if code, page := get(""); code != 200 || !strings.Contains(string(page), "Quality over time") {
+	code, page := get("")
+	if code != 200 || !strings.Contains(string(page), "Quality over time") || !strings.Contains(string(page), `id="root"`) {
 		t.Fatalf("page: %d", code)
+	}
+	// The page's script is embedded in the binary, and the page's own routes
+	// load the page.
+	m := regexp.MustCompile(`src="/(assets/[^"]+\.js)"`).FindStringSubmatch(string(page))
+	if m == nil {
+		t.Fatalf("no script in the page: %s", page)
+	}
+	if code, js := get(m[1]); code != 200 || len(js) < 1000 {
+		t.Errorf("script %s: %d (%d bytes)", m[1], code, len(js))
+	}
+	for _, route := range []string{"modules/internal", "changes", "graph"} {
+		if code, b := get(route); code != 200 || !strings.Contains(string(b), `id="root"`) {
+			t.Errorf("route %s: %d", route, code)
+		}
+	}
+	if code, _ := get("api/unknown"); code != 404 {
+		t.Errorf("unknown API path: %d, want 404", code)
 	}
 	var meta struct {
 		Commits []struct {
