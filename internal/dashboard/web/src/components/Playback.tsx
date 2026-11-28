@@ -1,6 +1,6 @@
 // Stepping through the window: ← and → move one commit, space plays.
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { useMetrics, useSelection } from "../core/data";
+import { useMetrics, useSelection, useWindowFollowsSelection } from "../core/data";
 
 interface PlaybackValue {
   playing: boolean;
@@ -9,6 +9,7 @@ interface PlaybackValue {
 const Ctx = createContext<PlaybackValue>({ playing: false, toggle: () => {} });
 
 export function PlaybackProvider({ children }: { children: ReactNode }) {
+  useWindowFollowsSelection();
   const { index, select } = useSelection();
   const win = useMetrics().data?.window;
   const [playing, setPlaying] = useState(false);

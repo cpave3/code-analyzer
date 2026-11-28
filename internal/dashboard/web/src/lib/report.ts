@@ -41,7 +41,7 @@ export interface FileRow {
   file: string;
   debt: number;
   items: number;
-  hotspots: number; // complexity or nesting items
+  hotspots: number; // distinct callables with complexity or nesting debt
   worst: string;
 }
 
@@ -49,14 +49,18 @@ export interface FileRow {
 // file that holds the import).
 export function byFile(factors: Factor[]): FileRow[] {
   const m = new Map<string, FileRow>();
+  const hot = new Set<string>(); // a callable over both thresholds has two factors
   for (const f of factors) {
     const file = f.location.file || f.module;
-    let r = m.get(file);
-    if (!r) m.set(file, (r = { file, debt: 0, items: 0, hotspots: 0, worst: "" }));
+    const r = m.get(file) ?? m.set(file, { file, debt: 0, items: 0, hotspots: 0, worst: "" }).get(file)!;
     r.debt += f.debt;
     r.items++;
-    if (f.kind === "complexity" || f.kind === "nesting") r.hotspots++;
-    if (!r.worst) r.worst = f.location.symbol || f.module;
+    const callable = `${file}:${f.location.startLine}:${f.location.symbol ?? ""}`;
+    if ((f.kind === "complexity" || f.kind === "nesting") && !hot.has(callable)) {
+      hot.add(callable);
+      r.hotspots++;
+    }
+    r.worst ||= f.location.symbol || f.module;
   }
   return [...m.values()].sort((a, b) => b.debt - a.debt || a.file.localeCompare(b.file));
 }

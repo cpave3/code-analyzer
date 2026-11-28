@@ -197,6 +197,12 @@ export interface DefectReport {
   totals: { gate: number; advisory: number };
 }
 
+// normalizeGraph turns the lists Go encodes as null when empty (a commit
+// with no debt-carrying functions, no clones or no imports) into arrays.
+export function normalizeGraph(d: GraphData): GraphData {
+  return { ...d, modules: d.modules ?? [], callables: d.callables ?? [], clones: d.clones ?? [], imports: d.imports ?? [] };
+}
+
 export class HttpError extends Error {
   constructor(
     public status: number,
@@ -215,7 +221,7 @@ async function getJSON<T>(url: string): Promise<T> {
 export const api = {
   meta: () => getJSON<Meta>("/api/meta"),
   metrics: () => getJSON<MetricsResponse>("/api/metrics"),
-  graph: (sha: string) => getJSON<GraphData>(`/api/graph?commit=${sha}`),
+  graph: async (sha: string) => normalizeGraph(await getJSON<GraphData>(`/api/graph?commit=${sha}`)),
   explain: (sha: string, path: string) => getJSON<ExplainReport>(`/api/explain?commit=${sha}&path=${encodeURIComponent(path)}`),
   // cached=true answers null (204) when the commit has not been checked yet,
   // so the page can offer the check instead of starting it.

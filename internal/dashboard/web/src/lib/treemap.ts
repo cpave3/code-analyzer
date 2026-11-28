@@ -94,6 +94,15 @@ function facts(c: TreeNode, o: TileOpts) {
   return { name: c.name, path: c.path, bad: false, value: sizeOf(c, o.sizeBy), debt: c.debt, lines: c.lines, density: c.density };
 }
 
+// folderFacts sums a folder's shown tiles, so a language filter also
+// filters the folder's area and totals.
+function folderFacts(c: TreeNode, children: Tile[]) {
+  const sum = (k: "value" | "lines" | "debt") => children.reduce((a, x) => a + x[k], 0);
+  const lines = sum("lines"),
+    debt = sum("debt");
+  return { name: c.name, path: c.path, bad: false, value: sum("value"), debt, lines, density: lines ? (debt * 1000) / lines : 0 };
+}
+
 // tiles turns a folder's children into treemap tiles; folders left empty by
 // the language filter are dropped.
 export function tiles(n: TreeNode, o: TileOpts, t: Tokens): Tile[] {
@@ -104,7 +113,7 @@ export function tiles(n: TreeNode, o: TileOpts, t: Tokens): Tile[] {
       continue;
     }
     const children = tiles(c, o, t);
-    if (children.length) out.push({ ...facts(c, o), children, itemStyle: { borderColor: t.line, color: t.bg } });
+    if (children.length) out.push({ ...folderFacts(c, children), children, itemStyle: { borderColor: t.line, color: t.bg } });
   }
   return out;
 }

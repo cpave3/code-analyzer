@@ -49,3 +49,10 @@ describe("items and findings", () => {
     expect(agentPrompt(x)).toContain("- extract");
   });
 });
+
+describe("byFile hotspots", () => {
+  it("counts a callable over both thresholds once", () => {
+    const rows = byFile([f("a.go", 8, "complexity", "Run"), f("a.go", 4, "nesting", "Run"), f("a.go", 2, "complexity", "Other")]);
+    expect(rows[0]).toMatchObject({ items: 3, hotspots: 2 });
+  });
+});

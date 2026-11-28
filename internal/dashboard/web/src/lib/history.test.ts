@@ -1,5 +1,5 @@
 import type { Commit, Metrics } from "../core/api";
-import { change, clampWindow, dateWindow, debtChange, findCommits, groupRows, lastN, recentre } from "./history";
+import { change, clampWindow, dateWindow, debtChange, findCommits, groupRows, lastN, recentre, windowFor } from "./history";
 
 const debt = (t: number) => ({ complexity: t, nesting: 0, duplication: 0, architecture: 0, total: t });
 const m = (t: number, extra: Partial<Metrics> = {}): Metrics =>
@@ -51,5 +51,12 @@ describe("findCommits", () => {
     expect(findCommits(cs, "", 2).map((c) => c.index)).toEqual([2, 1]);
     expect(findCommits(cs, "PARSER", 5).map((c) => c.index)).toEqual([1]);
     expect(findCommits(cs, "s0", 5).map((c) => c.index)).toEqual([0]);
+  });
+});
+
+describe("windowFor", () => {
+  it("moves a same-size window to a commit outside it, and leaves it otherwise", () => {
+    expect(windowFor(0, { from: 50, to: 99 }, 100)).toEqual([0, 49]);
+    expect(windowFor(60, { from: 50, to: 99 }, 100)).toBeNull();
   });
 });

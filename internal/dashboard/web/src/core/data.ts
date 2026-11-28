@@ -1,7 +1,8 @@
 // Data hooks over the serve API, and the selected commit (kept in the URL
 // as ?commit=SHA so any view can be linked).
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { windowFor } from "../lib/history";
 import { useSearchParams } from "react-router";
 import { api, type Metrics, type MetricsResponse } from "./api";
 
@@ -108,4 +109,22 @@ export function useDefects(sha: string | undefined, path: string) {
     },
   });
   return { ...q, run };
+}
+
+// useWindowFollowsSelection moves the measured window when the URL selects a
+// commit outside it (a link to an older commit, or a window another tab
+// moved), as picking that commit from the header does.
+export function useWindowFollowsSelection() {
+  const meta = useMeta().data;
+  const win = useMetrics().data?.window;
+  const { index } = useSelection();
+  const setWindow = useSetWindow();
+  const asked = useRef(-1);
+  useEffect(() => {
+    if (!meta || !win || setWindow.isPending || asked.current === index) return;
+    const w = windowFor(index, win, meta.commits.length);
+    if (!w) return;
+    asked.current = index;
+    setWindow.mutate({ from: w[0], to: w[1] });
+  }, [meta, win, index, setWindow]);
 }

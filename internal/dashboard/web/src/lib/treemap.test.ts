@@ -41,3 +41,16 @@ describe("treemap tiles", () => {
     expect(inkFor("#101010")).toBe("#fff");
   });
 });
+
+describe("language filter", () => {
+  it("weighs folders by the modules of the chosen language only", () => {
+    const m = (id: string, lang: string, lines: number): GraphModule => ({ ...mod(id, lang, 0), lines, density: 0 });
+    const tr = buildTree([m("go:a/x", "go", 100), m("typescript:a/y", "typescript", 9900), m("go:b/z", "go", 100), m("go:b/w", "go", 0.0001)]);
+    const top = tiles(tr, { ...base, marked: new Set(), lang: "go" }, t);
+    const a = top.find((x) => x.path === "a")!,
+      b = top.find((x) => x.path === "b")!;
+    expect(a.lines).toBe(100);
+    expect(a.value).toBe(100);
+    expect(Math.round(b.value)).toBe(101);
+  });
+});

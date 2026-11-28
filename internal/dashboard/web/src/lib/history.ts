@@ -124,3 +124,10 @@ export function findCommits(commits: Commit[], query: string, limit: number): Co
   for (let i = commits.length - 1; i >= 0 && out.length < limit; i--) if (hit(commits[i])) out.push(commits[i]);
   return out;
 }
+
+// windowFor is the window to measure so that commit i is in it: null when it
+// already is, else a same-size window centred on i.
+export function windowFor(i: number, win: { from: number; to: number }, n: number): [number, number] | null {
+  if (i < 0 || (i >= win.from && i <= win.to)) return null;
+  return recentre(i, win.from, win.to, n);
+}

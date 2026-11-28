@@ -26,12 +26,19 @@ func static(page fs.FS) http.Handler {
 			files.ServeHTTP(w, r)
 			return
 		}
-		if p == "api" || p == "assets" || strings.HasPrefix(p, "api/") || strings.HasPrefix(p, "assets/") || path.Ext(p) != "" {
+		if !route(p) && (p == "api" || p == "assets" || strings.HasPrefix(p, "api/") || strings.HasPrefix(p, "assets/") || path.Ext(p) != "") {
 			http.NotFound(w, r)
 			return
 		}
 		serveIndex(w, r, page)
 	})
+}
+
+// route reports whether p is one of the page's own routes. Folder paths
+// under /modules/ may contain dots (a C# project such as My.App), so they
+// are not mistaken for missing files.
+func route(p string) bool {
+	return p == "modules" || strings.HasPrefix(p, "modules/")
 }
 
 func serveIndex(w http.ResponseWriter, r *http.Request, page fs.FS) {

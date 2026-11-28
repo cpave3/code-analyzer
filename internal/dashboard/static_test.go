@@ -26,7 +26,7 @@ func TestStaticServesAssetsAndFallsBackToTheApp(t *testing.T) {
 		t.Errorf("/: %d %q %q", w.Code, body(w), w.Header().Get("Cache-Control"))
 	}
 	// Client-side routes load the app.
-	for _, p := range []string{"/modules/internal/service", "/changes", "/graph"} {
+	for _, p := range []string{"/modules/internal/service", "/modules/src/My.App", "/modules/My.App/Services", "/changes", "/graph"} {
 		if w := get(p); w.Code != 200 || !strings.Contains(body(w), "root") {
 			t.Errorf("%s: %d %q", p, w.Code, body(w))
 		}
