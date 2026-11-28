@@ -2,6 +2,20 @@
 
 All versions are local proof-of-concept builds; there is no remote or release.
 
+## 0.8.2-poc
+
+- **Dashboard structure view**, now the default graph: a squarified
+  treemap of the directory tree.
+  - Modules sit inside their folders. Single-child chains collapse, and
+    one-module folders become the tile.
+  - Area is lines or debt (*Size by*); colour is debt density.
+  - Modules in an import cycle get a red corner marker instead of a mesh of
+    arrows. On a 1,483-module repository the old view drew 1,705 cycle
+    arrows.
+  - A hovered or selected module shows its imports and importers.
+  - The force layout stays as the "Network" view, which leaves out modules
+    with no debt and under 150 lines.
+
 ## 0.8.1-poc
 
 - **C# dependency graph fix.** The 0.8.0 graph linked a `using N` to every

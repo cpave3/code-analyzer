@@ -406,8 +406,17 @@ its parent has been measured.
   defect findings and near-duplication pairs, per commit. Points are
   coloured by the provenance group chosen above them.
 - **Stepper:** ◀ ▶, a slider, ▶ Play and the arrow keys step through
-  commits. The module graph keeps node positions between commits, and rings
-  mark nodes whose debt rose (red) or fell (green), and new nodes (dashed).
+  commits.
+- **Structure view** (the default graph): a treemap of the directory tree.
+  - Every module is a tile inside its parent folders. Single-child folder
+    chains merge, and a folder holding one module is that module's tile.
+  - Area is source lines (or debt); colour is debt density.
+  - A red corner marks a module in an import cycle or breaking a rule.
+  - Hovering or selecting a module draws its imports and importers, with
+    cycle-closing imports in red.
+  - Outlines mark modules whose debt rose (red) or fell (green), and new
+    ones (dashed).
+- **Network view:** the force layout, kept as an option.
   The panel also shows the commit's subject, author, provenance and deltas
   against the previous commit. The graph fills its card and has:
   - a "How to read this graph" section built from the configured thresholds;

@@ -32,6 +32,8 @@ button:hover{border-color:var(--accent)}
 .up{color:var(--up)}.down{color:var(--down)}
 .graphCard{display:flex;flex-direction:column}
 #graphWrap{position:relative;flex:1;min-height:480px}
+#graphCtl{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;font-size:12px;margin-bottom:6px}
+#graphCtl select{padding:2px 6px}
 details.how{margin:0 0 8px;font-size:12px}
 details.how summary{cursor:pointer;color:var(--accent)}
 details.how ul{margin:6px 0 0;padding-left:18px}
@@ -99,6 +101,12 @@ th{color:var(--dim);font-weight:500}
   <section class="card graphCard">
     <h2>Module graph at this commit</h2>
     <details class="how" id="how"><summary>How to read this graph</summary><ul id="howList"></ul></details>
+    <div id="graphCtl">
+      <span>View <label><input type="radio" name="gmode" value="structure" checked> Structure (folders)</label>
+        <label><input type="radio" name="gmode" value="network"> Network (imports)</label></span>
+      <span>Size by <select id="sizeBy"><option value="lines">source lines</option><option value="debt">debt</option></select></span>
+      <label><input type="checkbox" id="showCycles" checked> mark modules in import cycles (and rule breaks)</label>
+    </div>
     <div id="graphWrap"><canvas id="graph"></canvas></div>
     <div id="graphLegend"></div>
     <div id="changes"></div>
@@ -407,12 +415,13 @@ let picked = null, prevNodes = [];
 function renderHow() {
   const t = meta.thresholds || {cyclomatic: 10, nesting: 4, minCloneTokens: 40};
   const items = [
-    "<b>Big circles are modules</b> (a Go package or a TypeScript directory) that carry debt or have at least 150 lines. <b>Small circles are functions</b>: the 120 with the most debt, each tied to its module by a thin grey line.",
-    "<b>Size</b> grows with debt (area ∝ debt). <b>Module colour</b> is debt per 1,000 source lines: <span style='color:" + GREEN + "'>●</span> under 60, <span style='color:" + AMBER + "'>●</span> 60–105, <span style='color:" + RED + "'>●</span> 105 or more. <b>Function colour</b> is its own debt: <span style='color:" + GREEN + "'>●</span> under 5, <span style='color:" + AMBER + "'>●</span> 5–15, <span style='color:" + RED + "'>●</span> 15 or more points.",
+    "<b>Structure view (default):</b> the repository's folders as nested boxes. Each coloured tile is a module (a Go package, or a TypeScript or C# directory) inside its parent folders; single-child folder chains are merged. <b>Tile area</b> is source lines (or debt, with <i>Size by</i>), so big tiles are where the code is.",
+    "<b>Colour</b> is debt per 1,000 source lines: <span style='color:" + GREEN + "'>■</span> under 60, <span style='color:" + AMBER + "'>■</span> 60–105, <span style='color:" + RED + "'>■</span> 105 or more. In the network view, functions are coloured by their own debt: under 5, 5–15, 15 or more points.",
     `<b>Debt</b> (scoring/v2, an uncalibrated structural proxy): a function with cyclomatic complexity cc ≥ ${t.cyclomatic} adds cc − ${t.cyclomatic - 1} points; nesting depth ≥ ${t.nesting} adds 2 × (depth − ${t.nesting - 1}); copies in a structural clone group (≥ ${t.minCloneTokens} tokens) add 1 point per 20 redundant tokens; an import breaking a configured rule adds 10, a module in an import cycle 20.`,
-    "<b>Lines:</b> faint grey between modules = imports; <span style='color:#22d3ee'>cyan</span> = functions in the same structural clone group; <span style='color:" + RED + "'>red</span> = an import that breaks a configured rule or closes a cycle.",
-    "<b>Rings compare with the previous commit:</b> <span class='up'>red</span> = more debt, <span class='down'>green</span> = less, <span style='color:var(--new)'>dashed amber</span> = new. Positions come from a force layout (linked things pull together) and are kept between commits, so movement means a structural change, not noise.",
-    "<b>Use it:</b> hover for a summary, click a circle for its breakdown, drag to pan, scroll to zoom, double-click to fit. The list under the graph names the biggest changes in this step.",
+    "<b>A red corner</b> marks a module in an import cycle (or with an import breaking a configured rule). <b>Hover or select a module</b> to draw its imports: what it imports in <span style='color:var(--accent)'>purple</span>, what imports it in <span style='color:#22d3ee'>cyan</span>, and imports that close a cycle in <span style='color:" + RED + "'>red</span>.",
+    "<b>Outlines compare with the previous commit:</b> <span class='up'>red</span> = more debt, <span class='down'>green</span> = less, <span style='color:var(--new)'>dashed amber</span> = new module.",
+    "<b>Network view:</b> a force layout of modules with debt (or ≥ 150 lines) and the 120 functions with the most debt, pulled together by imports and clone links; positions are kept between commits.",
+    "<b>Use it:</b> hover for a summary, click for the breakdown below, drag to pan, scroll to zoom, double-click to reset. The list under the graph names the biggest changes in this commit.",
   ];
   $("howList").innerHTML = items.map(x => `<li>${x}</li>`).join("");
 }
@@ -429,9 +438,9 @@ async function showGraph(i) {
   const mods = {};
   const next = [];
   for (const m of d.modules) {
-    if (m.debt.total <= 0 && m.lines < 150) continue;
     const id = "m:" + m.id;
-    const n = {id, kind: "module", label: m.id.split(":").pop(), debt: m.debt.total, density: m.density, lines: m.lines, hot: m.hotspots, m};
+    const n = {id, kind: "module", label: m.id.split(":").pop(), debt: m.debt.total, density: m.density, lines: m.lines, hot: m.hotspots, m,
+      minor: m.debt.total <= 0 && m.lines < 150}; // the network view leaves these out
     mods[m.id] = n; next.push(n); ids.add(id);
   }
   for (const cl of d.callables) {
@@ -468,29 +477,34 @@ async function showGraph(i) {
     if (a && b) links.push({a, b, kind: e.violation || e.cycle ? "bad" : "import"});
   }
   nodes = next; shownSha = c.sha; alpha = fromPrev ? .35 : 1;
+  netNodes = nodes.filter(n => !n.minor && !(n.mod && n.mod.minor));
+  netLinks = links.filter(l => !l.a.minor && !l.b.minor);
+  for (const l of links) if (l.kind === "bad") l.a.inCycle = l.b.inCycle = true;
+  layoutTreemap();
   if (picked) picked = nodes.find(n => n.id === picked.id) || null;
   renderChanges(); renderDetail();
   const counts = {new: 0, up: 0, down: 0};
   for (const n of nodes) if (n.state in counts) counts[n.state]++;
-  $("graphLegend").innerHTML = `${nodes.filter(n => n.kind === "module").length} modules, ${nodes.filter(n => n.kind === "callable").length} functions · colour`
+  $("graphLegend").innerHTML = `${nodes.filter(n => n.kind === "module").length} modules (${mode === "network" ? netNodes.filter(n => n.kind === "module").length + " shown" : "all shown"}), ${nodes.filter(n => n.kind === "callable").length} functions with the most debt · colour`
     + `<span class="sw" style="background:${GREEN}"></span>low<span class="sw" style="background:${AMBER}"></span>mid<span class="sw" style="background:${RED}"></span>high debt · ring vs previous commit:`
     + `<span class="sw" style="border:2px solid var(--up)"></span>${counts.up} more debt<span class="sw" style="border:2px solid var(--down)"></span>${counts.down} less<span class="sw" style="border:2px dashed var(--new)"></span>${counts.new} new · ${removed} gone`;
-  if (!fromPrev) fit();
+  if (!fromPrev || mode === "structure") fit();
   // prefetch neighbours
   // Graphs are expensive on the server: prefetch only the next one, and only while playing.
   if (playing && meta.commits[i + 1] && i + 1 <= win.to) fetchGraph(meta.commits[i + 1].sha).catch(() => {});
 }
 function fit() {
-  if (!nodes.length) return;
-  const xs = nodes.map(n => n.p.x), ys = nodes.map(n => n.p.y);
+  if (mode === "structure") { view.x = 0; view.y = 0; view.k = 1; return; }
+  if (!netNodes.length) return;
+  const xs = netNodes.map(n => n.p.x), ys = netNodes.map(n => n.p.y);
   const w = Math.max(...xs) - Math.min(...xs) + 120, h = Math.max(...ys) - Math.min(...ys) + 120;
   view.x = (Math.max(...xs) + Math.min(...xs)) / 2; view.y = (Math.max(...ys) + Math.min(...ys)) / 2;
   view.k = Math.min(canvas.clientWidth / w, canvas.clientHeight / h, 2);
 }
 function tick() {
-  if (alpha < .005) return;
-  for (const a of nodes) {
-    for (const b of nodes) {
+  if (mode !== "network" || alpha < .005) return;
+  for (const a of netNodes) {
+    for (const b of netNodes) {
       if (a === b) continue;
       const dx = a.p.x - b.p.x, dy = a.p.y - b.p.y, d2 = dx * dx + dy * dy + 30;
       if (d2 > 90000) continue;
@@ -499,13 +513,13 @@ function tick() {
     }
     a.p.vx -= a.p.x * .002 * alpha; a.p.vy -= a.p.y * .002 * alpha;
   }
-  for (const l of links) {
+  for (const l of netLinks) {
     const dx = l.b.p.x - l.a.p.x, dy = l.b.p.y - l.a.p.y, d = Math.hypot(dx, dy) || 1;
     const want = l.kind === "member" ? 26 + l.b.r : l.kind === "clone" ? 60 : 140, k = l.kind === "member" ? .08 : .01;
     const f = (d - want) / d * k * alpha;
     l.a.p.vx += dx * f; l.a.p.vy += dy * f; l.b.p.vx -= dx * f; l.b.p.vy -= dy * f;
   }
-  for (const n of nodes) {
+  for (const n of netNodes) {
     const s = Math.hypot(n.p.vx, n.p.vy); if (s > 30) { n.p.vx *= 30 / s; n.p.vy *= 30 / s; }
     n.p.x += n.p.vx; n.p.y += n.p.vy; n.p.vx *= .6; n.p.vy *= .6;
   }
@@ -517,8 +531,15 @@ function drawGraph() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.fillStyle = cssVar("--bg"); ctx.fillRect(0, 0, W, H);
   ctx.setTransform(dpr * view.k, 0, 0, dpr * view.k, dpr * (W / 2 - view.x * view.k), dpr * (H / 2 - view.y * view.k));
+  if (mode === "structure") {
+    if (W !== laidOut.w || H !== laidOut.h) layoutTreemap();
+    drawTreemap();
+  } else drawNetwork();
+  ctx.globalAlpha = 1;
+}
+function drawNetwork() {
   const line = cssVar("--line");
-  for (const l of links) {
+  for (const l of netLinks) {
     ctx.globalAlpha = l.kind === "member" ? .35 : .7;
     ctx.strokeStyle = l.kind === "clone" ? "#22d3ee" : l.kind === "bad" ? "#f43f5e" : line;
     ctx.lineWidth = (l.kind === "clone" || l.kind === "bad" ? 1.5 : .7) / view.k;
@@ -526,7 +547,7 @@ function drawGraph() {
   }
   ctx.globalAlpha = 1;
   const ring = {up: cssVar("--up"), down: cssVar("--down"), new: cssVar("--new")};
-  for (const n of nodes) {
+  for (const n of netNodes) {
     ctx.fillStyle = n.kind === "module" ? density(n.density) : fnColor(n.debt);
     ctx.globalAlpha = n.kind === "module" ? .95 : .8;
     ctx.beginPath(); ctx.arc(n.p.x, n.p.y, n.r, 0, 2 * Math.PI); ctx.fill();
@@ -544,7 +565,7 @@ function drawGraph() {
     }
   }
   ctx.fillStyle = cssVar("--fg"); ctx.textAlign = "center";
-  for (const n of nodes) {
+  for (const n of netNodes) {
     if (n.kind !== "module" && n !== hover && n !== picked && !(n.state !== "same" && n.r * view.k > 5)) continue;
     ctx.font = `${(n.kind === "module" ? 11 : 10) / view.k}px system-ui,sans-serif`;
     ctx.globalAlpha = .9;
@@ -552,6 +573,142 @@ function drawGraph() {
   }
   ctx.globalAlpha = 1;
 }
+// ---------- structure view: a squarified treemap of the directory tree ----------
+let mode = "structure", sizeBy = "lines", showCycles = true, netNodes = [], netLinks = [], folders = [], laidOut = {w: 0, h: 0};
+function moduleValue(n) { return Math.max(1, sizeBy === "debt" ? n.debt : n.lines); }
+function buildTree() {
+  const root = {name: "", kids: new Map(), mods: []};
+  for (const n of nodes) {
+    if (n.kind !== "module") continue;
+    let t = root;
+    for (const part of n.label.split("/")) {
+      if (!t.kids.has(part)) t.kids.set(part, {name: part, kids: new Map(), mods: []});
+      t = t.kids.get(part);
+    }
+    t.mods.push(n);
+  }
+  // Collapse single-child chains (services/agx.autopilot/...) into one folder.
+  const collapse = t => {
+    for (const [k, kid] of [...t.kids]) t.kids.set(k, collapse(kid));
+    while (t.name && t.kids.size === 1 && !t.mods.length) {
+      const only = [...t.kids.values()][0];
+      t = {name: t.name + "/" + only.name, kids: only.kids, mods: only.mods};
+    }
+    return t;
+  };
+  const total = t => (t.value = t.mods.reduce((a, n) => a + moduleValue(n), 0) + [...t.kids.values()].reduce((a, k) => a + total(k), 0));
+  const r = collapse(root);
+  total(r);
+  return r;
+}
+// squarify lays items ({value}) out in the rectangle, setting item.r.
+function squarify(items, x, y, w, h) {
+  const sum = items.reduce((a, it) => a + it.value, 0);
+  if (!sum || w <= 0 || h <= 0) { for (const it of items) it.r = {x, y, w: 0, h: 0}; return; }
+  for (const it of items) it.area = it.value * w * h / sum;
+  let rx = x, ry = y, rw = w, rh = h, row = [];
+  const worst = (r, side) => {
+    const s = r.reduce((a, it) => a + it.area, 0);
+    let mx = 0, mn = Infinity;
+    for (const it of r) { mx = Math.max(mx, it.area); mn = Math.min(mn, it.area); }
+    return Math.max(side * side * mx / (s * s), s * s / (side * side * mn));
+  };
+  const flush = () => {
+    const s = row.reduce((a, it) => a + it.area, 0);
+    if (rw >= rh) {
+      const cw = s / rh; let yy = ry;
+      for (const it of row) { const hh = it.area / cw; it.r = {x: rx, y: yy, w: cw, h: hh}; yy += hh; }
+      rx += cw; rw -= cw;
+    } else {
+      const ch = s / rw; let xx = rx;
+      for (const it of row) { const ww = it.area / ch; it.r = {x: xx, y: ry, w: ww, h: ch}; xx += ww; }
+      ry += ch; rh -= ch;
+    }
+    row = [];
+  };
+  for (const it of items) {
+    const side = Math.min(rw, rh);
+    if (row.length && worst([...row, it], side) > worst(row, side)) flush();
+    row.push(it);
+  }
+  if (row.length) flush();
+}
+function placeFolder(t, x, y, w, h, depth) {
+  if (t.name) {
+    folders.push({name: t.name, x, y, w, h, depth});
+    const head = w > 50 && h > 30 ? 15 : 0, pad = Math.min(3, w / 8, h / 8);
+    x += pad; y += pad + head; w -= 2 * pad; h -= 2 * pad + head;
+  }
+  // A folder holding just one module (and no subfolders) is drawn as that
+  // module's tile, named after the folder, not as a frame around one tile.
+  const items = [...t.mods.map(n => ({value: moduleValue(n), n, name: n.label.split("/").pop()})),
+    ...[...t.kids.values()].map(k => k.kids.size === 0 && k.mods.length === 1 ? {value: k.value, n: k.mods[0], name: k.name} : {value: k.value, t: k})]
+    .sort((a, b) => b.value - a.value);
+  squarify(items, x, y, Math.max(0, w), Math.max(0, h));
+  for (const it of items) {
+    if (it.n) { it.n.rect = it.r; it.n.tileName = it.name; }
+    else placeFolder(it.t, it.r.x, it.r.y, it.r.w, it.r.h, depth + 1);
+  }
+}
+function layoutTreemap() {
+  const W = canvas.clientWidth || 600, H = canvas.clientHeight || 400;
+  folders = [];
+  for (const n of nodes) n.rect = null;
+  placeFolder(buildTree(), -W / 2, -H / 2, W, H, 0);
+  laidOut = {w: W, h: H};
+}
+const center = n => ({x: n.rect.x + n.rect.w / 2, y: n.rect.y + n.rect.h / 2});
+function clippedText(text, x, y, w, h, px) {
+  ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+  ctx.font = `${px / view.k}px system-ui,sans-serif`; ctx.fillText(text, x + 3 / view.k, y + (px + 1) / view.k);
+  ctx.restore();
+}
+function drawTreemap() {
+  const fg = cssVar("--fg"), line = cssVar("--line"), ring = {up: cssVar("--up"), down: cssVar("--down"), new: cssVar("--new")};
+  const focus = picked && picked.kind === "module" ? picked : hover && hover.kind === "module" ? hover : null;
+  ctx.textAlign = "left";
+  for (const f of folders) {
+    ctx.globalAlpha = Math.min(.25, .05 + .04 * f.depth); ctx.fillStyle = line; ctx.fillRect(f.x, f.y, f.w, f.h);
+    ctx.globalAlpha = 1; ctx.strokeStyle = line; ctx.lineWidth = 1 / view.k; ctx.strokeRect(f.x, f.y, f.w, f.h);
+    if (f.w * view.k > 50 && f.h * view.k > 30) { ctx.fillStyle = fg; ctx.globalAlpha = .85; clippedText(f.name, f.x, f.y, f.w, 15, 11); ctx.globalAlpha = 1; }
+  }
+  for (const n of nodes) {
+    if (n.kind !== "module" || !n.rect || n.rect.w <= 0) continue;
+    const r = n.rect;
+    ctx.globalAlpha = focus && focus !== n ? .55 : .9;
+    ctx.fillStyle = density(n.density); ctx.fillRect(r.x, r.y, r.w, r.h);
+    ctx.globalAlpha = 1; ctx.strokeStyle = cssVar("--bg"); ctx.lineWidth = 1 / view.k; ctx.strokeRect(r.x, r.y, r.w, r.h);
+    if (n.state !== "same") {
+      ctx.strokeStyle = ring[n.state]; ctx.lineWidth = 2.5 / view.k;
+      ctx.setLineDash(n.state === "new" ? [4 / view.k, 3 / view.k] : []);
+      ctx.strokeRect(r.x + 1.5 / view.k, r.y + 1.5 / view.k, r.w - 3 / view.k, r.h - 3 / view.k); ctx.setLineDash([]);
+    }
+    if (showCycles && n.inCycle) { // red corner marker: this module is in an import cycle or breaks a rule
+      const m = Math.min(10 / view.k, r.w / 2, r.h / 2);
+      ctx.fillStyle = RED; ctx.beginPath(); ctx.moveTo(r.x + r.w, r.y); ctx.lineTo(r.x + r.w - m, r.y); ctx.lineTo(r.x + r.w, r.y + m); ctx.closePath(); ctx.fill();
+    }
+    if (r.w * view.k > 46 && r.h * view.k > 14) { ctx.fillStyle = "#111"; clippedText(n.tileName || n.label.split("/").pop(), r.x, r.y, r.w, r.h, 10); }
+  }
+  // edges: only the focused (hovered or selected) module's imports and importers
+  const arrow = (a, b, color, width) => {
+    const p = center(a), q = center(b);
+    ctx.strokeStyle = color; ctx.lineWidth = width / view.k;
+    ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+    const ang = Math.atan2(q.y - p.y, q.x - p.x), s = 6 / view.k;
+    ctx.beginPath(); ctx.moveTo(q.x, q.y); ctx.lineTo(q.x - s * Math.cos(ang - .4), q.y - s * Math.sin(ang - .4));
+    ctx.lineTo(q.x - s * Math.cos(ang + .4), q.y - s * Math.sin(ang + .4)); ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+  };
+  for (const l of links) {
+    if ((l.kind !== "import" && l.kind !== "bad") || !l.a.rect || !l.b.rect) continue;
+    if (focus && (l.a === focus || l.b === focus)) { ctx.globalAlpha = .95; arrow(l.a, l.b, l.kind === "bad" ? RED : l.a === focus ? cssVar("--accent") : "#22d3ee", 1.8); }
+  }
+  ctx.globalAlpha = 1;
+  if (focus && focus.rect) { ctx.strokeStyle = fg; ctx.lineWidth = 2.5 / view.k; ctx.strokeRect(focus.rect.x, focus.rect.y, focus.rect.w, focus.rect.h); }
+}
+document.querySelectorAll("input[name=gmode]").forEach(el => el.onchange = () => { mode = el.value; alpha = 1; fit(); showGraph(sel); });
+$("sizeBy").onchange = () => { sizeBy = $("sizeBy").value; layoutTreemap(); };
+$("showCycles").onchange = () => { showCycles = $("showCycles").checked; };
+
 function frame() { tick(); drawGraph(); requestAnimationFrame(frame); }
 const toWorld = (sx, sy) => ({x: (sx - canvas.clientWidth / 2) / view.k + view.x, y: (sy - canvas.clientHeight / 2) / view.k + view.y});
 let drag = null;
@@ -566,7 +723,11 @@ canvas.onmousemove = e => {
   if (drag) { if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 3) drag.moved = true; view.x = drag.vx - (e.clientX - drag.x) / view.k; view.y = drag.vy - (e.clientY - drag.y) / view.k; return; }
   const r = canvas.getBoundingClientRect(), p = toWorld(e.clientX - r.left, e.clientY - r.top);
   hover = null; let best = 1e9;
-  for (const n of nodes) { const d = Math.hypot(n.p.x - p.x, n.p.y - p.y); if (d < n.r + 4 / view.k && d < best) { best = d; hover = n; } }
+  if (mode === "structure") {
+    for (const n of nodes) { const r = n.rect; if (r && p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h) hover = n; }
+  } else {
+    for (const n of netNodes) { const d = Math.hypot(n.p.x - p.x, n.p.y - p.y); if (d < n.r + 4 / view.k && d < best) { best = d; hover = n; } }
+  }
   if (!hover) return hideTip();
   const n = hover, ch = n.prev == null ? (shownSha && n.state === "new" ? "new in this step" : "") : `Δ ${signed(n.debt - n.prev, 1)} vs previous`;
   showTip(e, n.kind === "module"
